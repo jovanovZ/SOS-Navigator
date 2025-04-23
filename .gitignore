@@ -1,7 +1,8 @@
+#backend
 /backend/node_modules
 /backend/.env
 
-
+#frontend
 /frontend/node_modules
 /frontend/.pnp
 /frontend/.pnp.js
@@ -22,3 +23,51 @@
 /frontend/npm-debug.log*
 /frontend/yarn-debug.log*
 /frontend/yarn-error.log*
+
+#desktop
+/desktop/.gradle
+/desktop/build/
+/desktop/!gradle/wrapper/gradle-wrapper.jar
+/desktop/!**/src/main/**/build/
+/desktop/!**/src/test/**/build/
+
+### IntelliJ IDEA ###
+/desktop/.idea/modules.xml
+/desktop/.idea/jarRepositories.xml
+/desktop/.idea/compiler.xml
+/desktop/.idea/libraries/
+/desktop/*.iws
+/desktop/*.iml
+/desktop/*.ipr
+/desktop/out/
+/desktop/!**/src/main/**/out/
+/desktop/!**/src/test/**/out/
+
+### Kotlin ###
+/desktop/.kotlin
+
+### Eclipse ###
+/desktop/.apt_generated
+/desktop/.classpath
+/desktop/.factorypath
+/desktop/.project
+/desktop/.settings
+/desktop/.springBeans
+/desktop/.sts4-cache
+/desktop/bin/
+/desktop/!**/src/main/**/bin/
+/desktop/!**/src/test/**/bin/
+
+### NetBeans ###
+/desktop/nbproject/private/
+/desktop/nbbuild/
+/desktop/dist/
+/desktop/nbdist/
+/desktop/.nb-gradle/
+
+### VS Code ###
+/desktop/.vscode/
+
+### Mac OS ###
+/desktop/.DS_Store
+/desktop/.idea/
