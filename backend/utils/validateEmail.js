@@ -1,0 +1,1 @@
+// napisi funkcijo za validiranje emaila (pri login ali register)
