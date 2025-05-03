@@ -1,7 +1,10 @@
 import React from 'react'
+import Navigation from '../home/Navigation';
 
 export default function Profile() {
   return (
+    <>
+    <Navigation/>
     <div className="bg-[#434343] bg-opacity-30  w-2/3 h-3/5 mx-auto rounded-b-lg p-8 text-white">
       <div className="h-1/3 flex justify-between ">
         <div className="w-2/3 flex gap-20 ">
@@ -61,5 +64,6 @@ export default function Profile() {
         </table>
       </div>
     </div>
+    </>
   );
 }
