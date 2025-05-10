@@ -33,28 +33,33 @@ exports.login = async (req, res) => {
 }
 
 exports.register = async (req, res) => {
-    const { username, email, password } = req.body;
-    if (!username || !email || !password) {
-      return res.status(400).json({ message: 'All fields are required' });
-    }
-    try {
-      const existsEmail = await User.findOne({ email });
-      if (existsEmail) return res.status(400).json({ message: 'Email already in use' });
-  
-      const existsUsername = await User.findOne({ username });
-      if (existsUsername) return res.status(400).json({ message: 'Username already taken' });
-  
-      const hashedPassword = await bcrypt.hash(password, 10);
-      const avatar = 'https://api.dicebear.com/7.x/fun-emoji/svg?seed=1';
-  
-      const newUser = new User({ username, email, password: hashedPassword, image: avatar });
-      await newUser.save();
-  
-      return res.status(201).json({ user: { id: newUser._id, username: newUser.username, email: newUser.email } });
-    } catch (error) {
-      return res.status(500).json({ message: 'Server error' });
-    }
-}
+  const { username, email, password } = req.body;
+  console.log("Incoming register body:", req.body); // <== To dodaj
+  if (!username || !email || !password) {
+    return res.status(400).json({ message: 'All fields are required' });
+  }
+  try {
+    const existsEmail = await User.findOne({ email });
+    console.log("Email check:", existsEmail); // <== To dodaj
+    if (existsEmail) return res.status(400).json({ message: 'Email already in use' });
+
+    const existsUsername = await User.findOne({ username });
+    console.log("Username check:", existsUsername); // <== To dodaj
+    if (existsUsername) return res.status(400).json({ message: 'Username already taken' });
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const avatar = 'https://api.dicebear.com/7.x/fun-emoji/svg?seed=1';
+
+    const newUser = new User({ username, email, password: hashedPassword, imageUrl: avatar });
+    await newUser.save();
+
+    return res.status(201).json({ user: { id: newUser._id, username, email, imageUrl: avatar } });
+  } catch (error) {
+    console.error("Registration error:", error); 
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
 
 exports.getProfile = async (req, res) => {
     try {

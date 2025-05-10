@@ -4,11 +4,11 @@ var mongoose = require("mongoose");
 var Schema = mongoose.Schema;
 
 var UserSchema = new Schema({
-  name: String,
-  email: String,
-  password: String,
-  imageUrl: String,
-  historySimulations: [{ type: Schema.Types.ObjectId, ref: "simulation" }],
+  username: { type: String, required: true },
+  email: { type: String, required: true },
+  password: { type: String, required: true },
+  imageUrl: { type: String, required: true },
+  historySimulations: [{ type: Schema.Types.ObjectId, ref: "simulation", default: [] }], // to je zgodovina simulacij, ki jih je uporabnik naredil
 });
 
 module.exports = mongoose.model("user", UserSchema);
