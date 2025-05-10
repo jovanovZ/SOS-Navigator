@@ -1,0 +1,1 @@
+// tukaj bo funkcija za hashanje passworda (login ali register)
