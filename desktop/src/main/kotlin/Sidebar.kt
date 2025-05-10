@@ -1,57 +1,121 @@
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.*
-import androidx.compose.ui.Alignment
+import androidx.compose.material.Divider
+import androidx.compose.material.DropdownMenu
+import androidx.compose.material.DropdownMenuItem
+import androidx.compose.material.Text
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.material.Card
-import androidx.compose.material.Text
-import androidx.compose.runtime.Composable
 
 @Composable
-fun ScrapePrompt() {
-    Box(
-        modifier = Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center
+fun SidebarWithDropdown() {
+    var expandedTable by remember { mutableStateOf(false) }
+    var expandedScraper by remember { mutableStateOf(false) }
+    var expandedGenerator by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = Modifier
+            .width(200.dp)
+            .fillMaxHeight()
+            .background(Color(0xFFD0E8FF))
+            .padding(16.dp),
+        verticalArrangement = Arrangement.SpaceBetween
     ) {
-        Card(
-            shape = RoundedCornerShape(12.dp),
-            elevation = 8.dp,
-            backgroundColor = Color.White
-        ) {
-            Column(
-                modifier = Modifier.padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = "You want to scrape Gasilci ?",
-                    fontSize = 18.sp,
-                    color = Color.Black
-                )
-
-                Spacer(modifier = Modifier.height(20.dp))
-
+        Column {
+            Box {
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { expandedTable = !expandedTable }
+                        .padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Button(
-                        onClick = { println("Cancelled") },
-                        colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFFC62828)),
-                        shape = RoundedCornerShape(50)
-                    ) {
-                        Text("No", color = Color.White)
-                    }
+                    Text("Tables", fontSize = 18.sp)
+                    Text(if (expandedTable) "Ë…" else ">", fontSize = 18.sp)
+                }
 
-                    Button(
-                        onClick = { println("Scraping gasilci...") },
-                        colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF1E88E5)),
-                        shape = RoundedCornerShape(50)
-                    ) {
-                        Text("Scrape", color = Color.White)
-                    }
+                DropdownMenu(
+                    expanded = expandedTable,
+                    onDismissRequest = { expandedTable = false },
+                    modifier = Modifier.background(Color.White)
+                ) {
+                    DropdownMenuItem(onClick = { expandedTable = false }) { Text("User") }
+                    DropdownMenuItem(onClick = { expandedTable = false }) { Text("Simulation") }
+                    DropdownMenuItem(onClick = { expandedTable = false }) { Text("Accident") }
+                    DropdownMenuItem(onClick = { expandedTable = false }) { Text("Location") }
+                    DropdownMenuItem(onClick = { expandedTable = false }) { Text("Station") }
+                    DropdownMenuItem(onClick = { expandedTable = false }) { Text("Path") }
                 }
             }
+            Text("No table selected", color = Color.Gray)
+            Divider(modifier = Modifier.padding(vertical = 8.dp))
+
+            Box {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { expandedScraper = !expandedScraper }
+                        .padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("Scraper", fontSize = 18.sp)
+                    Text(if (expandedScraper) "Ë…" else ">", fontSize = 18.sp)
+                }
+
+                DropdownMenu(
+                    expanded = expandedScraper,
+                    onDismissRequest = { expandedScraper = false },
+                    modifier = Modifier.background(Color.White)
+                ) {
+                    DropdownMenuItem(onClick = { expandedScraper = false }) { Text("Bolnica") }
+                    DropdownMenuItem(onClick = { expandedScraper = false }) { Text("Policija") }
+                    DropdownMenuItem(onClick = { expandedScraper = false }) { Text("Gasilci") }
+                }
+            }
+            Text("No scraper selected", color = Color.Gray)
+            Divider(modifier = Modifier.padding(vertical = 8.dp))
+
+            Box {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { expandedGenerator = !expandedGenerator }
+                        .padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("Generate", fontSize = 18.sp)
+                    Text(if (expandedGenerator) "Ë…" else ">", fontSize = 18.sp)
+                }
+
+                DropdownMenu(
+                    expanded = expandedGenerator,
+                    onDismissRequest = { expandedGenerator = false },
+                    modifier = Modifier.background(Color.White)
+                ) {
+                    DropdownMenuItem(onClick = { expandedGenerator = false }) { Text("User") }
+                    DropdownMenuItem(onClick = { expandedGenerator = false }) { Text("Simulation") }
+                    DropdownMenuItem(onClick = { expandedGenerator = false }) { Text("Accident") }
+                    DropdownMenuItem(onClick = { expandedGenerator = false }) { Text("Location") }
+                    DropdownMenuItem(onClick = { expandedGenerator = false }) { Text("Station") }
+                    DropdownMenuItem(onClick = { expandedGenerator = false }) { Text("Path") }
+                }
+            }
+            Text("No generator selected", color = Color.Gray)
+            Divider(modifier = Modifier.padding(vertical = 8.dp))
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color(0xFFBBDEFB))
+                .padding(8.dp),
+            horizontalArrangement = Arrangement.Start
+        ) {
+            Text("About", fontSize = 16.sp)
         }
     }
 }
