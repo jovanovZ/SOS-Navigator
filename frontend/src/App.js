@@ -6,10 +6,12 @@ import Login from './components/auth/Login';
 import Homepage from './components/home/Homepage';
 import Profile from './components/profile/Profile';
 import UpdateProfile from './components/profile/UpdateProfile'
+import { ToastContainer, toast } from 'react-toastify';
 
 
 function App() {
   return (
+    <>
     <Router>
       <Routes>
         <Route path="/register" element={<Register />} />
@@ -18,7 +20,22 @@ function App() {
         <Route path="/profile" element={<Profile />} />
         <Route path="/update" element={<UpdateProfile />} />
       </Routes>
+
     </Router>
+    <ToastContainer
+        position="top-right"
+        autoClose={2000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="dark"
+        style={{ zIndex: 9999 }} 
+    />
+    </>
   );
 }
 
