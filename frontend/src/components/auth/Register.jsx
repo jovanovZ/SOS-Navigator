@@ -1,4 +1,4 @@
-import React from "react";
+import React, {useState, useEffect} from "react";
 import { IoLogoGithub } from "react-icons/io";
 import axios from "axios";
 import { toast } from "react-toastify"; 
@@ -12,6 +12,16 @@ const Register = () => {
   const [confirmPassword, setConfirmPassword] = React.useState("");
   const [loading, setLoading] = React.useState(false);
   const navigator = useNavigate(); 
+
+  useEffect(() => {
+    axios.post("http://localhost:3002/api/logout", {}, { withCredentials: true })
+      .then(() => {
+        console.log("Token cookie cleared");
+      })
+      .catch((err) => {
+        console.error("Logout on entry failed", err);
+      });
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

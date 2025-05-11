@@ -2,8 +2,8 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
-const path = require("path");
 const userRoutes = require("./routes/userRoutes");
+const cookieParser = require("cookie-parser");
 
 // Uvoz route-ov
 //const userRoutes = require('./routes/userRoutes');
@@ -16,7 +16,7 @@ app.use(cors({
   credentials: true, // omogoči piškotke
 }));
 app.use(express.json()); // za JSON requeste
-
+app.use(cookieParser()); 
 app.use('/api', userRoutes);
 
 
