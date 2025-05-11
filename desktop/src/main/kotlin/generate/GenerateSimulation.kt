@@ -1,0 +1,98 @@
+package generate
+
+import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import kotlin.random.Random
+
+fun generateRandomServices(): List<String> {
+    val services = listOf("ambulance", "fire", "police")
+    val numberOfServices = Random.nextInt(1, 4)
+    return services.shuffled().take(numberOfServices)
+}
+
+@Composable
+@Preview
+fun GenerateSimulation() {
+    val instanceCount = remember { mutableStateOf("") }
+
+    val responseTimeMin = remember { mutableStateOf("") }
+    val responseTimeMax = remember { mutableStateOf("") }
+
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(start = 300.dp)
+            .padding(32.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Card(
+            shape = RoundedCornerShape(12.dp),
+            elevation = 8.dp,
+            backgroundColor = Color(0xFFFFFFFF),
+            modifier = Modifier.width(600.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("Generate Simulation", style = MaterialTheme.typography.h5)
+                }
+                Divider(modifier = Modifier.padding(vertical = 8.dp))
+
+                Text("Number of Instances", fontSize = 18.sp)
+                InputFieldForNumber(
+                    value = instanceCount.value,
+                    onValueChange = { instanceCount.value = it },
+                    inputModifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text("Response time range (in minutes)", fontSize = 14.sp)
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    InputFieldForNumber(
+                        label = "Min",
+                        value = responseTimeMin.value,
+                        onValueChange = { responseTimeMin.value = it },
+                        inputModifier = Modifier.weight(1f).padding(end = 8.dp)
+                    )
+                    InputFieldForNumber(
+                        label = "Max",
+                        value = responseTimeMax.value,
+                        onValueChange = { responseTimeMax.value = it },
+                        inputModifier = Modifier.weight(1f).padding(start = 8.dp)
+                    )
+                }
+
+
+                Box(modifier = Modifier.fillMaxWidth().padding(top = 16.dp), contentAlignment = Alignment.BottomEnd) {
+                    Button(
+                        colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF1E88E5)),
+                        shape = RoundedCornerShape(50),
+                        onClick = {
+                            val typeOfService: List<String> = generateRandomServices()
+
+                            // ker v modelih shranjujemo v milisecundah tu pa input dobiš v minutah ne pozabi spremenit iz min v milisec
+                            //potem pa se rabimo userID, accountID, bestStationID, bestPathID
+                        }) {
+                        Text("Generate")
+                    }
+                }
+            }
+        }
+    }
+}

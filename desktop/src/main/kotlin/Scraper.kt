@@ -16,7 +16,7 @@ fun ScrapePrompt(scraperState: MutableState<Scraper>) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(start = 200.dp)
+            .padding(start = 300.dp)
             .padding(32.dp),
         contentAlignment = Alignment.Center
     ) {
