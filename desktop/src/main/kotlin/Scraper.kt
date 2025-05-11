@@ -9,11 +9,16 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.material.Card
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 
 @Composable
-fun ScrapePrompt() {
+fun ScrapePrompt(scraperState: MutableState<Scraper>) {
     Box(
-        modifier = Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(start = 200.dp)
+            .padding(32.dp),
+        contentAlignment = Alignment.Center
     ) {
         Card(
             shape = RoundedCornerShape(12.dp),
@@ -25,7 +30,9 @@ fun ScrapePrompt() {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "You want to scrape Gasilci ?",
+                    text = if (scraperState.value == Scraper.NONE) "First select scraper" else "Do you want to scrape ${
+                        scraperState.value.toString().lowercase().replace("_", " ").replaceFirstChar { it.uppercase() }
+                    }?",
                     fontSize = 18.sp,
                     color = Color.Black
                 )
@@ -35,20 +42,22 @@ fun ScrapePrompt() {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Button(
-                        onClick = { println("Cancelled") },
-                        colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFFC62828)),
-                        shape = RoundedCornerShape(50)
-                    ) {
-                        Text("No", color = Color.White)
-                    }
+                    if(scraperState.value != Scraper.NONE){
+                        Button(
+                            onClick = { println("Cancelled") },
+                            colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFFC62828)),
+                            shape = RoundedCornerShape(50)
+                        ) {
+                            Text("No", color = Color.White)
+                        }
 
-                    Button(
-                        onClick = { println("Scraping gasilci...") },
-                        colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF1E88E5)),
-                        shape = RoundedCornerShape(50)
-                    ) {
-                        Text("Scrape", color = Color.White)
+                        Button(
+                            onClick = { println("Scraping gasilci...") },
+                            colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF1E88E5)),
+                            shape = RoundedCornerShape(50)
+                        ) {
+                            Text("Scrape", color = Color.White)
+                        }
                     }
                 }
             }
