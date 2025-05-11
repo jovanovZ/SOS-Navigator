@@ -9,12 +9,17 @@ import { FaRegEye } from "react-icons/fa";
 import { FaEyeSlash } from "react-icons/fa";
 import MapSlovenia from './MapSlovenia';
 import InformationPart from './InformationPart';
+import { CiLogout } from "react-icons/ci";
+import { toast } from 'react-toastify';
+import axios from 'axios';
+import { useNavigate } from "react-router-dom";
 
 export default function Homepage() {
   const [history, setHistory] = useState(false);
   const [simulation, setSimulation] = useState(1);
   const [addObject, setAddObject] = useState(false);
   const [object, setObject] = useState(1);
+  const navigate = useNavigate();
 
   const [bolniceVidnost, setBolniceVidnost] = useState(true);
   const [policijaVidnost, setPolicijaVidnost] = useState(true);
@@ -34,6 +39,17 @@ export default function Homepage() {
     {id: 11, title: 'simulation11'},
     {id: 12, title: 'simulation12'},
   ]
+
+  const handleLogout = async () => {
+    try {
+      await axios.post("http://localhost:3002/api/logout", {}, { withCredentials: true });
+      console.log("Token cookie cleared");
+      toast.success("Logged out");
+      navigate("/login");
+    } catch (err) {
+      toast.error("Logout failed");
+    }
+  };
 
   
 
@@ -57,8 +73,12 @@ export default function Homepage() {
             <div onClick={() => {setAddObject(!addObject); setHistory(false)}}  className={`w-[100px] mt-2 ${addObject && 'bg-gray-500'}`}>
               <FaPlus size={50} className='w-full' />
               <span className='w-full justify-center flex'>Dodaj objekt</span>
-            </div>        
+            </div>       
 
+            <div onClick={handleLogout} className='hover:bg-gray-500'>
+              <CiLogout size={50} className='w-full' />
+              <span className='w-full justify-center flex'>Logout</span>
+            </div>       
           </div>
 
 

@@ -17,14 +17,16 @@ exports.login = async (req, res) => {
   
       const match = await bcrypt.compare(password, user.password);
       if (!match) return res.status(401).json({ message: 'Invalid credentials' });
+
+      const token = createToken(user); // DODAJ TO V VRSTICO PRED res.cookie(...)
   
-      const token = createToken(user);
       res.cookie('token', token, {
-        secure: true,
+        secure: false,
         httpOnly: true,
         sameSite: 'Strict',
         maxAge: 24 * 60 * 60 * 1000,
       });
+      
   
       return res.json({ user: { id: user._id, username: user.username, email: user.email } });
     } catch (error) {

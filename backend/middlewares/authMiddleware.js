@@ -8,7 +8,7 @@ const authMiddleware = (req, res, next) => {
     if (!token) return res.status(401).json({ message: 'Not authenticated' });
 
     const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = { id: decoded.id };    
+    req.user = { _id: decoded._id };    
     next();
   } catch (err) {
     return res.status(401).json({ message: 'Invalid or expired token' });
