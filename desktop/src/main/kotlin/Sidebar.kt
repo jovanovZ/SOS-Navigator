@@ -39,7 +39,7 @@ fun SidebarWithDropdown(
 
     Column(
         modifier = Modifier
-            .width(200.dp)
+            .width(300.dp)
             .fillMaxHeight()
             .background(Color(0xFFE3F2FD)),
         verticalArrangement = Arrangement.SpaceBetween

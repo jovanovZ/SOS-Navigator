@@ -7,6 +7,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
+import generate.*
+
 enum class Mode {
     TABLE,
     SCRAPER,
@@ -54,10 +56,25 @@ fun App(
         }
         when(state.value){
             Mode.ABOUT -> About()
-            Mode.TABLE -> println("TODO")
+            Mode.TABLE -> when(tablesState.value){
+                Tables.USER -> println("TODO")
+                Tables.SIMULATION -> println("TODO")
+                Tables.ACCIDENT -> println("TODO")
+                Tables.LOCATION -> println("TODO")
+                Tables.STATION -> println("TODO")
+                Tables.PATH -> println("TODO")
+                else -> println("TODO")
+            }
             Mode.SCRAPER -> ScrapePrompt(scraperState)
-            Mode.GENERATOR -> println("TODO")
-
+            Mode.GENERATOR -> when(generatorState.value){
+                Generator.USER -> GenerateUser()
+                Generator.SIMULATION -> GenerateSimulation()
+                Generator.ACCIDENT -> GenerateAccident()
+                Generator.LOCATION -> GenerateLocation()
+                Generator.STATION -> GenerateStation()
+                Generator.PATH -> GeneratePath()
+                else -> println("TODO")
+            }
         }
     }
 }

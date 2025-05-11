@@ -13,12 +13,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-@Preview
 fun About() {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(start = 200.dp)
+            .padding(start = 300.dp)
             .padding(32.dp),
         contentAlignment = Alignment.Center
     ) {
