@@ -77,7 +77,7 @@ fun AddAccident() {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = if (selectedAccident.value.isEmpty()) "Select Region" else selectedAccident.value,
+                            text = if (selectedAccident.value.isEmpty()) "Select type of accident" else selectedAccident.value,
                             modifier = Modifier.weight(1f)
                         )
                         Icon(

@@ -9,6 +9,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import generate.*
+import viewTables.*
 
 enum class Mode {
     TABLE,
@@ -63,18 +64,18 @@ fun App(
     addTableState: MutableState<Add> = mutableStateOf(Add.NONE)
 ) {
     MaterialTheme {
-        Row(modifier = Modifier.fillMaxSize().background(Color(0xFFFFFFFF))) {
+        Row(modifier = Modifier.fillMaxSize().background(Color(0xF9FAFB))) {
             SidebarWithDropdown(state, tablesState, scraperState, generatorState,addTableState)
         }
         when(state.value){
             Mode.ABOUT -> About()
             Mode.TABLE -> when(tablesState.value){
-                Tables.USER -> println("TODO")
-                Tables.SIMULATION -> println("TODO")
-                Tables.ACCIDENT -> println("TODO")
-                Tables.LOCATION -> println("TODO")
-                Tables.STATION -> println("TODO")
-                Tables.PATH -> println("TODO")
+                Tables.USER -> ViewUsers()
+                Tables.SIMULATION -> ViewSimulation()
+                Tables.ACCIDENT -> ViewAccidents()
+                Tables.LOCATION -> ViewLocation()
+                Tables.STATION -> ViewStations()
+                Tables.PATH -> ViewPaths()
                 else -> println("TODO")
             }
             Mode.SCRAPER -> ScrapePrompt(scraperState)
@@ -99,6 +100,8 @@ fun App(
         }
     }
 }
+
+//POPRAVI KO JE ABOUUT SE NE RESETA STATE V SIDEBARU
 
 fun main() = application {
     val stateMode = mutableStateOf(Mode.ABOUT)

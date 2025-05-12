@@ -2,6 +2,7 @@ import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
@@ -24,6 +25,7 @@ fun resetOtherStates(
     if (currentState != scraperState) scraperState.value = Scraper.NONE
     if (currentState != generatorState) generatorState.value = Generator.NONE
     if (currentState != addTableState) addTableState.value = Add.NONE
+
 }
 
 
@@ -41,10 +43,12 @@ fun SidebarWithDropdown(
     var expandedGenerator by remember { mutableStateOf(false) }
     var expandedAddTable by remember { mutableStateOf(false) }
 
+
     Column(
         modifier = Modifier
             .width(300.dp)
             .fillMaxHeight()
+            .padding(end = 20.dp)
             .background(Color(0xFFE3F2FD)),
         verticalArrangement = Arrangement.SpaceBetween
     ) {
@@ -80,37 +84,37 @@ fun SidebarWithDropdown(
                         expandedTable = false
                         tablesState.value = Tables.USER
                         stateMode.value = Mode.TABLE
-                        resetOtherStates(tablesState, tablesState, scraperState, generatorState,addTableState)
+                        resetOtherStates(tablesState, tablesState, scraperState, generatorState, addTableState)
                     }) { Text("User") }
                     DropdownMenuItem(onClick = {
                         expandedTable = false
                         tablesState.value = Tables.SIMULATION
                         stateMode.value = Mode.TABLE
-                        resetOtherStates(tablesState, tablesState, scraperState, generatorState,addTableState)
+                        resetOtherStates(tablesState, tablesState, scraperState, generatorState, addTableState)
                     }) { Text("Simulation") }
                     DropdownMenuItem(onClick = {
                         expandedTable = false
                         tablesState.value = Tables.ACCIDENT
                         stateMode.value = Mode.TABLE
-                        resetOtherStates(tablesState, tablesState, scraperState, generatorState,addTableState)
+                        resetOtherStates(tablesState, tablesState, scraperState, generatorState, addTableState)
                     }) { Text("Accident") }
                     DropdownMenuItem(onClick = {
                         expandedTable = false
                         tablesState.value = Tables.LOCATION
                         stateMode.value = Mode.TABLE
-                        resetOtherStates(tablesState, tablesState, scraperState, generatorState,addTableState)
+                        resetOtherStates(tablesState, tablesState, scraperState, generatorState, addTableState)
                     }) { Text("Location") }
                     DropdownMenuItem(onClick = {
                         expandedTable = false
                         tablesState.value = Tables.STATION
                         stateMode.value = Mode.TABLE
-                        resetOtherStates(tablesState, tablesState, scraperState, generatorState,addTableState)
+                        resetOtherStates(tablesState, tablesState, scraperState, generatorState, addTableState)
                     }) { Text("Station") }
                     DropdownMenuItem(onClick = {
                         expandedTable = false
                         tablesState.value = Tables.PATH
                         stateMode.value = Mode.TABLE
-                        resetOtherStates(tablesState, tablesState, scraperState, generatorState,addTableState)
+                        resetOtherStates(tablesState, tablesState, scraperState, generatorState, addTableState)
                     }) { Text("Path") }
                 }
             }
@@ -154,37 +158,37 @@ fun SidebarWithDropdown(
                         expandedAddTable = false
                         addTableState.value = Add.USER
                         stateMode.value = Mode.ADD
-                        resetOtherStates(addTableState, tablesState, scraperState, generatorState,addTableState)
+                        resetOtherStates(addTableState, tablesState, scraperState, generatorState, addTableState)
                     }) { Text("User") }
                     DropdownMenuItem(onClick = {
                         expandedAddTable = false
                         addTableState.value = Add.SIMULATION
                         stateMode.value = Mode.ADD
-                        resetOtherStates(addTableState, tablesState, scraperState, generatorState,addTableState)
+                        resetOtherStates(addTableState, tablesState, scraperState, generatorState, addTableState)
                     }) { Text("Simulation") }
                     DropdownMenuItem(onClick = {
                         expandedAddTable = false
                         addTableState.value = Add.ACCIDENT
                         stateMode.value = Mode.ADD
-                        resetOtherStates(addTableState, tablesState, scraperState, generatorState,addTableState)
+                        resetOtherStates(addTableState, tablesState, scraperState, generatorState, addTableState)
                     }) { Text("Accident") }
                     DropdownMenuItem(onClick = {
                         expandedAddTable = false
                         addTableState.value = Add.LOCATION
                         stateMode.value = Mode.ADD
-                        resetOtherStates(addTableState, tablesState, scraperState, generatorState,addTableState)
+                        resetOtherStates(addTableState, tablesState, scraperState, generatorState, addTableState)
                     }) { Text("Location") }
                     DropdownMenuItem(onClick = {
                         expandedAddTable = false
                         addTableState.value = Add.STATION
                         stateMode.value = Mode.ADD
-                        resetOtherStates(addTableState, tablesState, scraperState, generatorState,addTableState)
+                        resetOtherStates(addTableState, tablesState, scraperState, generatorState, addTableState)
                     }) { Text("Station") }
                     DropdownMenuItem(onClick = {
                         expandedAddTable = false
                         addTableState.value = Add.PATH
                         stateMode.value = Mode.ADD
-                        resetOtherStates(addTableState, tablesState, scraperState, generatorState,addTableState)
+                        resetOtherStates(addTableState, tablesState, scraperState, generatorState, addTableState)
                     }) { Text("Path") }
                 }
             }
@@ -229,19 +233,19 @@ fun SidebarWithDropdown(
                         expandedScraper = false
                         scraperState.value = Scraper.AMBULANCE
                         stateMode.value = Mode.SCRAPER
-                        resetOtherStates(scraperState, tablesState, scraperState, generatorState,addTableState)
+                        resetOtherStates(scraperState, tablesState, scraperState, generatorState, addTableState)
                     }) { Text("Ambulance") }
                     DropdownMenuItem(onClick = {
                         expandedScraper = false
                         scraperState.value = Scraper.POLICE
                         stateMode.value = Mode.SCRAPER
-                        resetOtherStates(scraperState, tablesState, scraperState, generatorState,addTableState)
+                        resetOtherStates(scraperState, tablesState, scraperState, generatorState, addTableState)
                     }) { Text("Police") }
                     DropdownMenuItem(onClick = {
                         expandedScraper = false
                         scraperState.value = Scraper.FIRE_DEPARTMENT
                         stateMode.value = Mode.SCRAPER
-                        resetOtherStates(scraperState, tablesState, scraperState, generatorState,addTableState)
+                        resetOtherStates(scraperState, tablesState, scraperState, generatorState, addTableState)
                     }) { Text("Fire Department") }
                 }
             }
@@ -285,37 +289,37 @@ fun SidebarWithDropdown(
                         expandedGenerator = false
                         generatorState.value = Generator.USER
                         stateMode.value = Mode.GENERATOR
-                        resetOtherStates(generatorState, tablesState, scraperState, generatorState,addTableState)
+                        resetOtherStates(generatorState, tablesState, scraperState, generatorState, addTableState)
                     }) { Text("User") }
                     DropdownMenuItem(onClick = {
                         expandedGenerator = false
                         generatorState.value = Generator.SIMULATION
                         stateMode.value = Mode.GENERATOR
-                        resetOtherStates(generatorState, tablesState, scraperState, generatorState,addTableState)
+                        resetOtherStates(generatorState, tablesState, scraperState, generatorState, addTableState)
                     }) { Text("Simulation") }
                     DropdownMenuItem(onClick = {
                         expandedGenerator = false
                         generatorState.value = Generator.ACCIDENT
                         stateMode.value = Mode.GENERATOR
-                        resetOtherStates(generatorState, tablesState, scraperState, generatorState,addTableState)
+                        resetOtherStates(generatorState, tablesState, scraperState, generatorState, addTableState)
                     }) { Text("Accident") }
                     DropdownMenuItem(onClick = {
                         expandedGenerator = false
                         generatorState.value = Generator.LOCATION
                         stateMode.value = Mode.GENERATOR
-                        resetOtherStates(generatorState, tablesState, scraperState, generatorState,addTableState)
+                        resetOtherStates(generatorState, tablesState, scraperState, generatorState, addTableState)
                     }) { Text("Location") }
                     DropdownMenuItem(onClick = {
                         expandedGenerator = false
                         generatorState.value = Generator.STATION
                         stateMode.value = Mode.GENERATOR
-                        resetOtherStates(generatorState, tablesState, scraperState, generatorState,addTableState)
+                        resetOtherStates(generatorState, tablesState, scraperState, generatorState, addTableState)
                     }) { Text("Station") }
                     DropdownMenuItem(onClick = {
                         expandedGenerator = false
                         generatorState.value = Generator.PATH
                         stateMode.value = Mode.GENERATOR
-                        resetOtherStates(generatorState, tablesState, scraperState, generatorState,addTableState)
+                        resetOtherStates(generatorState, tablesState, scraperState, generatorState, addTableState)
                     }) { Text("Path") }
                 }
             }
