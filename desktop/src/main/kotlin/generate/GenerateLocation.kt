@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import inputs.InputFieldForNumber
 
 @Composable
 @Preview
@@ -97,7 +98,7 @@ fun GenerateLocation() {
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                Box(modifier = Modifier.fillMaxSize().padding(top = 16.dp), contentAlignment = Alignment.BottomEnd) {
+                Box(modifier = Modifier.fillMaxWidth().padding(top = 16.dp), contentAlignment = Alignment.BottomEnd) {
                     Button(
                         colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF1E88E5)),
                         shape = RoundedCornerShape(50),
