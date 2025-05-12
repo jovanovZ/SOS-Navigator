@@ -1,4 +1,4 @@
-package generate
+package inputs
 
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.OutlinedTextField
@@ -8,20 +8,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 
 @Composable
-fun InputFieldForNumber(
+fun InputFieldForText(
     value: String,
     onValueChange: (String) -> Unit,
-    label: String = "Enter number",
+    label: String = "Enter text",
     inputModifier: Modifier = Modifier
 ) {
     OutlinedTextField(
         value = value,
         modifier = inputModifier,
-        keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
+        keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Text),
         onValueChange = { input ->
-            if (input.all { it.isDigit() || it == '.' || it == '-' }) {
-                onValueChange(input)
-            }
+            onValueChange(input)
         },
         label = { Text(label) },
     )

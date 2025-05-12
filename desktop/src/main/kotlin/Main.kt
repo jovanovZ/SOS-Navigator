@@ -1,3 +1,4 @@
+import addTables.*
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -13,7 +14,8 @@ enum class Mode {
     TABLE,
     SCRAPER,
     GENERATOR,
-    ABOUT
+    ABOUT,
+    ADD
 }
 enum class Tables {
     USER,
@@ -39,6 +41,15 @@ enum class Generator {
     PATH,
     NONE
 }
+enum class Add {
+    USER,
+    SIMULATION,
+    ACCIDENT,
+    LOCATION,
+    STATION,
+    PATH,
+    NONE
+}
 
 
 
@@ -48,11 +59,12 @@ fun App(
     state: MutableState<Mode> = mutableStateOf(Mode.ABOUT),
     tablesState: MutableState<Tables> = mutableStateOf(Tables.NONE),
     scraperState: MutableState<Scraper> = mutableStateOf(Scraper.NONE),
-    generatorState: MutableState<Generator> = mutableStateOf(Generator.NONE)
+    generatorState: MutableState<Generator> = mutableStateOf(Generator.NONE),
+    addTableState: MutableState<Add> = mutableStateOf(Add.NONE)
 ) {
     MaterialTheme {
         Row(modifier = Modifier.fillMaxSize().background(Color(0xFFFFFFFF))) {
-            SidebarWithDropdown(state, tablesState, scraperState, generatorState)
+            SidebarWithDropdown(state, tablesState, scraperState, generatorState,addTableState)
         }
         when(state.value){
             Mode.ABOUT -> About()
@@ -75,6 +87,15 @@ fun App(
                 Generator.PATH -> GeneratePath()
                 else -> println("TODO")
             }
+            Mode.ADD -> when(addTableState.value){
+                Add.USER -> AddUser()
+                Add.SIMULATION -> AddSimulation()
+                Add.ACCIDENT -> AddAccident()
+                Add.LOCATION -> AddLocation()
+                Add.STATION -> AddStation()
+                Add.PATH -> AddPath()
+                else -> println("TODO")
+            }
         }
     }
 }
@@ -84,8 +105,10 @@ fun main() = application {
     val stateForTable: MutableState<Tables> = remember { mutableStateOf(Tables.NONE) }
     val stateForScraper: MutableState<Scraper> = remember {   mutableStateOf(Scraper.NONE)}
     val stateForGenerator: MutableState<Generator> = remember {   mutableStateOf(Generator.NONE)}
+    val stateForAddTables: MutableState<Add> = remember {   mutableStateOf(Add.NONE)}
+
 
     Window(onCloseRequest = ::exitApplication) {
-        App(stateMode, stateForTable, stateForScraper, stateForGenerator)
+        App(stateMode, stateForTable, stateForScraper, stateForGenerator, stateForAddTables)
     }
 }

@@ -1,0 +1,146 @@
+package addTables
+
+import inputs.InputFieldForNumber
+import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import inputs.InputFieldForText
+
+@Composable
+@Preview
+fun AddUser() {
+    val username = remember { mutableStateOf("") }
+    val email = remember { mutableStateOf("") }
+    val password = remember { mutableStateOf("") }
+    val imgUrl = remember { mutableStateOf("") }
+    val historySimulationsId = remember { mutableStateOf(mutableListOf<String>()) }
+    val newSimulationId = remember { mutableStateOf("") }
+    val scrollState = rememberScrollState()
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(start = 300.dp)
+            .padding(32.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Card(
+            shape = RoundedCornerShape(12.dp),
+            elevation = 8.dp,
+            backgroundColor = Color(0xFFFFFFFF),
+            modifier = Modifier.width(600.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(40.dp).verticalScroll(scrollState),
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("Insert into User table", style = MaterialTheme.typography.h5)
+                }
+                Divider(modifier = Modifier.padding(vertical = 8.dp))
+
+                Text("Username", fontSize = 18.sp)
+                InputFieldForText(
+                    value = username.value,
+                    onValueChange = { username.value = it },
+                    inputModifier = Modifier.fillMaxWidth(),
+                    label = "Username"
+                )
+                Divider(modifier = Modifier.padding(vertical = 8.dp))
+
+                Text("Email", fontSize = 18.sp)
+                InputFieldForText(
+                    value = email.value,
+                    onValueChange = { email.value = it },
+                    inputModifier = Modifier.fillMaxWidth(),
+                    label = "Email"
+                )
+                Divider(modifier = Modifier.padding(vertical = 8.dp))
+
+                //TU SE LAHKO NAREDIM DA BO PIKICE ZA ZDAJ JE DA VIDIMO CE SE JE PRAV VNESLO
+                Text("Password", fontSize = 18.sp)
+                InputFieldForText(
+                    value = password.value,
+                    onValueChange = { password.value = it },
+                    inputModifier = Modifier.fillMaxWidth(),
+                    label = "Password"
+                )
+                Divider(modifier = Modifier.padding(vertical = 8.dp))
+
+                Text("Image url", fontSize = 18.sp)
+                InputFieldForText(
+                    value = imgUrl.value,
+                    onValueChange = { imgUrl.value = it },
+                    inputModifier = Modifier.fillMaxWidth(),
+                    label = "Image url"
+                )
+                Divider(modifier = Modifier.padding(vertical = 8.dp))
+
+                Text("Add Simulation ID", fontSize = 18.sp)
+                InputFieldForText(
+                    value = newSimulationId.value,
+                    onValueChange = { newSimulationId.value = it },
+                    inputModifier = Modifier.fillMaxWidth(),
+                    label = "Simulation ID"
+                )
+                Button(
+                    colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF1E88E5)),
+                    shape = RoundedCornerShape(50),
+                    onClick = {
+                        if (newSimulationId.value.isNotEmpty() && !historySimulationsId.value.contains(newSimulationId.value)) {
+                            historySimulationsId.value.add(newSimulationId.value)
+                            newSimulationId.value = ""
+                        }
+                    },
+                    modifier = Modifier.padding(top = 8.dp)
+                ) {
+                    Text("Add ID")
+                }
+
+                Text("Current Simulation IDs: ${historySimulationsId.value.joinToString(", ")}", fontSize = 14.sp)
+
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+
+
+                Box(modifier = Modifier.fillMaxWidth().padding(top = 16.dp), contentAlignment = Alignment.BottomEnd) {
+                    Button(
+                        colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF1E88E5)),
+                        shape = RoundedCornerShape(50),
+                        onClick = {
+                            if(username.value.isEmpty() || email.value.isEmpty() || password.value.isEmpty() || imgUrl.value.isEmpty()) {
+                                println("Please fill all fields")
+                                return@Button
+                            }
+                            println(
+                                """
+                                    Person info:
+                                    Username: ${username.value}
+                                    Email: ${email.value}
+                                    Password: ${password.value}
+                                    Image URL: ${imgUrl.value}
+                                    History Simulation IDs: ${historySimulationsId.value.joinToString(", ")}
+                                  """.trimIndent()
+                            )
+                        }) {
+                        Text("Insert")
+                    }
+                }
+            }
+        }
+    }
+}
