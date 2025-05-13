@@ -1,3 +1,4 @@
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
@@ -17,13 +18,14 @@ fun ScrapePrompt(scraperState: MutableState<Scraper>) {
         modifier = Modifier
             .fillMaxSize()
             .padding(start = 300.dp)
-            .padding(32.dp),
+            .background(color = Color(0xFFE3F2FD)),
         contentAlignment = Alignment.Center
     ) {
         Card(
             shape = RoundedCornerShape(12.dp),
             elevation = 8.dp,
-            backgroundColor = Color.White
+            backgroundColor = Color.White,
+
         ) {
             Column(
                 modifier = Modifier.padding(24.dp),
@@ -33,7 +35,7 @@ fun ScrapePrompt(scraperState: MutableState<Scraper>) {
                     text = if (scraperState.value == Scraper.NONE) "First select scraper" else "Do you want to scrape ${
                         scraperState.value.toString().lowercase().replace("_", " ").replaceFirstChar { it.uppercase() }
                     }?",
-                    fontSize = 18.sp,
+                    fontSize = 24.sp,
                     color = Color.Black
                 )
 
@@ -46,7 +48,7 @@ fun ScrapePrompt(scraperState: MutableState<Scraper>) {
                         Button(
                             onClick = { println("Cancelled") },
                             colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFFC62828)),
-                            shape = RoundedCornerShape(50)
+                            shape = RoundedCornerShape(30)
                         ) {
                             Text("No", color = Color.White)
                         }
@@ -54,7 +56,7 @@ fun ScrapePrompt(scraperState: MutableState<Scraper>) {
                         Button(
                             onClick = { println("Scraping gasilci...") },
                             colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF1E88E5)),
-                            shape = RoundedCornerShape(50)
+                            shape = RoundedCornerShape(30)
                         ) {
                             Text("Scrape", color = Color.White)
                         }

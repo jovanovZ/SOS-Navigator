@@ -1,6 +1,7 @@
-package addTables
+package insertTables
 
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
@@ -12,7 +13,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import inputs.InputFieldForNumber
-import inputs.InputFieldForText
 
 @Composable
 @Preview
@@ -24,7 +24,7 @@ fun AddLocation() {
         modifier = Modifier
             .fillMaxSize()
             .padding(start = 300.dp)
-            .padding(32.dp),
+            .background(color = Color(0xFFE3F2FD)),
         contentAlignment = Alignment.Center
     ) {
         Card(
@@ -53,7 +53,7 @@ fun AddLocation() {
                 )
                 Divider(modifier = Modifier.padding(vertical = 8.dp))
 
-                Text("Latitude id", fontSize = 18.sp)
+                Text("Latitude", fontSize = 18.sp)
                 InputFieldForNumber(
                     value = latitude.value,
                     onValueChange = { latitude.value = it },
@@ -68,7 +68,7 @@ fun AddLocation() {
                 Box(modifier = Modifier.fillMaxWidth().padding(top = 16.dp), contentAlignment = Alignment.BottomEnd) {
                     Button(
                         colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF1E88E5)),
-                        shape = RoundedCornerShape(50),
+                        shape = RoundedCornerShape(30),
                         onClick = {
                             if(longitude.value.isEmpty() || latitude.value.isEmpty()) {
                                 return@Button

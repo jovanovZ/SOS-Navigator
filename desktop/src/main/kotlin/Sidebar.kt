@@ -5,15 +5,18 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.capitalize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+// funckija ki resetira ostale state-e, to uporabimo vsakic ko kliknemo na dropwdown menu
+// z menujem spremenimo state, zato za prikaz besedila selected user table/ selected police scraper, moremo vsaki resetirat ostale state
+// da mamo samo en aktiven napis
 fun resetOtherStates(
     currentState: MutableState<*>,
     tablesState: MutableState<Tables>,
@@ -43,6 +46,15 @@ fun SidebarWithDropdown(
     var expandedGenerator by remember { mutableStateOf(false) }
     var expandedAddTable by remember { mutableStateOf(false) }
 
+    //Ta del je da ce si v about se ne prikaze selected table/selected scraper, ...
+    LaunchedEffect(stateMode.value) {
+        if (stateMode.value == Mode.ABOUT) {
+            tablesState.value = Tables.NONE
+            scraperState.value = Scraper.NONE
+            generatorState.value = Generator.NONE
+            addTableState.value = Add.NONE
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -65,7 +77,12 @@ fun SidebarWithDropdown(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Tables", fontSize = 18.sp)
+                    Row {
+                        Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Insert into tables", modifier = Modifier.padding(end = 16.dp))
+                        Text("Tables", fontSize = 18.sp)
+
+                    }
+
                     IconButton(onClick = { expandedTable = !expandedTable }) {
                         Icon(
                             Icons.Default.MoreVert,
@@ -127,7 +144,7 @@ fun SidebarWithDropdown(
             )
             Divider(modifier = Modifier.padding(vertical = 8.dp))
 
-            //Add table Del
+            //Insert table Del
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -139,7 +156,10 @@ fun SidebarWithDropdown(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Insert into tables", fontSize = 18.sp)
+                    Row {
+                        Icon(Icons.Default.Add, contentDescription = "Insert into tables", modifier = Modifier.padding(end = 16.dp))
+                        Text("Insert into tables", fontSize = 18.sp)
+                    }
                     IconButton(onClick = { expandedAddTable = !expandedAddTable }) {
                         Icon(
                             Icons.Default.MoreVert,
@@ -213,7 +233,11 @@ fun SidebarWithDropdown(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Scraper", fontSize = 18.sp)
+                    Row {
+                        Icon(Icons.Filled.Search, contentDescription = "Scraper", modifier = Modifier.padding(end = 16.dp))
+                        Text("Scraper", fontSize = 18.sp)
+                    }
+
                     IconButton(onClick = { expandedScraper = !expandedScraper }) {
                         Icon(
                             Icons.Default.MoreVert,
@@ -270,7 +294,11 @@ fun SidebarWithDropdown(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Generate", fontSize = 18.sp)
+                    Row {
+                        Icon(Icons.Default.Build, contentDescription = "Generator", modifier = Modifier.padding(end = 16.dp))
+                        Text("Generate", fontSize = 18.sp)
+                    }
+
                     IconButton(onClick = { expandedGenerator = !expandedGenerator }) {
                         Icon(
                             Icons.Default.MoreVert,
@@ -342,7 +370,8 @@ fun SidebarWithDropdown(
                 },
             horizontalArrangement = Arrangement.Start
         ) {
-            Text("About", fontSize = 18.sp, modifier = Modifier.padding(16.dp))
+            Icon(Icons.Default.Info, contentDescription = "About", modifier = Modifier.padding(start =16.dp, top =16.dp, bottom = 16.dp))
+            Text("About", fontSize = 18.sp, modifier = Modifier.padding(start =16.dp, top =16.dp, bottom = 16.dp))
         }
     }
 }

@@ -70,7 +70,7 @@ fun ViewLocation() {
         contentAlignment = Alignment.Center
     ) {
         LazyVerticalGrid(
-            columns = GridCells.Adaptive(minSize = 550.dp),
+            columns = GridCells.Adaptive(minSize = 300.dp),
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp),
