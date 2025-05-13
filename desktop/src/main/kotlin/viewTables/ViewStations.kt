@@ -56,7 +56,7 @@ internal fun StationCard(station: Station) {
 
             Text("Location id: ${station.locationId}" )
             Spacer(modifier = Modifier.height(4.dp))
-            Text(station.typeOfStation)
+            Text("Type of station: ${station.typeOfStation}")
             Spacer(modifier = Modifier.height(4.dp))
             Text("Is permanent: ${station.isPermanent}")
             Spacer(modifier = Modifier.height(4.dp))

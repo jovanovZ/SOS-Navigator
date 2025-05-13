@@ -1,7 +1,7 @@
-package addTables
+package insertTables
 
-import inputs.InputFieldForNumber
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -32,7 +32,7 @@ fun AddUser() {
         modifier = Modifier
             .fillMaxSize()
             .padding(start = 300.dp)
-            .padding(32.dp),
+            .background(color = Color(0xFFE3F2FD)),
         contentAlignment = Alignment.Center
     ) {
         Card(
@@ -98,7 +98,7 @@ fun AddUser() {
                 )
                 Button(
                     colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF1E88E5)),
-                    shape = RoundedCornerShape(50),
+                    shape = RoundedCornerShape(30),
                     onClick = {
                         if (newSimulationId.value.isNotEmpty() && !historySimulationsId.value.contains(newSimulationId.value)) {
                             historySimulationsId.value.add(newSimulationId.value)
@@ -120,7 +120,7 @@ fun AddUser() {
                 Box(modifier = Modifier.fillMaxWidth().padding(top = 16.dp), contentAlignment = Alignment.BottomEnd) {
                     Button(
                         colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF1E88E5)),
-                        shape = RoundedCornerShape(50),
+                        shape = RoundedCornerShape(30),
                         onClick = {
                             if(username.value.isEmpty() || email.value.isEmpty() || password.value.isEmpty() || imgUrl.value.isEmpty()) {
                                 println("Please fill all fields")

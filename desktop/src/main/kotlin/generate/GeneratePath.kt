@@ -1,6 +1,7 @@
 package generate
 
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
@@ -23,7 +24,7 @@ fun GeneratePath() {
         modifier = Modifier
             .fillMaxSize()
             .padding(start = 300.dp)
-            .padding(32.dp),
+            .background(color = Color(0xFFE3F2FD)),
         contentAlignment = Alignment.Center
     ) {
         Card(

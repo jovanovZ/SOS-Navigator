@@ -1,7 +1,7 @@
-package addTables
+package insertTables
 
-import InputFieldForBoolean
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -41,7 +41,7 @@ fun AddSimulation() {
         modifier = Modifier
             .fillMaxSize()
             .padding(start = 300.dp)
-            .padding(32.dp),
+            .background(color = Color(0xFFE3F2FD)),
         contentAlignment = Alignment.Center
     ) {
         Card(
@@ -157,7 +157,7 @@ fun AddSimulation() {
                 Box(modifier = Modifier.fillMaxWidth().padding(top = 16.dp), contentAlignment = Alignment.BottomEnd) {
                     Button(
                         colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF1E88E5)),
-                        shape = RoundedCornerShape(50),
+                        shape = RoundedCornerShape(30),
                         onClick = {
                             if (userId.value.isEmpty() || accidentId.value.isEmpty() || selectedServices.isEmpty() || bestStationId.value.isEmpty() || bestPathId.value.isEmpty() || responseTime.value.isEmpty()) {
                                 println("Please fill all fields")

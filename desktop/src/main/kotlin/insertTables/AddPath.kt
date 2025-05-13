@@ -1,6 +1,7 @@
-package addTables
+package insertTables
 
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
@@ -11,7 +12,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import inputs.InputFieldForNumber
 import inputs.InputFieldForText
 
 @Composable
@@ -25,7 +25,7 @@ fun AddPath() {
         modifier = Modifier
             .fillMaxSize()
             .padding(start = 300.dp)
-            .padding(32.dp),
+            .background(color = Color(0xFFE3F2FD)),
         contentAlignment = Alignment.Center
     ) {
         Card(
@@ -54,16 +54,16 @@ fun AddPath() {
                 )
                 Divider(modifier = Modifier.padding(vertical = 8.dp))
 
-                Text("Add Location ID (array of locationIds)", fontSize = 18.sp)
+                Text("Add Location id (array of locationIds)", fontSize = 18.sp)
                 InputFieldForText(
                     value = newLocationId.value,
                     onValueChange = { newLocationId.value = it },
                     inputModifier = Modifier.fillMaxWidth(),
-                    label = "Simulation ID"
+                    label = "Simulation id"
                 )
                 Button(
                     colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF1E88E5)),
-                    shape = RoundedCornerShape(50),
+                    shape = RoundedCornerShape(30),
                     onClick = {
                         if (newLocationId.value.isNotEmpty() && !arrayOfLocationIds.value.contains(newLocationId.value)) {
                             arrayOfLocationIds.value.add(newLocationId.value)
@@ -85,7 +85,7 @@ fun AddPath() {
                 Box(modifier = Modifier.fillMaxWidth().padding(top = 16.dp), contentAlignment = Alignment.BottomEnd) {
                     Button(
                         colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF1E88E5)),
-                        shape = RoundedCornerShape(50),
+                        shape = RoundedCornerShape(30),
                         onClick = {
                            if(accidentId.value.isEmpty() || arrayOfLocationIds.value.isEmpty()) {
                                 println("Please fill all fields")

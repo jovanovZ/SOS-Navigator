@@ -1,4 +1,5 @@
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Card
@@ -18,25 +19,25 @@ fun About() {
         modifier = Modifier
             .fillMaxSize()
             .padding(start = 300.dp)
-            .padding(32.dp),
+            .background(color = Color(0xFFE3F2FD)),
         contentAlignment = Alignment.Center
     ) {
         Card(
             shape = RoundedCornerShape(12.dp),
             elevation = 8.dp,
             backgroundColor = Color.White,
-            modifier = Modifier.width(300.dp)
+            modifier = Modifier.width(400.dp)
         ) {
             Column(
                 modifier = Modifier.padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text("SOS-Navigator", style = MaterialTheme.typography.h5)
+                Text("SOS-Navigator", style = MaterialTheme.typography.h4)
                 Divider(modifier = Modifier.padding(vertical = 8.dp))
-                Text("Subject", fontSize = 16.sp, color = Color(0xFF1565C0))
-                Text("Principi programskih jezikov", fontSize = 14.sp)
+                Text("Subject", fontSize = 24.sp, color = Color(0xFF1565C0))
+                Text("Principi programskih jezikov", fontSize = 18.sp)
                 Spacer(modifier = Modifier.height(12.dp))
-                Text("Authors", fontSize = 16.sp, color = Color(0xFF1565C0))
+                Text("Authors", fontSize = 18.sp, color = Color(0xFF1565C0))
                 Text("• Zdravko Jovanov")
                 Text("• Miha Brunec")
                 Text("• Martin Kobal")
