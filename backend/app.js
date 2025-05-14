@@ -3,6 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
 const userRoutes = require("./routes/userRoutes");
+const accidentRoutes = require("./routes/accidenceRoutes");
 const cookieParser = require("cookie-parser");
 
 // Uvoz route-ov
@@ -18,6 +19,7 @@ app.use(cors({
 app.use(express.json()); // za JSON requeste
 app.use(cookieParser()); 
 app.use('/api', userRoutes);
+app.use('/api/accident', accidentRoutes);
 
 
 mongoose.connect(process.env.MONGO_URI)
