@@ -2,6 +2,63 @@ const Location = require("../models/LocationModel");
 const Station = require("../models/StationModel");
 const Accident = require("../models/AccidenceModel");
 
+
+exports.createLocation = async (req, res) => {
+  const { long, lat } = req.body; 
+  if (!long || !lat) {
+    return res.status(400).json({ message: "longitude or longitude is not given" });
+  }
+  try {
+    const location = new Location({
+      geometry: {
+        type: "Point",
+        coordinates: [Number(long), Number(lat)],
+      },
+    });
+    await location.save();
+    return res.status(200).json({ message: "Location created successfully" });
+    
+  } catch (error) {
+    return res.status(500).json({ message: "Error on create location", error });
+  }
+
+}
+
+exports.updateLocation = async (req, res) => {
+  const { locationId, long, lat } = req.body;
+  if (!locationId || !long || !lat) {
+    return res.status(400).json({ message: "locationId, longitude or latitude is not given" });
+  }
+  try {
+    const location = await Location(locationId);
+    if (!location) {
+      return res.status(404).json({ message: "Location not found" });
+    } 
+    location.geometry.coordinates = [Number(long), Number(lat)];
+    await location.save();
+    return res.status(200).json({ message: "Location updated successfully" });
+  }
+  catch (error) {
+    return res.status(500).json({ message: "Error on update location", error });
+  }
+}
+
+exports.deleteLocation = async (req, res) => {
+  const { locationId } = req.params;
+  if (!locationId) {
+    return res.status(400).json({ message: "locationId is null" });
+  }
+  try {
+    const location = await Location.findByIdAndDelete(locationId);
+    if (!location) {
+      return res.status(404).json({ message: "Location not found" });
+    }
+    return res.status(200).json({ message: "Location deleted successfully" });
+  } catch (error) {
+    return res.status(500).json({ message: "Error on delete location", error });
+  }
+}
+
 exports.findAllLocationsInRadius = async (req, res) => {
   const { long, lat, radius } = req.query; // log, lat to je center point od kroga; radius je v metrih
   if (!long || !lat || !radius) {
