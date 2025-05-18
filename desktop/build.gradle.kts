@@ -22,6 +22,11 @@ dependencies {
     // With compose.desktop.common you will also lose @Preview functionality
     implementation(compose.desktop.currentOs)
     implementation("it.skrape:skrapeit:1.2.2")
+
+    implementation("org.mongodb:mongodb-driver-reactivestreams:4.10.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactive:1.7.3")
+    implementation("io.github.cdimascio:dotenv-kotlin:6.4.1")
 }
 
 compose.desktop {

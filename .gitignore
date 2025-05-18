@@ -34,6 +34,7 @@
 /desktop/!gradle/wrapper/gradle-wrapper.jar
 /desktop/!**/src/main/**/build/
 /desktop/!**/src/test/**/build/
+/desktop/.env
 
 ### IntelliJ IDEA ###
 /desktop/.idea/modules.xml
