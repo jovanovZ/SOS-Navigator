@@ -18,21 +18,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import db.DataBase
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.reactive.asFlow
+import kotlinx.coroutines.runBlocking
+import org.bson.types.ObjectId
 
 // za teste dokler ni povezave na bazo
 internal data class Station(
-    val locationId: String,
+    val id: ObjectId,
+    val locationId: ObjectId,
     val typeOfStation: String,
     val isPermanent: Boolean,
     val region: String
-)
-
-internal val stations = listOf(
-    Station("64b7f3c2e4b0f5a1d2c3e4f1", "Policijska", true, "Osrednjeslovenska"),
-    Station("64b7f3c2e4b0f5a1d2c3e4f1", "Bolnica", false, "Gorenjska"),
-    Station("64b7f3c2e4b0f5a1d2c3e4f1", "Gasilci", true, "Podravska"),
-    Station("64b7f3c2e4b0f5a1d2c3e4f1", "Policijska", false, "Pomurska"),
-    Station("64b7f3c2e4b0f5a1d2c3e4f1", "Bolnica", true, "Obalno-kraška")
 )
 
 
@@ -53,8 +51,9 @@ internal fun StationCard(station: Station) {
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
-            Text("Location id: ${station.locationId}" )
+            Text("Id: ${station.id}")
+            Spacer(modifier = Modifier.height(4.dp))
+            Text("Location id: ${station.locationId}")
             Spacer(modifier = Modifier.height(4.dp))
             Text("Type of station: ${station.typeOfStation}")
             Spacer(modifier = Modifier.height(4.dp))
@@ -68,26 +67,49 @@ internal fun StationCard(station: Station) {
 
 @Composable
 fun ViewStations() {
-    val scrollState = rememberScrollState()
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(start = 300.dp)
-            .background(Color(0xFFE3F2FD)),
-        contentAlignment = Alignment.Center
-    ) {
-        LazyVerticalGrid(
-            columns = GridCells.Adaptive(minSize = 350.dp),
+    val stations = runBlocking {
+        try {
+            val db = DataBase.getDatabase()
+            val collection = db.getCollection("stations")
+            val stations = collection.find().asFlow().toList()
+            stations.map { doc ->
+                Station(
+                    id = doc.getObjectId("_id"),
+                    locationId = doc.getObjectId("locationId"),
+                    typeOfStation = doc.getString("typeOfStation"),
+                    isPermanent = doc.getBoolean("isPermanent"),
+                    region = doc.getString("region")
+                )
+            }
+        } catch (e: Exception) {
+            println("Error while fetching stations: ${e.message}")
+            emptyList()
+        }
+    }
+    if (stations.isEmpty()) {
+        Modal("No stations found \nPlease generate some stations first.")
+    } else {
+
+        rememberScrollState()
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp),
-            contentPadding = PaddingValues(8.dp)
+                .padding(start = 300.dp)
+                .background(Color(0xFFE3F2FD)),
+            contentAlignment = Alignment.Center
         ) {
-            items(stations) { station ->
-                StationCard(station)
+            LazyVerticalGrid(
+                columns = GridCells.Adaptive(minSize = 350.dp),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                contentPadding = PaddingValues(8.dp)
+            ) {
+                items(stations) { station ->
+                    StationCard(station)
+                }
             }
+
         }
-
     }
-
 }

@@ -18,28 +18,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import db.DataBase
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.reactive.asFlow
+import kotlinx.coroutines.runBlocking
+import org.bson.Document
+import org.bson.types.ObjectId
 
-// za teste dokler ni povezave na bazo
 internal data class Accident(
-    val locationId: String,
+    val id : ObjectId,
+    val locationId: ObjectId,
     val typeOfAccident: String
 )
-
-internal val accidents = listOf(
-    Accident(
-        locationId = "64b7f3c2e4b0f5a1d2c3e4f1",
-        typeOfAccident = "Prometna"
-    ),
-    Accident(
-        locationId = "64b7f3c2e4b0f5a1d2c3e4f2",
-        typeOfAccident = "Požar"
-    ),
-    Accident(
-        locationId = "64b7f3c2e4b0f5a1d2c3e4f3",
-        typeOfAccident = "Zdravstveni nujni primer"
-    )
-)
-
 
 @Composable
 internal fun AccidentCard(accident: Accident) {
@@ -58,7 +48,8 @@ internal fun AccidentCard(accident: Accident) {
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
+            Text("Id: ${accident.id}")
+            Spacer(modifier = Modifier.height(4.dp))
             Text("Location Id: ${accident.locationId}")
             Spacer(modifier = Modifier.height(4.dp))
             Text("Type of accident: ${accident.typeOfAccident}")
@@ -71,25 +62,46 @@ internal fun AccidentCard(accident: Accident) {
 
 @Composable
 fun ViewAccidents() {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(start = 300.dp)
-            .background(Color(0xFFE3F2FD)),
-        contentAlignment = Alignment.Center
-    ) {
-        LazyVerticalGrid(
-            columns = GridCells.Adaptive(minSize = 550.dp),
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            contentPadding = PaddingValues(8.dp)
-        ) {
-            items(accidents) { accident ->
-                AccidentCard(accident)
-            }
-        }
+    val accidents = runBlocking {
+        try {
+            val db = DataBase.getDatabase()
+            val collection = db.getCollection("accidents", Document::class.java)
 
+            val documents = collection.find().asFlow().toList()
+            documents.map { doc ->
+                Accident(
+                    id = doc.getObjectId("_id"),
+                    locationId = doc.getObjectId("locationId"),
+                    typeOfAccident = doc.getString("typeOfAccident")
+                )
+            }
+        } catch (e: Exception) {
+            println("Error while fetching accidents: ${e.message}")
+            emptyList()
+        }
     }
 
+    if (accidents.isEmpty()) {
+        Modal("No accidents found \nPlease generate some accidents first.")
+    } else {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(start = 300.dp)
+                .background(Color(0xFFE3F2FD)),
+            contentAlignment = Alignment.Center
+        ) {
+            LazyVerticalGrid(
+                columns = GridCells.Adaptive(minSize = 550.dp),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                contentPadding = PaddingValues(8.dp)
+            ) {
+                items(accidents) { accident ->
+                    AccidentCard(accident)
+                }
+            }
+        }
+    }
 }

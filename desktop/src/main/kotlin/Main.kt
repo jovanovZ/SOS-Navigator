@@ -76,7 +76,7 @@ fun App(
                 Tables.LOCATION -> ViewLocation()
                 Tables.STATION -> ViewStations()
                 Tables.PATH -> ViewPaths()
-                else -> println("TODO")
+                else -> Modal("No table selected")
             }
             Mode.SCRAPER -> ScrapePrompt(scraperState)
             Mode.GENERATOR -> when(generatorState.value){
@@ -86,7 +86,7 @@ fun App(
                 Generator.LOCATION -> GenerateLocation()
                 Generator.STATION -> GenerateStation()
                 Generator.PATH -> GeneratePath()
-                else -> println("TODO")
+                else -> Modal("No table selected")
             }
             Mode.ADD -> when(addTableState.value){
                 Add.USER -> AddUser()
@@ -95,13 +95,12 @@ fun App(
                 Add.LOCATION -> AddLocation()
                 Add.STATION -> AddStation()
                 Add.PATH -> AddPath()
-                else -> println("TODO")
+                else -> Modal("No table selected")
             }
         }
     }
 }
 
-//POPRAVI KO JE ABOUUT SE NE RESETA STATE V SIDEBARU
 
 fun main() = application {
     val stateMode = mutableStateOf(Mode.ABOUT)

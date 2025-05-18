@@ -18,17 +18,22 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import db.DataBase
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.reactive.asFlow
+import kotlinx.coroutines.runBlocking
+import org.bson.Document
+import org.bson.types.ObjectId
 
-// za teste dokler ni povezave na bazo
-internal data class Location(
-    val longitude: Double,
-    val latitude: Double
+
+data class Location(
+    val id: ObjectId,
+    val geometry: Geometry
 )
 
-internal val locations = listOf(
-    Location(longitude = 14.505751, latitude = 46.056947),
-    Location(longitude = 15.645881, latitude = 45.815399),
-    Location(longitude = 13.593354, latitude = 45.546299)
+data class Geometry(
+    val type: String = "Point",
+    val coordinates: List<Double>
 )
 
 
@@ -49,10 +54,11 @@ internal fun LocationCard(location: Location) {
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
-            Text("Longitude: ${location.longitude}")
+            Text("Id: ${location.id}")
             Spacer(modifier = Modifier.height(4.dp))
-            Text("Latitude: ${location.latitude}")
+            Text("Longitude: ${location.geometry.coordinates[0]}")
+            Spacer(modifier = Modifier.height(4.dp))
+            Text("Latitude: ${location.geometry.coordinates[1]}")
             Spacer(modifier = Modifier.height(4.dp))
 
         }
@@ -62,25 +68,51 @@ internal fun LocationCard(location: Location) {
 
 @Composable
 fun ViewLocation() {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(start = 300.dp)
-            .background(Color(0xFFE3F2FD)),
-        contentAlignment = Alignment.Center
-    ) {
-        LazyVerticalGrid(
-            columns = GridCells.Adaptive(minSize = 300.dp),
+    val locations = runBlocking {
+        try {
+            val db = DataBase.getDatabase()
+            val collection = db.getCollection("locations", Document::class.java)
+            val documents = collection.find().asFlow().toList()
+
+            documents.map { doc ->
+                val geometry = doc.get("geometry", Document::class.java)
+                Location(
+                    id = doc.getObjectId("_id"),
+                    geometry = Geometry(
+                        type = geometry.getString("type"),
+                        coordinates = geometry.getList("coordinates", Number::class.java)
+                            .map { it.toDouble() }
+                    )
+                )
+            }
+        } catch (e: Exception) {
+            println("Error while fetching locations: ${e.message}")
+            emptyList()
+        }
+    }
+    if (locations.isEmpty()) {
+        Modal("No locations found \nPlease generate some locations first.")
+    } else {
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp),
-            contentPadding = PaddingValues(8.dp)
+                .padding(start = 300.dp)
+                .background(Color(0xFFE3F2FD)),
+            contentAlignment = Alignment.Center
         ) {
-            items(locations) { location ->
-                LocationCard(location)
+            LazyVerticalGrid(
+                columns = GridCells.Adaptive(minSize = 300.dp),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                contentPadding = PaddingValues(8.dp)
+            ) {
+                items(locations) { location ->
+                    LocationCard(location)
+                }
             }
-        }
 
+        }
     }
 
 }
