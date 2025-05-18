@@ -5,55 +5,33 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import db.DataBase
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.reactive.asFlow
+import org.bson.types.ObjectId
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.reactive.asFlow
+import kotlinx.coroutines.runBlocking
+import org.bson.Document
+
 
 // za teste dokler ni povezave na bazo
 internal data class Simulation(
-    val userId: String,
-    val accidentId: String,
+    val id: ObjectId,
+    val userId: ObjectId,
+    val accidentId: ObjectId,
     val typeOfServices: List<String>,
-    val bestStationId: String,
-    val bestPathId: String,
+    val bestStationId: ObjectId,
+    val bestPathId: ObjectId,
     val responseTime: Double
-)
-
-internal val simulations = listOf(
-    Simulation(
-        userId = "64b7f3c2e4b0f5a1d2c3e4f1",
-        accidentId = "64b7f3c2e4b0f5a1d2c3e4f2",
-        typeOfServices = listOf("Policijska", "Bolnica"),
-        bestStationId = "64b7f3c2e4b0f5a1d2c3e4f3",
-        bestPathId = "64b7f3c2e4b0f5a1d2c3e4f4",
-        responseTime = 1200.213
-    ),
-    Simulation(
-        userId = "64b7f3c2e4b0f5a1d2c3e4f5",
-        accidentId = "64b7f3c2e4b0f5a1d2c3e4f6",
-        typeOfServices = listOf("Policijska", "Bolnica, Gasilci"),
-        bestStationId = "64b7f3c2e4b0f5a1d2c3e4f7",
-        bestPathId = "64b7f3c2e4b0f5a1d2c3e4f8",
-        responseTime = 1500.3123
-    ),
-    Simulation(
-        userId = "64b7f3c2e4b0f5a1d2c3e4f9",
-        accidentId = "64b7f3c2e4b0f5a1d2c3e4fa",
-        typeOfServices = listOf("Policijska"),
-        bestStationId = "64b7f3c2e4b0f5a1d2c3e4fb",
-        bestPathId = "64b7f3c2e4b0f5a1d2c3e4fc",
-        responseTime = 1800.01023
-    )
 )
 
 
@@ -74,8 +52,9 @@ internal fun SimulationCard(simulation: Simulation) {
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
-            Text("User id: ${simulation.userId}" )
+            Text("Id: ${simulation.id}")
+            Spacer(modifier = Modifier.height(4.dp))
+            Text("User id: ${simulation.userId}")
             Spacer(modifier = Modifier.height(4.dp))
             Text("Accident id: ${simulation.accidentId}")
             Spacer(modifier = Modifier.height(4.dp))
@@ -93,25 +72,50 @@ internal fun SimulationCard(simulation: Simulation) {
 
 @Composable
 fun ViewSimulation() {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(start = 300.dp)
-            .background(Color(0xFFE3F2FD)),
-        contentAlignment = Alignment.Center
-    ) {
-        LazyVerticalGrid(
-            columns = GridCells.Adaptive(minSize = 350.dp),
+    val simulations = runBlocking {
+        try {
+            val db = DataBase.getDatabase()
+            val collection = db.getCollection("simulations")
+            val documents = collection.find().asFlow().toList()
+            documents.map { doc ->
+                Simulation(
+                    id = doc.getObjectId("_id"),
+                    userId = doc.getObjectId("userId"),
+                    accidentId = doc.getObjectId("accidentId"),
+                    typeOfServices = doc.getList("typeOfServices", String::class.java),
+                    bestStationId = doc.getObjectId("bestStationId"),
+                    bestPathId = doc.getObjectId("bestPathId"),
+                    responseTime = doc.getDouble("responseTime")
+                )
+            }
+
+        } catch (e: Exception) {
+            println("Error while fetching simulations: ${e.message}")
+            emptyList()
+        }
+    }
+    if (simulations.isEmpty()) {
+        Modal("No simulations found \nPlease generate some simulations first.")
+    } else {
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp),
-            contentPadding = PaddingValues(8.dp)
+                .padding(start = 300.dp)
+                .background(Color(0xFFE3F2FD)),
+            contentAlignment = Alignment.Center
         ) {
-            items(simulations) { simulation ->
-                SimulationCard(simulation)
+            LazyVerticalGrid(
+                columns = GridCells.Adaptive(minSize = 350.dp),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                contentPadding = PaddingValues(8.dp)
+            ) {
+                items(simulations) { simulation ->
+                    SimulationCard(simulation)
+                }
             }
+
         }
-
     }
-
 }
