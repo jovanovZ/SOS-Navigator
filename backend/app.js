@@ -6,6 +6,8 @@ const userRoutes = require("./routes/userRoutes");
 const accidentRoutes = require("./routes/accidenceRoutes");
 const pathRoutes = require("./routes/pathRoutes");
 const locationRoutes = require("./routes/locationRoutes")
+const stationRoutes = require("./routes/stationRoutes")
+
 const cookieParser = require("cookie-parser");
 
 // Uvoz route-ov
@@ -26,6 +28,7 @@ app.use("/api", userRoutes);
 app.use("/api/accident", accidentRoutes);
 app.use("/api/path", pathRoutes);
 app.use("/api/location", locationRoutes)
+app.use("/api/station",stationRoutes)
 
 mongoose
   .connect(process.env.MONGO_URI)
