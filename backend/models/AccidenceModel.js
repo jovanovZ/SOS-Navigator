@@ -7,13 +7,9 @@ var accidentSchema = new Schema({
     type: String,
     enum: [
       "prometna",
-      "požar",
       "naravna nesreča",
-      "onesnaženje",
-      "zdravstveni nujni primer",
-      "eksplozija",
-      "napad", // assult je mišljeno
-      "drugo",
+      "zdravstveni primer",
+      "kriminal",
     ],
   },
 });

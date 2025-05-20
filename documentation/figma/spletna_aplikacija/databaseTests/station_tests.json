@@ -1,0 +1,62 @@
+[
+  {
+    "locationId": { "$oid": "682ce105a0a899bd0a99fe12" },
+    "typeOfStation": "Gasilci",
+    "isPermanent": true,
+    "region": "Jugovzhodna Slovenija"
+  },
+  {
+    "locationId": { "$oid": "682ce105a0a899bd0a99fe13" },
+    "typeOfStation": "Policijska",
+    "isPermanent": false,
+    "region": "Posavska"
+  },
+  {
+    "locationId": { "$oid": "682ce105a0a899bd0a99fe14" },
+    "typeOfStation": "Bolnica",
+    "isPermanent": true,
+    "region": "Zasavska"
+  },
+  {
+    "locationId": { "$oid": "682ce105a0a899bd0a99fe15" },
+    "typeOfStation": "Gasilci",
+    "isPermanent": false,
+    "region": "Goriška"
+  },
+  {
+    "locationId": { "$oid": "682ce105a0a899bd0a99fe16" },
+    "typeOfStation": "Policijska",
+    "isPermanent": true,
+    "region": "Koroška"
+  },
+  {
+    "locationId": { "$oid": "682ce105a0a899bd0a99fe17" },
+    "typeOfStation": "Bolnica",
+    "isPermanent": true,
+    "region": "Savinjska"
+  },
+  {
+    "locationId": { "$oid": "682ce105a0a899bd0a99fe18" },
+    "typeOfStation": "Gasilci",
+    "isPermanent": false,
+    "region": "Podravska"
+  },
+  {
+    "locationId": { "$oid": "682ce105a0a899bd0a99fe19" },
+    "typeOfStation": "Policijska",
+    "isPermanent": true,
+    "region": "Osrednjeslovenska"
+  },
+  {
+    "locationId": { "$oid": "682ce105a0a899bd0a99fe1a" },
+    "typeOfStation": "Bolnica",
+    "isPermanent": false,
+    "region": "Pomurska"
+  },
+  {
+    "locationId": { "$oid": "682ce105a0a899bd0a99fe1b" },
+    "typeOfStation": "Gasilci",
+    "isPermanent": true,
+    "region": "Primorsko-notranjska"
+  }
+]
