@@ -28,7 +28,7 @@ exports.login = async (req, res) => {
       });
       
   
-      return res.json({ user: { id: user._id, username: user.username, email: user.email } });
+      return res.json({ user: { id: user._id, username: user.username, email: user.email, image: user.imageUrl || '' } });
     } catch (error) {
       return res.status(500).json({ message: 'Server error' });
     }
