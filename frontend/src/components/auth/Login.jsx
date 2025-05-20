@@ -30,6 +30,7 @@ const Login = () => {
         { withCredentials: true }
     );
       if (res.status === 200) {
+        localStorage.setItem("user", JSON.stringify(res.data.user));
         toast.success("Login successful!");
         setUsername("");
         setPassword("");
@@ -39,6 +40,8 @@ const Login = () => {
       toast.error("Login error");
     } finally {
       setLoading(false);
+      const user = JSON.parse(localStorage.getItem("user"));
+      console.log(user?.username);
     }
   }
 
