@@ -7,6 +7,7 @@ const accidentRoutes = require("./routes/accidenceRoutes");
 const pathRoutes = require("./routes/pathRoutes");
 const locationRoutes = require("./routes/locationRoutes")
 const stationRoutes = require("./routes/stationRoutes")
+const simulationRoutes = require("./routes/simulationRoutes")
 
 const cookieParser = require("cookie-parser");
 
@@ -27,8 +28,9 @@ app.use(cookieParser());
 app.use("/api", userRoutes);
 app.use("/api/accident", accidentRoutes);
 app.use("/api/path", pathRoutes);
-app.use("/api/location", locationRoutes)
-app.use("/api/station",stationRoutes)
+app.use("/api/location", locationRoutes);
+app.use("/api/station",stationRoutes);
+app.use("/api/simulation",simulationRoutes);
 
 mongoose
   .connect(process.env.MONGO_URI)
