@@ -8,7 +8,6 @@ var StationSchema = new Schema({
   region: {
     type: String,
     enum: [
-      //Slika da vidiš kje so te regije https://sl.wikipedia.org/wiki/Statisti%C4%8Dne_regije_Slovenije#/media/Slika:Statisticne_regije_Slovenije_2015.svg
       "Pomurska",
       "Podravska",
       "Koroška",

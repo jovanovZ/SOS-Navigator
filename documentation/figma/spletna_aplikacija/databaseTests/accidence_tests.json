@@ -1,0 +1,42 @@
+[
+  {
+    "locationId": { "$oid": "682ce105a0a899bd0a99fe1c" },
+    "typeOfAccident": "prometna"
+  },
+  {
+    "locationId": { "$oid": "682ce105a0a899bd0a99fe1d" },
+    "typeOfAccident": "kriminal"
+  },
+  {
+    "locationId": { "$oid": "682ce105a0a899bd0a99fe1e" },
+    "typeOfAccident": "zdravstveni primer"
+  },
+  {
+    "locationId": { "$oid": "682ce105a0a899bd0a99fe1f" },
+    "typeOfAccident": "naravna nesreča"
+  },
+  {
+    "locationId": { "$oid": "682ce105a0a899bd0a99fe20" },
+    "typeOfAccident": "prometna"
+  },
+  {
+    "locationId": { "$oid": "682ce105a0a899bd0a99fe21" },
+    "typeOfAccident": "zdravstveni primer"
+  },
+  {
+    "locationId": { "$oid": "682ce105a0a899bd0a99fe22" },
+    "typeOfAccident": "kriminal"
+  },
+  {
+    "locationId": { "$oid": "682ce105a0a899bd0a99fe23" },
+    "typeOfAccident": "naravna nesreča"
+  },
+  {
+    "locationId": { "$oid": "682ce105a0a899bd0a99fe24" },
+    "typeOfAccident": "prometna"
+  },
+  {
+    "locationId": { "$oid": "682ce105a0a899bd0a99fe25" },
+    "typeOfAccident": "kriminal"
+  }
+]
