@@ -78,8 +78,6 @@ export default function MapSlovenia({gasilciVidnost, bolniceVidnost, policijaVid
             icon={loc.icon}
             />
         ))}
-
-
         <ZoomControl position="bottomright" />
       </MapContainer>
     </div>
