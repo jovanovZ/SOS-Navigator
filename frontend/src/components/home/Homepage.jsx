@@ -154,6 +154,18 @@ useEffect(() => {
   }
 
 
+  const saveSimulation = async () => {
+    // tole je zate zdravko
+    // ko shranis simulacijo, moras paziti na naslednje:
+    // if(station.region === "notSpecified") {
+    //   shrani najprej to postajo v podatkovno bazo
+    // }
+    // potem pa shrani simulacijo normalno
+    // ce station.region !== "notSpecified" pa samo shrani simulacijo
+    // lahko me poklices se potem
+  }
+
+
 
   return (
     <div className='w-full'>
