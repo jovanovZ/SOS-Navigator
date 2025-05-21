@@ -7,7 +7,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { RiCriminalLine } from "react-icons/ri";
 import { toast } from "react-toastify";
 import axios from "axios";
-// Ikone
+
 const hospitalIcon = L.divIcon({
   html: renderToStaticMarkup(<FaHospital color="#8B0000" size={22} />),
   iconSize: [30, 30],
@@ -15,7 +15,7 @@ const hospitalIcon = L.divIcon({
 });
 
 const policeIcon = L.divIcon({
-  html: renderToStaticMarkup(<FaShieldAlt color="#1E3A8A" size={22} />), // Tailwind "blue-900"
+  html: renderToStaticMarkup(<FaShieldAlt color="#1E3A8A" size={22} />), 
   iconSize: [30, 30],
   className: "",
 });
@@ -71,19 +71,8 @@ function ClickToAddAccident({ setAddedAccident, type, setCheck }) {
   return null;
 }
 
-export default function MapSlovenia({gasilciVidnost,bolniceVidnost,policijaVidnost,stations}) {
+export default function MapSlovenia({gasilciVidnost,bolniceVidnost,policijaVidnost,stations, addedAccident, setAddedAccident, accidenceTypes, accidenceType, setAccidenceType, showCheck, setShowCheck}) {
 
-  const [addedAccident, setAddedAccident] = useState();
-  const [accidenceType, setAccidenceType] = useState("kriminal");
-
-  const [showCheck, setShowCheck] = useState(false);
-
-    const accidenceTypes = [
-    { id: 1, type: 'prometna' },
-    { id: 2, type: 'kriminal' },
-    { id: 3, type: 'zdravstveni primer' },
-    { id: 4, type: 'naravna nesreča' },
-  ]
 
   const saveAccident = async () => {
     try {
@@ -122,21 +111,20 @@ export default function MapSlovenia({gasilciVidnost,bolniceVidnost,policijaVidno
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        {stations
-          .filter(
+        {stations?.filter(
             (station) =>
-              (station.type === "hospital" && bolniceVidnost) ||
-              (station.type === "police" && policijaVidnost) ||
-              (station.type === "fire" && gasilciVidnost)
+              (station.type === "Bolnica" && bolniceVidnost) ||
+              (station.type === "Policijska" && policijaVidnost) ||
+              (station.type === "Gasilci" && gasilciVidnost)
           )
           .map((station, index) => (
             <Marker
               key={index}
               position={[station.latitude, station.longitude]}
               icon={
-                station.type === "hospital"
+                station.type === "Bolnica"
                   ? hospitalIcon
-                  : station.type === "police"
+                  : station.type === "Policijska"
                   ? policeIcon
                   : fireIcon
               }
@@ -169,7 +157,7 @@ export default function MapSlovenia({gasilciVidnost,bolniceVidnost,policijaVidno
         )}
 
         <div className="grid grid-cols-1 gap-2">
-          {accidenceTypes.map((type) => {
+          {accidenceTypes?.map((type) => {
             const isActive = accidenceType === type.type;
 
             const icon = {
