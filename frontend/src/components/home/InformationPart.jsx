@@ -16,10 +16,10 @@ export default function InformationPart({simulation}) {
   return (
     <div className="fixed border-[3px] py-[15px] bg-gray-200 border-black bottom-4 left-[130px] shadow-lg p-4 w-[280px] z-50">
     <h1 className="font-bold justify-center flex text-xl mb-1 uppercase">
-        {simulation.title}
+        {simulation ? simulation.accidentName : 'Naslov simulacije'}
     </h1>
     <p className="text-md mb-2">Potrebna pomoč: <span className="font-semibold">POLICIJA</span></p>
-    <p className="text-md mb-2">Tip nesreče: <span className="font-semibold">{simulation.type}</span></p>
+    <p className="text-md mb-2">Tip nesreče: <span className="font-semibold">{simulation?.type}</span></p>
 
 
     <div className='w-full flex justify-between'>
