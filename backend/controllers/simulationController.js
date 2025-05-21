@@ -127,7 +127,21 @@ exports.getSimulationsByUserId = async (req, res) => {
         return res.status(400).json({message: "User ID is required"});
     }
     try {
-        const simulations = await Simulation.find({userId}).populate("userId").populate("accidentId").populate("bestStationId").populate("bestPathId");
+        const simulations = await Simulation.find({ userId })
+        .populate("userId")
+        .populate({
+            path: "accidentId",
+            populate: {
+            path: "locationId", 
+            },
+        })
+        .populate({
+            path: "bestStationId",
+            populate: {
+            path: "locationId",
+            },
+        })
+        .populate("bestPathId");
         if(simulations.length === 0){
             return res.status(404).json({message: "No simulations found for this user"});
         }
