@@ -2,24 +2,43 @@ const Accident = require("../models/AccidenceModel");
 const Location = require("../models/LocationModel");
 
 exports.createAccident = async (req, res) => {
-  const { locationId, typeOfAccident } = req.body;
-  if (!locationId || !typeOfAccident) {
-    return res.status(400).json({ message: "All fields are required" });
+  const { latitude, longitude, type } = req.body;
+
+  if (typeof latitude !== "number" || typeof longitude !== "number" || !type) {
+    return res.status(400).json({ message: "Polja latitude, longitude in type so obvezna." });
   }
+
   try {
-    const location = await Location.findById(locationId);
-    if (!location) {
-      return res.status(404).json({ message: "Location not found" });
-    }
-    const newAccident = new Accident({ locationId, typeOfAccident });
-    console.log(newAccident);
+    const newLocation = new Location({
+      geometry: {
+        type: "Point",
+        coordinates: [longitude, latitude], 
+      },
+    });
+
+    await newLocation.save();
+
+    const newAccident = new Accident({
+      locationId: newLocation._id,
+      typeOfAccident: type,
+    });
+
     await newAccident.save();
+
     return res.status(201).json({
-      accident: { id: newAccident._id, locationId, typeOfAccident },
-      message: "Accident created successfully",
+      message: "Nesreča uspešno ustvarjena.",
+      accident: {
+        id: newAccident._id,
+        typeOfAccident: newAccident.typeOfAccident,
+        location: {
+          id: newLocation._id,
+          coordinates: newLocation.geometry.coordinates,
+        },
+      },
     });
   } catch (error) {
-    return res.status(500).json({ message: "Failed to create accident " });
+    console.error("Napaka pri ustvarjanju nesreče:", error);
+    return res.status(500).json({ message: "Napaka na strežniku pri ustvarjanju nesreče." });
   }
 };
 

@@ -2,7 +2,9 @@ import React from 'react'
 import { IoMdDownload } from "react-icons/io";
 import { FaFireAlt } from "react-icons/fa";
 
-export default function InformationPart() {
+export default function InformationPart({simulation}) {
+  
+
   return (
     <div className="fixed border-[3px] py-[15px] bg-gray-200 border-black bottom-4 left-[130px] shadow-lg p-4 w-[280px] z-50">
     <h1 className="font-bold justify-center flex text-xl mb-1 ">
