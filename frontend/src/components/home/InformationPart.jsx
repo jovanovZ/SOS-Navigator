@@ -3,18 +3,28 @@ import { IoMdDownload } from "react-icons/io";
 import { FaFireAlt } from "react-icons/fa";
 
 export default function InformationPart({simulation}) {
-  
+
+  const formatTime = (ms) => {
+    const totalSeconds = Math.floor(ms / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    return `${hours}h ${minutes}min ${seconds}sec`;
+  };
 
   return (
     <div className="fixed border-[3px] py-[15px] bg-gray-200 border-black bottom-4 left-[130px] shadow-lg p-4 w-[280px] z-50">
-    <h1 className="font-bold justify-center flex text-xl mb-1 ">
-        SIMULACIJA 12
+    <h1 className="font-bold justify-center flex text-xl mb-1 uppercase">
+        {simulation.title}
     </h1>
-    <p className="text-md mb-2">Potrebna pomoč: <span className="font-semibold">rešilci</span></p>
+    <p className="text-md mb-2">Potrebna pomoč: <span className="font-semibold">POLICIJA</span></p>
+    <p className="text-md mb-2">Tip nesreče: <span className="font-semibold">{simulation.type}</span></p>
+
 
     <div className='w-full flex justify-between'>
         <div>
-            <div className="text-5xl font-bold text-black mb-2">10<span className="text-base font-medium">min</span></div>
+            <div className="text-lg font-bold text-black mb-2">{formatTime(simulation?.time)}</div>
             <p className="text-sm mb-1">Od: <span className="font-medium">Ljubljana 123a</span></p>
             <p className="text-sm mb-3">Do: <span className="font-medium">Grosuplje 23b</span></p>
         </div>
