@@ -113,25 +113,28 @@ export default function MapSlovenia({gasilciVidnost,bolniceVidnost,policijaVidno
 
         {stations?.filter(
             (station) =>
-              (station.type === "Bolnica" && bolniceVidnost) ||
-              (station.type === "Policijska" && policijaVidnost) ||
-              (station.type === "Gasilci" && gasilciVidnost)
+              (station.typeOfStation === "Bolnica" && bolniceVidnost) ||
+              (station.typeOfStation === "Policijska" && policijaVidnost) ||
+              (station.typeOfStation === "Gasilci" && gasilciVidnost)
           )
           .map((station, index) => (
             <Marker
               key={index}
-              position={[station.latitude, station.longitude]}
+              position={[
+                station.locationId?.geometry?.coordinates[1],
+                station.locationId?.geometry?.coordinates[0],
+              ]}
               icon={
-                station.type === "Bolnica"
+                station.typeOfStation === "Bolnica"
                   ? hospitalIcon
-                  : station.type === "Policijska"
+                  : station.typeOfStation === "Policijska"
                   ? policeIcon
                   : fireIcon
               }
             />
-          ))}
+        ))}
 
-        {/* Dodajanje ali posodabljanje nesreče */}
+
         <ClickToAddAccident setAddedAccident={setAddedAccident} type={accidenceType} setCheck={setShowCheck} />
 
         {Number.isFinite(addedAccident?.latitude) &&
