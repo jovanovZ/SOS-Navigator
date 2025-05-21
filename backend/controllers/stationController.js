@@ -14,11 +14,14 @@ exports.createStation = async (req, res) => {
     const newStation = new Station({
       locationId,
       typeOfStation,
-      isPermanent,
+      isPermanent: Boolean(isPermanent), // pretvorba
       region,
     });
+
     console.log(newStation);
+    console.log('hi')
     await newStation.save();
+
     return res.status(201).json({
       station: {
         id: newStation._id,

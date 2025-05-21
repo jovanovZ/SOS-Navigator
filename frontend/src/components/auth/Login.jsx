@@ -11,6 +11,9 @@ const Login = () => {
   const navigate = useNavigate();
 
 
+  
+
+
     useEffect(() => {
       axios.post("http://localhost:3002/api/logout", {}, { withCredentials: true })
         .then(() => {
