@@ -16,6 +16,25 @@ import { useNavigate } from "react-router-dom";
 import { MdAutorenew } from "react-icons/md";
 
 export default function Homepage() {
+
+  const [searchingExSimulation, setSearchingExSimulation] = useState(false);  //ce gledas stare simulacije, ne moras dodajati nesrec (za zdaj)
+
+  // ko je searchingExSimulation true ,moras omogociti dodajanje necrece, kar je ze, hkrati se mora izracunati najblizja postaja glede na tip nesrece. 
+  // potem se izracuna se pot. ko je to vse izracunano, naj se to prikaze na kartici. ko kliknes na kartici "Save", se shrani vse skupaj v bazo
+  // na koncu bomo omogocali se urejanje simulacij, a počasi. mormo vidt kaj nam bo ratal, ker se vse skupaj malo lahko zaplete
+  // zaenkrat imamo ogled simulacije brez prikaza poti. -> je povezano s kartico, miha bo naredil generacijo PDF-ja 
+  // potem je mozno dodajanje nesrec glede na tip, ce kliknes 'Nova simulacija', ce pa gledas stare, pa to ni mozno, oziroma je ta funkcija blokirana
+
+
+  //torej na kratko funkcionalnosti do zdaj:
+  // prikaz zgodovinskih simulacij, povezano s kartico
+  //ce kliknes na novo simulacijo, lahko dodas nesreco
+  // pot se izrise tudi, a ni vredu, na teh podatkih bo treba se delati, saj sem jaz dal le testne
+  // ni shranjevanja simulacij se
+  // ni generacije pdfja
+  // treba je omogocati se dodajanje postaj, ki niso Permanent, da naredimo lahko novo simulacijo
+  
+
   const [simulation, setSimulation] = useState(1);
   const [object, setObject] = useState(1);
   const navigate = useNavigate();
@@ -132,7 +151,7 @@ useEffect(() => {
                 <FaPlus size={30} />
                 <span className='text-sm mt-1 text-center'>Dodaj</span>
               </div>
-              <div onClick={() => {setShowCheck(false); setCurrentSimulation(null); setAddedAccident(null);}} className={`w-full py-4 px-2 flex flex-col items-center hover:bg-blue-800 transition duration-200`}>
+              <div onClick={() => {setSearchingExSimulation(false); setShowCheck(false); setCurrentSimulation(null); setAddedAccident(null);}} className={`w-full py-4 px-2 flex flex-col items-center hover:bg-blue-800 transition duration-200`}>
                 <MdAutorenew  size={30} />
                 <span className='text-sm mt-1 text-center'>Nova simulacija</span>
               </div>
@@ -152,7 +171,7 @@ useEffect(() => {
               >
                 {simulationData?.map((item, index) => (
                   <div
-                    onClick={() => {setShowCheck(false); setSimulation(item._id); setCurrentSimulation(item); setAddedAccident(null); }}
+                    onClick={() => {setShowCheck(false); setSimulation(item._id); setSearchingExSimulation(true); setCurrentSimulation(item); setAddedAccident(null); }}
                     key={index}
                     className={`px-4 py-3 border-b border-blue-800 cursor-pointer transition duration-200 
                       ${simulation === item._id ? 'bg-blue-800 font-bold' : 'hover:bg-blue-800 hover:text-white'}`}
@@ -210,6 +229,8 @@ useEffect(() => {
                 accidenceTypes={accidenceTypes}
                 showCheck={showCheck}
                 setShowCheck={setShowCheck}
+                searchingExSimulation={searchingExSimulation}
+                currentSimulation={currentSimulation}
               />
               
             </div>
