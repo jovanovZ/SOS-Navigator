@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import Navigation from './Navigation'
 import { TbMapStar } from "react-icons/tb";
 import { FaPlus } from "react-icons/fa";
@@ -13,18 +13,42 @@ import { CiLogout } from "react-icons/ci";
 import { toast } from 'react-toastify';
 import axios from 'axios';
 import { useNavigate } from "react-router-dom";
+import { MdEmergencyShare } from "react-icons/md";
 
 export default function Homepage() {
   const [simulation, setSimulation] = useState(1);
   const [object, setObject] = useState(1);
   const navigate = useNavigate();
 
+
+  const [addedObject, setAddedObject] = useState('bolnica');
+
+
+
+
   const [bolniceVidnost, setBolniceVidnost] = useState(true);
   const [policijaVidnost, setPolicijaVidnost] = useState(true);
   const [gasilciVidnost, setGasilciVidnost] = useState(true);
   const [hoveredMenu, setHoveredMenu] = useState(null);
 
-  const historyData = [
+  /*
+  const [simulations, setSimulations] = useState([])
+
+  useEffect(() => {
+    const fetchSimulations = async () => {
+      try {
+        const response = await axios.get("http://localhost:3002/api/simulations", { withCredentials: true });
+        setSimulations(response.data);
+      } catch (error) {
+        console.error("Error fetching simulations:", error);
+        toast.error("Error fetching simulations");
+      } finally {
+        setLoading(false);
+      }
+    };
+*/
+
+  const simulationData = [   //simulacije
     {id: 1, title: 'simulation1'},
     {id: 2, title: 'simulation2'},
     {id: 3, title: 'simulation3'},
@@ -53,15 +77,58 @@ export default function Homepage() {
   
 
   const addObjectData = [
-    { id: 1, icon: <FaHospitalSymbol color='red' size={50} /> },
-    {id: 2, icon: <GrUserPolice color='blue' size={50} /> },
-    { id: 3, icon: <MdOutlineFireTruck color='orange' size={50} /> },
+    { id: 1, icon: <FaHospitalSymbol color='yellow' size={50} />, type: 'bolnica' },
+    { id: 2, icon: <GrUserPolice color='blue' size={50} />, type: 'policija' },
+    { id: 3, icon: <MdOutlineFireTruck color='orange' size={50} />, type: 'gasilci' },
   ]
+
+
+  const [currentSimulation, setCurrentSimulation] = useState(simulationData[0]);
+
+
+
+  /*
+  const [stationsData, setStationsData] = useState([]); 
+
+  useEffect(() => {
+    const fetchStations = async () => {
+      try {
+        const response = await axios.get("http://localhost:3002/api/stations", { withCredentials: true });
+        setStationsData(response.data);
+      } catch (error) {
+        console.error("Error fetching stations:", error);
+        toast.error("Error fetching stations");
+      }
+    };
+    fetchStations();
+  }, []);
+*/
+
+
+  const stations = [ 
+        { type: 'hospital', latitude: 46.0569, longitude: 14.5058 },
+        { type: 'hospital', latitude: 46.5547, longitude: 15.6459 },
+        { type: 'police', latitude: 46.2381, longitude: 15.2675 },
+        { type: 'fire', latitude: 46.2396, longitude: 14.3556 },
+        { type: 'police', latitude: 46.3625, longitude: 15.1103 },
+        { type: 'fire', latitude: 45.9578, longitude: 13.6431 },
+        { type: 'hospital',  latitude: 45.5481, longitude: 13.7300 },
+        { type: 'fire',  latitude: 46.1556, longitude: 15.0535 },
+        { type: 'police',  latitude: 46.5111, longitude: 15.0800 },
+        { type: 'hospital', latitude: 46.1383, longitude: 14.5934 },
+        { type: 'fire',  latitude: 46.2253, longitude: 14.6094 },
+        { type: 'hospital',  latitude: 46.5450, longitude: 14.9645 },
+        { type: 'fire', latitude: 46.6581, longitude: 16.1666 },
+        { type: 'hospital',  latitude: 46.5645, longitude: 16.4544 },
+        { type: 'police',  latitude: 45.5282, longitude: 13.5686 }
+    ];
 
   return (
     <div className='w-full'>
         <Navigation/>
+
         <div className="flex">
+
           <div className="w-[100px] z-10 h-[calc(100vh-64px)] top-[70px] fixed bg-blue-900 text-white shadow-md flex flex-col justify-between cursor-pointer">
             <div>
               <div onMouseEnter={() => setHoveredMenu('simulacije')} onMouseLeave={() => setHoveredMenu(null)} className={`w-full py-4 px-2 flex flex-col items-center hover:bg-blue-800 transition duration-200 ${hoveredMenu === 'simulacije' && 'bg-blue-800 font-bold'}`}>
@@ -88,7 +155,7 @@ export default function Homepage() {
                 onMouseEnter={() => setHoveredMenu('simulacije')}
                 onMouseLeave={() => setHoveredMenu(null)}
               >
-                {historyData.map((item, index) => (
+                {simulationData.map((item, index) => (
                   <div
                     onClick={() => { setSimulation(item.id); }}
                     key={index}
@@ -101,28 +168,26 @@ export default function Homepage() {
               </div>
             )}
 
-         {hoveredMenu === 'dodaj' && (
-            <div className="fixed left-[100px] top-[156px] w-[90px] bg-blue-950 text-white shadow-lg max-h-[400px] z-20 rounded-r-md"
-              onMouseEnter={() => setHoveredMenu('dodaj')}
-              onMouseLeave={() => setHoveredMenu(null)}
-            >
-              {addObjectData.map((item, index) => (
-                <div
-                  onClick={() => { setObject(item.id); }}
-                  key={index}
-                  className={`p-3 border-b border-blue-800 flex items-center justify-center cursor-pointer transition duration-200
-                    ${object === item.id ? 'bg-blue-800' : 'hover:bg-blue-800'}`}
+            {hoveredMenu === 'dodaj' && (
+                <div className="fixed left-[100px] top-[156px] w-[90px] bg-blue-950 text-white shadow-lg max-h-[400px] z-20 rounded-r-md"
+                  onMouseEnter={() => setHoveredMenu('dodaj')}
+                  onMouseLeave={() => setHoveredMenu(null)}
                 >
-                  {item.icon}
+                  {addObjectData.map((item, index) => (
+                    <div
+                      onClick={() => { setObject(item.id); setAddedObject(item.type); }}
+                      key={index}
+                      className={`p-3 border-b border-blue-800 flex items-center justify-center cursor-pointer transition duration-200
+                        ${object === item.id ? 'bg-blue-800' : 'hover:bg-blue-800'}`}
+                    >
+                      {item.icon}
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
+              )}
 
-          {/* main content area */}
           <div className="flex-1 bg-white p-2 z-1">
-
-<div className='fixed space-y-2 top-[80px] left-[120px] z-10 bg-gray-300 bg-opacity-70 rounded-md px-4 py-2 shadow-md'>
+            <div className='fixed space-y-2 top-[80px] left-[120px] z-10 bg-gray-300 bg-opacity-70 rounded-md px-4 py-2 shadow-md'>
               <div onClick={() => setBolniceVidnost(!bolniceVidnost)} className={`${!bolniceVidnost && 'text-gray-600'} flex items-center gap-2 cursor-pointer font-bold text-[25px]`}>
                 {bolniceVidnost ? <FaRegEye className='mt-1' /> : <FaEyeSlash className='mt-1' />  } bolnice
               </div>
@@ -135,20 +200,21 @@ export default function Homepage() {
             </div>
 
             <div className="absolute inset-0 z-0">
-              <MapSlovenia bolniceVidnost={bolniceVidnost} gasilciVidnost={gasilciVidnost} policijaVidnost={policijaVidnost} />
-            </div>
 
+              <MapSlovenia
+                bolniceVidnost={bolniceVidnost} 
+                gasilciVidnost={gasilciVidnost} 
+                policijaVidnost={policijaVidnost} 
+                stations={stations}
+              />
+              
+            </div>
           </div>
         </div>
-        <InformationPart />
+
+        <InformationPart simulation={currentSimulation} />
     </div>
   )
 }
 
 
-
-/*
-git add -A
-git commit -m "SCRUM-19 Implementacija izgleda Domače strani"
-git push
-*/
