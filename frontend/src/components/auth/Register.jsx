@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from "react";
+import React, { useEffect} from "react";
 import { IoLogoGithub } from "react-icons/io";
 import axios from "axios";
 import { toast } from "react-toastify"; 
@@ -14,7 +14,7 @@ const Register = () => {
   const navigator = useNavigate(); 
 
   useEffect(() => {
-    axios.post("http://localhost:3002/api/logout", {}, { withCredentials: true })
+    axios.post("http://localhost:3002/api/user/logout", {}, { withCredentials: true })
       .then(() => {
         console.log("Token cookie cleared");
       })
@@ -31,7 +31,7 @@ const Register = () => {
       return;
     }
     try {
-      const res = await axios.post('http://localhost:3002/api/register', {
+      const res = await axios.post('http://localhost:3002/api/user/register', {
         username, email, password,
       });
 

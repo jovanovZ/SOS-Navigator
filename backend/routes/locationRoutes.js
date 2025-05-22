@@ -20,6 +20,6 @@ router.get("/getSomeStationsInRadius", locationController.findSomeStationsInRadi
 router.get("/getAllAccidentsInRadius", locationController.findAllAccidentsInRadius)
 //localhost:3002/api/location/getAllAccidentsInRadius?long=40.5058&lat=46.0569&radius=5000
 
-
+router.post("/create", locationController.createLocation)
 
 module.exports = router;

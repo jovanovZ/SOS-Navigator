@@ -1,29 +1,42 @@
 const Path = require("../models/PathModel");
 const Location = require("../models/LocationModel");
-const { path } = require("../app");
 
 exports.createPath = async (req, res) => {
   const { accidentId, locationPoints } = req.body;
-  if (!accidentId || !locationPoints) {
-    return res.status(400).json({ message: "All fields are required " });
+  if (
+    !accidentId ||
+    !locationPoints ||
+    !Array.isArray(locationPoints) ||
+    locationPoints.length === 0
+  ) {
+    return res.status(400).json({
+      message:
+        "All fields are required and locationPoints must be a non-empty array",
+    });
   }
   try {
-    const foundLocations = await Location.find({
-      _id: { $in: locationPoints },
-    });
-
-    if (foundLocations.length !== locationPoints.length) {
-      return res
-        .status(404)
-        .json({ message: "One or more locations do not exist" });
+    for (const point of locationPoints) {
+      if (typeof point.lat !== "number" || typeof point.lng !== "number") {
+        return res.status(400).json({
+          message: "Each locationPoint must have lat and lng as numbers",
+        });
+      }
+      const location = new Location({
+        geometry: {
+          type: "Point",
+          coordinates: [point.lng, point.lat],
+        },
+      });
+      await location.save();
     }
 
     const newPath = new Path({ accidentId, locationPoints });
-    newPath.save();
+    await newPath.save();
     return res
       .status(200)
       .json({ path: newPath, message: "Path created successfully" });
   } catch (error) {
+    console.error("Failed to create path:", error);
     return res.status(500).json({ message: "Failed to create Path" });
   }
 };

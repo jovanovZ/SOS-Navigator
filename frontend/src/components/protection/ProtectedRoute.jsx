@@ -7,7 +7,7 @@ const ProtectedRoute = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    axios.get("http://localhost:3002/api/me", { withCredentials: true })
+    axios.get("http://localhost:3002/api/user/me", { withCredentials: true })
       .then((res) => {
         setAuth(true);
       })

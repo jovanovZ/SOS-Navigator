@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import Navigation from './Navigation'
 import { TbMapStar } from "react-icons/tb";
 import { FaPlus } from "react-icons/fa";
@@ -79,7 +79,7 @@ useEffect(() => {
 
   const handleLogout = async () => {
     try {
-      await axios.post("http://localhost:3002/api/logout", {}, { withCredentials: true });
+      await axios.post("http://localhost:3002/api/user/logout", {}, { withCredentials: true });
       console.log("Token cookie cleared");
       toast.success("Logged out");
       navigate("/login");
@@ -176,7 +176,7 @@ useEffect(() => {
                     className={`px-4 py-3 border-b border-blue-800 cursor-pointer transition duration-200 
                       ${simulation === item._id ? 'bg-blue-800 font-bold' : 'hover:bg-blue-800 hover:text-white'}`}
                   >
-                    <span className="text-sm">{item.accidentName}</span>
+                    <span className="text-sm">{item.simulationName}</span>
                   </div>
                 ))}
               </div>

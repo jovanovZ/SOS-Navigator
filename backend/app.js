@@ -25,7 +25,7 @@ app.use(
 );
 app.use(express.json()); // za JSON requeste
 app.use(cookieParser());
-app.use("/api", userRoutes);
+app.use("/api/user", userRoutes);
 app.use("/api/accident", accidentRoutes);
 app.use("/api/path", pathRoutes);
 app.use("/api/location", locationRoutes);
