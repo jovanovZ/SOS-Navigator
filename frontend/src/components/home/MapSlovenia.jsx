@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import {MapContainer,Marker,Polyline,TileLayer,ZoomControl,useMapEvents} from "react-leaflet";
+import {MapContainer,Marker,Polyline,Popup,TileLayer,ZoomControl,useMapEvents} from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { FaCarCrash, FaFire, FaHeartbeat, FaExclamationTriangle, FaHospital, FaShieldAlt, FaFireExtinguisher,} from "react-icons/fa";
@@ -7,6 +7,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { RiCriminalLine } from "react-icons/ri";
 import { toast } from "react-toastify";
 import axios from "axios";
+import * as turf from '@turf/turf';
+import regions from './SR.geojson';
 
 const hospitalIcon = L.divIcon({
   html: renderToStaticMarkup(<FaHospital color="#8B0000" size={22} />),
@@ -74,19 +76,119 @@ function ClickToAddAccident({ setAddedAccident, type, setCheck, searchingExSimul
     click(e) {
       if(searchingExSimulation) return;
       const { lat, lng } = e.latlng;
+      console.log("Clicked coordinates:", lat, lng);
       setAddedAccident({
         latitude: lat,
         longitude: lng,
         type: type,
       });
+
       setCheck(true);
     },
   });
   return null;
 }
 
-export default function MapSlovenia({gasilciVidnost,bolniceVidnost,policijaVidnost,stations, addedAccident, setAddedAccident, accidenceTypes, accidenceType, setAccidenceType, showCheck, setShowCheck, searchingExSimulation, currentSimulation }) {
+function AddStation({ setStations, addedObject, setAddObject, setAddedObject }) {
 
+  useMapEvents({
+    click(e) {
+      const { lat, lng } = e.latlng;
+
+      const newStation = {
+        isPermanent: false,
+        region: "notSpecified",
+        typeOfStation: addedObject,
+        locationId: {
+          geometry: {
+            type: "Point",
+            coordinates: [lng, lat],
+          },
+        },
+      };
+
+      setStations((prev) => [...prev, newStation]);
+      setAddObject(false);
+      setAddedObject(null);
+    },
+  });
+  return null;
+}
+
+// se tole je treba urediti da bo vrnilo regijo, sedaj sem nastavil Osrednjeslovenska za vse
+export const getRegionFromCoordinates = async (lat, lon) => {
+  try {
+    const point = turf.point([lon, lat]);
+
+    for (const feature of regions.features) {
+      if (turf.booleanPointInPolygon(point, turf.feature(feature.geometry))) {
+        return feature.properties.NAME_1 || feature.properties.name || "Osrednjeslovenska";
+      }
+    }
+    return "Osrednjeslovenska";
+  } catch (err) {
+    console.error("Napaka pri iskanju regije:", err);
+    return "Osrednjeslovenska";
+  }
+};
+
+const saveStation = async (station) => {
+  try {
+    const { geometry } = station.locationId || {};
+    const [lng, lat] = geometry?.coordinates || [];
+
+    if (!lat || !lng) {
+      toast.error("Lokacija ni pravilno določena.");
+      return;
+    }
+
+    let region = station.region;
+    if (region === "notSpecified") {
+      region = await getRegionFromCoordinates(lat, lng);
+    }
+
+    const locationResponse = await axios.post(
+      "http://localhost:3002/api/location/create",
+      {
+        lat,
+        long: lng,
+      },
+      { withCredentials: true }
+    );
+
+
+
+
+    const locationId = locationResponse.data?.location?._id;
+
+    if (!locationId) {
+      throw new Error("Lokacija ni bila uspešno ustvarjena.");
+    }
+
+    const stationResponse = await axios.post(
+      "http://localhost:3002/api/station/create",
+      {
+        locationId,
+        typeOfStation: station.typeOfStation,
+        isPermanent: true,
+        region,
+      },
+      { withCredentials: true }
+    );
+
+    toast.success("Postaja uspešno shranjena");
+    return stationResponse.data;
+
+  } catch (error) {
+    toast.error("Napaka pri shranjevanju postaje");
+  }
+};
+
+
+
+
+export default function MapSlovenia({gasilciVidnost,bolniceVidnost,policijaVidnost,stations, addedAccident, setAddedAccident, accidenceTypes, accidenceType, setAccidenceType, showCheck, setShowCheck, searchingExSimulation, currentSimulation, addObject, addedObject, setAddObject, setAddedObject, setStations }) {
+  const [selectedStationId, setSelectedStationId] = useState(null);
 
   const saveAccident = async () => {
     try {
@@ -126,27 +228,97 @@ export default function MapSlovenia({gasilciVidnost,bolniceVidnost,policijaVidno
         />
 
         {stations?.filter(
-            (station) =>
-              (station.typeOfStation === "Bolnica" && bolniceVidnost) ||
-              (station.typeOfStation === "Policijska" && policijaVidnost) ||
-              (station.typeOfStation === "Gasilci" && gasilciVidnost)
+          (station) =>
+            (station.typeOfStation === "Bolnica" && bolniceVidnost) ||
+            (station.typeOfStation === "Policijska" && policijaVidnost) ||
+            (station.typeOfStation === "Gasilci" && gasilciVidnost)
+        )
+        .filter((station) => !station.deleted)
+        .map((station, index) => (
+          <Marker
+            key={station._id || index}
+            position={[
+              station.locationId?.geometry?.coordinates[1],
+              station.locationId?.geometry?.coordinates[0],
+            ]}
+            icon={
+              station.typeOfStation === "Bolnica"
+                ? hospitalIcon
+                : station.typeOfStation === "Policijska"
+                ? policeIcon
+                : fireIcon
+            }
+            eventHandlers={{
+              click: () => setSelectedStationId(station._id || index),
+            }}
+          >
+{selectedStationId === (station._id || index) && (
+<Popup
+  position={[
+    station.locationId?.geometry?.coordinates[1],
+    station.locationId?.geometry?.coordinates[0],
+  ]}
+  onClose={() => setSelectedStationId(null)}
+  closeButton={false}
+  closeOnClick={false}
+  autoPan={false}
+>
+  {station.region === "notSpecified" ? (
+    <div className="flex flex-col items-start gap-2">
+    <button
+      onClick={async () => {
+        const saved = await saveStation(station);
+        if (saved?._id) {
+          setStations((prev) =>
+            prev.map((s) =>
+              (s._id || s) === (station._id || station)
+                ? { ...saved, isPermanent: true } 
+                : s
+            )
+          );
+          setSelectedStationId(null);
+        }
+      }}
+      className="px-2 py-1 text-sm text-green-500 hover:text-green-600 rounded"
+    >
+      Save ✔
+    </button>
+      <button
+        onClick={() => {
+          setStations((prev) =>
+            prev.filter((s) => (s._id || s) !== (station._id || station))
+          );
+          setSelectedStationId(null);
+        }}
+        className="px-2 py-1 text-sm text-red-600 hover:text-red-800"
+      >
+        Delete ✖
+      </button>
+    </div>
+  ) : (
+    <button
+      onClick={() => {
+        setStations((prev) =>
+          prev.map((s) =>
+            (s._id || s) === (station._id || station)
+              ? { ...s, deleted: true }
+              : s
           )
-          .map((station, index) => (
-            <Marker
-              key={index}
-              position={[
-                station.locationId?.geometry?.coordinates[1],
-                station.locationId?.geometry?.coordinates[0],
-              ]}
-              icon={
-                station.typeOfStation === "Bolnica"
-                  ? hospitalIcon
-                  : station.typeOfStation === "Policijska"
-                  ? policeIcon
-                  : fireIcon
-              }
-            />
+        );
+        setSelectedStationId(null);
+      }}
+      className="px-2 py-1 text-sm text-red-600 hover:text-red-800"
+    >
+      Delete ✖
+    </button>
+  )}
+</Popup>
+
+)}
+
+          </Marker>
         ))}
+
 
         {currentSimulation?.accidentId?.locationId?.geometry?.coordinates && (
           <Marker
@@ -165,10 +337,11 @@ export default function MapSlovenia({gasilciVidnost,bolniceVidnost,policijaVidno
           />
         )}
 
-
-
-
-        <ClickToAddAccident setAddedAccident={setAddedAccident} type={accidenceType} setCheck={setShowCheck} searchingExSimulation={searchingExSimulation} />
+        {addObject ? (
+          <AddStation setStations={setStations} addedObject={addedObject} setAddObject={setAddObject} setAddedObject={setAddedObject} />
+        ) : (
+          <ClickToAddAccident setAddedAccident={setAddedAccident} type={accidenceType} setCheck={setShowCheck} searchingExSimulation={searchingExSimulation}/>
+        )}
 
         {Number.isFinite(addedAccident?.latitude) &&
           Number.isFinite(addedAccident?.longitude) && (

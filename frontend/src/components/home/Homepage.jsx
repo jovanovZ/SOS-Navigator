@@ -40,6 +40,7 @@ export default function Homepage() {
   const navigate = useNavigate();
 
 
+  const [addObject, setAddObject] = useState(false);
   const [addedObject, setAddedObject] = useState('bolnica');
 
 
@@ -91,9 +92,9 @@ useEffect(() => {
   
 
   const addObjectData = [
-    { id: 1, icon: <FaHospitalSymbol color='yellow' size={50} />, type: 'bolnica' },
-    { id: 2, icon: <GrUserPolice color='blue' size={50} />, type: 'policija' },
-    { id: 3, icon: <MdOutlineFireTruck color='orange' size={50} />, type: 'gasilci' },
+    { id: 1, icon: <FaHospitalSymbol color='yellow' size={50} />, type: 'Bolnica' },
+    { id: 2, icon: <GrUserPolice color='blue' size={50} />, type: 'Policijska' },
+    { id: 3, icon: <MdOutlineFireTruck color='orange' size={50} />, type: 'Gasilci' },
   ]
 
 
@@ -135,6 +136,36 @@ useEffect(() => {
 
   const [showCheck, setShowCheck] = useState(false);
 
+  const deleteRecentlyAddedStations = () => {
+    setStations((prev) =>
+      prev.filter((station) => station.region !== "notSpecified")
+    );
+  };
+
+  const setDeletedTrue = () => {
+    setStations((prev) =>
+      prev.map((station) => {
+        if (station.deleted ) {
+          return { ...station, deleted: false };
+        }
+        return station;
+      })
+    );
+  }
+
+
+  const saveSimulation = async () => {
+    // tole je zate zdravko
+    // ko shranis simulacijo, moras paziti na naslednje:
+    // if(station.region === "notSpecified") {
+    //   shrani najprej to postajo v podatkovno bazo
+    // }
+    // potem pa shrani simulacijo normalno
+    // ce station.region !== "notSpecified" pa samo shrani simulacijo
+    // lahko me poklices se potem
+  }
+
+
 
   return (
     <div className='w-full'>
@@ -151,7 +182,7 @@ useEffect(() => {
                 <FaPlus size={30} />
                 <span className='text-sm mt-1 text-center'>Dodaj</span>
               </div>
-              <div onClick={() => {setSearchingExSimulation(false); setShowCheck(false); setCurrentSimulation(null); setAddedAccident(null);}} className={`w-full py-4 px-2 flex flex-col items-center hover:bg-blue-800 transition duration-200`}>
+              <div onClick={() => {setSearchingExSimulation(false); setShowCheck(false); setCurrentSimulation(null); setDeletedTrue(); setAddedAccident(null); deleteRecentlyAddedStations()}} className={`w-full py-4 px-2 flex flex-col items-center hover:bg-blue-800 transition duration-200`}>
                 <MdAutorenew  size={30} />
                 <span className='text-sm mt-1 text-center'>Nova simulacija</span>
               </div>
@@ -171,7 +202,7 @@ useEffect(() => {
               >
                 {simulationData?.map((item, index) => (
                   <div
-                    onClick={() => {setShowCheck(false); setSimulation(item._id); setSearchingExSimulation(true); setCurrentSimulation(item); setAddedAccident(null); }}
+                    onClick={() => {setShowCheck(false); setDeletedTrue(); deleteRecentlyAddedStations(); setSimulation(item._id); setSearchingExSimulation(true); setCurrentSimulation(item); setAddedAccident(null); }}
                     key={index}
                     className={`px-4 py-3 border-b border-blue-800 cursor-pointer transition duration-200 
                       ${simulation === item._id ? 'bg-blue-800 font-bold' : 'hover:bg-blue-800 hover:text-white'}`}
@@ -191,7 +222,7 @@ useEffect(() => {
                 >
                   {addObjectData.map((item, index) => (
                     <div
-                      onClick={() => { setObject(item.id); setAddedObject(item.type); }}
+                      onClick={() => { setObject(item.id); setAddedObject(item.type); setAddObject(true)}}
                       key={index}
                       className={`p-3 border-b border-blue-800 flex items-center justify-center cursor-pointer transition duration-200
                         ${object === item.id ? 'bg-blue-800' : 'hover:bg-blue-800'}`}
@@ -231,6 +262,11 @@ useEffect(() => {
                 setShowCheck={setShowCheck}
                 searchingExSimulation={searchingExSimulation}
                 currentSimulation={currentSimulation}
+                addObject={addObject}
+                addedObject={addedObject}
+                setAddObject={setAddObject}
+                setAddedObject={setAddedObject}
+                setStations={setStations}
               />
               
             </div>

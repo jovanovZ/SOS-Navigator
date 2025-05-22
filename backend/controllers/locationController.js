@@ -6,8 +6,9 @@ const Accident = require("../models/AccidenceModel");
 exports.createLocation = async (req, res) => {
   const { long, lat } = req.body; 
   if (!long || !lat) {
-    return res.status(400).json({ message: "longitude or longitude is not given" });
+    return res.status(400).json({ message: "longitude or latitude is not given" });
   }
+
   try {
     const location = new Location({
       geometry: {
@@ -15,14 +16,18 @@ exports.createLocation = async (req, res) => {
         coordinates: [Number(long), Number(lat)],
       },
     });
+
     await location.save();
-    return res.status(200).json({ message: "Location created successfully" });
-    
+
+    return res.status(200).json({
+      location, 
+    });
+
   } catch (error) {
     return res.status(500).json({ message: "Error on create location", error });
   }
+};
 
-}
 
 exports.updateLocation = async (req, res) => {
   const { locationId, long, lat } = req.body;
