@@ -70,7 +70,7 @@ useEffect(() => {
   return (
     <div className="fixed border-[3px] py-[15px] bg-gray-200 border-black bottom-4 left-[130px] shadow-lg p-4 w-[280px] z-50">
       <h1 className="font-bold justify-center flex text-xl mb-1 uppercase">
-        {simulation?.accidentName || 'Naslov simulacije'}
+        {simulation?.simulationName || 'Naslov simulacije'}
       </h1>
 
       <p className="text-md mb-2">

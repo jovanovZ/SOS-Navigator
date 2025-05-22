@@ -23,5 +23,4 @@ router.get("/getAllAccidentsInRadius", locationController.findAllAccidentsInRadi
 router.post('/create', locationController.createLocation);
 
 
-
 module.exports = router;

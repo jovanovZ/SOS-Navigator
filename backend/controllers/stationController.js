@@ -2,17 +2,27 @@ const Station = require("../models/StationModel");
 const Location = require("../models/LocationModel");
 
 exports.createStation = async (req, res) => {
-  const { locationId, typeOfStation, isPermanent, region } = req.body;
-  if (!locationId || !typeOfStation || !isPermanent || !region) {
+  const { lat, long, typeOfStation, isPermanent, region } = req.body;
+  if (
+    typeof lat !== "number" ||
+    typeof long !== "number" ||
+    !typeOfStation ||
+    typeof isPermanent === "undefined" ||
+    !region
+  ) {
     return res.status(400).json({ message: "All fields are required" });
   }
   try {
-    const location = await Location.findById(locationId);
-    if (!location) {
-      return res.status(404).json({ message: "Location not found" });
-    }
+    const location = new Location({
+      geometry: {
+        type: "Point",
+        coordinates: [long, lat],
+      },
+    });
+    await location.save();
+
     const newStation = new Station({
-      locationId,
+      locationId: location._id,
       typeOfStation,
       isPermanent: Boolean(isPermanent), // pretvorba
       region,
@@ -20,12 +30,13 @@ exports.createStation = async (req, res) => {
 
     console.log(newStation);
     console.log('hi')
+
     await newStation.save();
 
     return res.status(201).json({
       station: {
         id: newStation._id,
-        locationId,
+        locationId: location._id,
         typeOfStation,
         isPermanent,
         region,
@@ -160,22 +171,30 @@ exports.getByRegion = async (req, res) => {
 exports.getByPermanence = async (req, res) => {
   let { isPermanent } = req.params;
 
-  if (isPermanent !== 'true' && isPermanent !== 'false') {
-    return res.status(400).json({ message: "isPermanent must be 'true' or 'false'" });
+  if (isPermanent !== "true" && isPermanent !== "false") {
+    return res
+      .status(400)
+      .json({ message: "isPermanent must be 'true' or 'false'" });
   }
 
-  isPermanent = isPermanent === 'true';
+  isPermanent = isPermanent === "true";
 
   try {
     const stations = await Station.find({ isPermanent }).populate("locationId");
 
     if (stations.length === 0) {
-      return res.status(404).json({ message: "No stations found for this permanence value" });
+      return res
+        .status(404)
+        .json({ message: "No stations found for this permanence value" });
     }
 
-    return res.status(200).json({ stations, message: `Stations found with isPermanent = ${isPermanent}` });
+    return res.status(200).json({
+      stations,
+      message: `Stations found with isPermanent = ${isPermanent}`,
+    });
   } catch (error) {
-    return res.status(500).json({ message: "Failed to get stations by permanence" });
+    return res
+      .status(500)
+      .json({ message: "Failed to get stations by permanence" });
   }
 };
-
