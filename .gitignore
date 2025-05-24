@@ -76,3 +76,5 @@
 ### Mac OS ###
 /desktop/.DS_Store
 /desktop/.idea/
+
+**/.env
