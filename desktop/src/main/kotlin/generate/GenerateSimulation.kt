@@ -3,7 +3,9 @@ package generate
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
@@ -14,17 +16,20 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import inputs.InputFieldForNumber
+import io.github.serpro69.kfaker.Faker
+import org.bson.types.ObjectId
 import kotlin.random.Random
 
-fun generateRandomServices(): List<String> {
-    val services = listOf("ambulance", "fire", "police")
+fun generateRandomServices(): String {
+    val services = listOf("policija", "reĹˇilci", "gasilci")
     val numberOfServices = Random.nextInt(1, 4)
-    return services.shuffled().take(numberOfServices)
+    return services.shuffled().take(numberOfServices).joinToString(", ")
 }
 
 @Composable
 @Preview
 fun GenerateSimulation() {
+    val faker = Faker()
     val instanceCount = remember { mutableStateOf("") }
 
     val responseTimeMin = remember { mutableStateOf("") }
@@ -44,8 +49,9 @@ fun GenerateSimulation() {
             backgroundColor = Color(0xFFFFFFFF),
             modifier = Modifier.width(600.dp)
         ) {
+            val scrollState = rememberScrollState()
             Column(
-                modifier = Modifier.padding(16.dp),
+                modifier = Modifier.padding(16.dp).verticalScroll(scrollState),
             ) {
                 Box(
                     modifier = Modifier.fillMaxWidth(),
@@ -64,7 +70,7 @@ fun GenerateSimulation() {
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                Text("Response time range (in minutes)", fontSize = 14.sp)
+                Text("Response time range (in sec)", fontSize = 14.sp)
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     InputFieldForNumber(
                         label = "Min",
@@ -86,10 +92,41 @@ fun GenerateSimulation() {
                         colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF1E88E5)),
                         shape = RoundedCornerShape(50),
                         onClick = {
-                            val typeOfService: List<String> = generateRandomServices()
+                            if (instanceCount.value.isEmpty() || responseTimeMin.value.isEmpty() || responseTimeMax.value.isEmpty()) {
+                                println("Please fill in all fields")
+                                return@Button
+                            }
+                            if (instanceCount.value.toInt() <= 0 || responseTimeMin.value.toInt() <= 0 || responseTimeMax.value.toInt() <= 0) {
+                                println("Please enter valid numbers")
+                                return@Button
+                            }
+                            if (responseTimeMin.value.toInt() > responseTimeMax.value.toInt()) {
+                                println("Minimum response time cannot be greater than maximum")
+                                return@Button
+                            }
+                            var userId:ObjectId
+                            var simulationName:String
+                            var accidentId: ObjectId
+                            var typeOfServices:String
+                            var stationId: ObjectId
+                            var pathId: ObjectId
+                            var responseTime: Int
+                            // z data clasi si pripravi reqbody tak kot je v path
+                            for (i in 1..instanceCount.value.toInt()) {
+                                //pridobi random userId
+                                simulationName = "Generirana simulacija $i"
+                                //pridobi random accidentId
+                                typeOfServices = generateRandomServices()
+                                //pridobi random stationId
+                                //pridobi random pathId
+                                responseTime = Random.nextInt(responseTimeMin.value.toInt(), responseTimeMax.value.toInt())
+                                responseTime *= 1000 //response time to milliseconds
 
-                            // ker v modelih shranjujemo v milisecundah tu pa input dobiš v minutah ne pozabi spremenit iz min v milisec
-                            //potem pa se rabimo userID, accountID, bestStationID, bestPathID
+                                println(simulationName)
+                                println(typeOfServices)
+                                println(responseTime)
+                            }
+
                         }) {
                         Text("Generate")
                     }

@@ -3,7 +3,9 @@ package generate
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
@@ -14,12 +16,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import inputs.InputFieldForNumber
+import io.github.serpro69.kfaker.Faker
 
 @Composable
 @Preview
 fun GenerateUser() {
     val instanceCount = remember { mutableStateOf("") }
-
+    val faker = Faker()
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -33,8 +36,9 @@ fun GenerateUser() {
             backgroundColor = Color(0xFFFFFFFF),
             modifier = Modifier.width(600.dp)
         ) {
+            val scrollState = rememberScrollState()
             Column(
-                modifier = Modifier.padding(16.dp),
+                modifier = Modifier.padding(16.dp).verticalScroll(scrollState),
             ) {
                 Box(
                     modifier = Modifier.fillMaxWidth(),
@@ -60,19 +64,29 @@ fun GenerateUser() {
                         colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF1E88E5)),
                         shape = RoundedCornerShape(50),
                         onClick = {
-                            /*
-                            val baseUsernames = listOf(
-                                "Alice", "Bob", "Charlie", "David", "Eve", "Frank", "Grace", "Hannah", "Ivy", "Jack",
-                                "Kathy", "Leo", "Mona", "Nina", "Oscar", "Paul", "Quinn", "Rachel", "Steve", "Tina",
-                                "Uma", "Victor", "Wendy", "Xander", "Yara", "Zane", "Liam", "Noah", "Emma", "Olivia"
-                            )
-                            val username = "${baseUsernames[Random.nextInt(0, 30)]}${Random.nextInt(1000, 9999)}"
-                            val email = "$username@generated.com"
-                            val password = "pass${Random.nextInt(1000, 9999)}${username}"
-                            // val imageUrl = deafult photo
-                            // rabimo se neki array  za historySimulations
-                            */
-                            }) {
+                            if(instanceCount.value.isEmpty() || instanceCount.value.toInt() <= 0) {
+                                return@Button
+                            }
+                            var name:String
+                            var email:String
+                            var password:String
+                            val imageUrl:String = "https://picsum.photos/200/300"
+                            var historySimulations:List<String>
+                            // z data clasi si pripravi reqbody tak kot je v path
+                            for (i in 0 until instanceCount.value.toInt()) {
+                                name = faker.name.name()
+                                email = faker.internet.email()
+                                password = faker.barcode.ean8()
+                                // manjka se samo historySimulations naredi funkcijo na backendu ki ti vrne random
+                                // veliki array simulacij
+                                println(name)
+                                println(email)
+                                println(password)
+                                println(imageUrl)
+                                println("\n")
+                            }
+
+                        }) {
                         Text("Generate")
                     }
                 }
