@@ -3,7 +3,9 @@ package generate
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
@@ -14,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import inputs.InputFieldForNumber
+import kotlin.random.Random
 
 @Composable
 @Preview
@@ -39,8 +42,9 @@ fun GenerateLocation() {
             backgroundColor = Color(0xFFFFFFFF),
             modifier = Modifier.width(600.dp)
         ) {
+            val scrollState = rememberScrollState()
             Column(
-                modifier = Modifier.padding(16.dp),
+                modifier = Modifier.padding(16.dp).verticalScroll(scrollState),
             ) {
                 Box(
                     modifier = Modifier.fillMaxWidth(),
@@ -104,7 +108,47 @@ fun GenerateLocation() {
                         colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF1E88E5)),
                         shape = RoundedCornerShape(50),
                         onClick = {
-                            //tu je logika, vrednosit inputa so v state-ih
+                            if (instanceCount.value.isEmpty() ||
+                                longitudeMin.value.isEmpty() ||
+                                longitudeMax.value.isEmpty() ||
+                                latitudeMin.value.isEmpty() ||
+                                latitudeMax.value.isEmpty()
+                            ) {
+                                println("Please fill all fields")
+                                return@Button
+                            }
+                            if (
+                                instanceCount.value.toInt() <= 0
+                                || longitudeMin.value.toDouble() >= longitudeMax.value.toDouble()
+                                || latitudeMin.value.toDouble() >= latitudeMax.value.toDouble()
+                            ) {
+                                println("Invalid input values")
+                                return@Button
+                            }
+                            if (
+                                longitudeMin.value.toDouble() < -180
+                                || longitudeMax.value.toDouble() > 180
+                                || latitudeMin.value.toDouble() < -90
+                                || latitudeMax.value.toDouble() > 90
+                            ) {
+                                println("Invalid longitude or latitude values")
+                                return@Button
+                            }
+                            var latitude: Double
+                            var longitude: Double
+                            val type:String = "Point"
+                            // z data clasi si pripravi reqbody tak kot je v path
+                            for (i in 0 until instanceCount.value.toInt()) {
+                                latitude = Random.nextDouble(
+                                    latitudeMin.value.toDouble(),
+                                    latitudeMax.value.toDouble()
+                                )
+                                longitude = Random.nextDouble(
+                                    longitudeMin.value.toDouble(),
+                                    longitudeMax.value.toDouble()
+                                )
+                                println("Generated Location: Latitude: $latitude, Longitude: $longitude")
+                            }
                         }) {
                         Text("Generate")
                     }

@@ -27,6 +27,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactive:1.7.3")
     implementation("io.github.cdimascio:dotenv-kotlin:6.4.1")
+    implementation ("io.github.serpro69:kotlin-faker:1.14.0")
 }
 
 compose.desktop {

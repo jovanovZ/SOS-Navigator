@@ -3,7 +3,9 @@ package generate
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
@@ -14,11 +16,35 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import inputs.InputFieldForNumber
+import io.github.serpro69.kfaker.Faker
+import org.bson.types.ObjectId
+import kotlin.random.Random
 
 @Composable
 @Preview
 fun GenerateStation() {
     val instanceCount = remember { mutableStateOf("") }
+    val faker = Faker()
+    val allRegions = listOf(
+        "Pomurska",
+        "Podravska",
+        "KoroĹˇka",
+        "Savinjska",
+        "Zasavska",
+        "Posavska",
+        "Jugovzhodna Slovenija",
+        "Osrednjeslovenska",
+        "Gorenjska",
+        "Primorsko-notranjska",
+        "GoriĹˇka",
+        "Obalno-kraĹˇka",
+    )
+    val stationType = listOf("Policijska", "Bolnica", "Gasilci")
+    val longitudeMin = remember { mutableStateOf("") }
+    val longitudeMax = remember { mutableStateOf("") }
+
+    val latitudeMin = remember { mutableStateOf("") }
+    val latitudeMax = remember { mutableStateOf("") }
 
     Box(
         modifier = Modifier
@@ -33,8 +59,9 @@ fun GenerateStation() {
             backgroundColor = Color(0xFFFFFFFF),
             modifier = Modifier.width(600.dp)
         ) {
+            val scrollState = rememberScrollState()
             Column(
-                modifier = Modifier.padding(16.dp),
+                modifier = Modifier.padding(16.dp).verticalScroll(scrollState),
             ) {
                 Box(
                     modifier = Modifier.fillMaxWidth(),
@@ -50,6 +77,47 @@ fun GenerateStation() {
                     onValueChange = { instanceCount.value = it },
                     inputModifier = Modifier.fillMaxWidth()
                 )
+                Divider(modifier = Modifier.padding(vertical = 8.dp))
+
+                Text("Location Range", fontSize = 18.sp)
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Longitude
+                Text("Longitude Range", fontSize = 14.sp)
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    InputFieldForNumber(
+                        label = "Min",
+                        value = longitudeMin.value,
+                        onValueChange = { longitudeMin.value = it },
+                        inputModifier = Modifier.weight(1f).padding(end = 8.dp)
+                    )
+                    InputFieldForNumber(
+                        label = "Max",
+                        value = longitudeMax.value,
+                        onValueChange = { longitudeMax.value = it },
+                        inputModifier = Modifier.weight(1f).padding(start = 8.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Latitude
+                Text("Latitude Range", fontSize = 14.sp)
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    InputFieldForNumber(
+                        label = "Min",
+                        value = latitudeMin.value,
+                        onValueChange = { latitudeMin.value = it },
+                        inputModifier = Modifier.weight(1f).padding(end = 8.dp)
+                    )
+                    InputFieldForNumber(
+                        label = "Max",
+                        value = latitudeMax.value,
+                        onValueChange = { latitudeMax.value = it },
+                        inputModifier = Modifier.weight(1f).padding(start = 8.dp)
+                    )
+                }
+
 
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -60,26 +128,61 @@ fun GenerateStation() {
                         colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF1E88E5)),
                         shape = RoundedCornerShape(50),
                         onClick = {
-                            /*
-                               val stationType = listOf("ambulance", "fire department", "police")
-                               val isPermanent = Random.nextBoolean()
-                               val allRegions = listOf(
-                                    "Pomurska",
-                                    "Podravska",
-                                    "Koroška",
-                                    "Savinjska",
-                                    "Zasavska",
-                                    "Posavska",
-                                    "Jugovzhodna Slovenija",
-                                    "Osrednjeslovenska",
-                                    "Gorenjska",
-                                    "Primorsko-notranjska",
-                                    "Goriška",
-                                    "Obalno-kraška",
+                            println(longitudeMin.value)
+                            println(longitudeMax.value)
+                            println(latitudeMin.value)
+                            println(latitudeMax.value)
+                            if(instanceCount.value.isEmpty() || instanceCount.value.toInt() <= 0) {
+                                println("Instance count is empty or less than 0")
+                                return@Button
+                            }
+                            if(longitudeMin.value.isEmpty() || longitudeMax.value.isEmpty() || latitudeMin.value.isEmpty() || latitudeMax.value.isEmpty()) {
+                                println("Longitude or Latitude is empty")
+                                return@Button
+                            }
+                            if(longitudeMin.value.toDouble() >= longitudeMax.value.toDouble()
+                                || latitudeMin.value.toDouble() >= latitudeMax.value.toDouble()) {
+                                println("Min and Max values are not valid")
+                                return@Button
+                            }
+                            if(longitudeMin.value.toDouble() < -180 || longitudeMax.value.toDouble() > 180) {
+                                println("Needs to be between -180 and 180")
+                                return@Button
+                            }
+                            if(latitudeMin.value.toDouble() < -90 || latitudeMax.value.toDouble() > 90) {
+                                println("Needs to be between -90 and 90")
+                                return@Button
+                            }
+
+                            var locationId :ObjectId
+                            var typeOfStation: String
+                            var region: String
+                            var isPermanent: Boolean
+                            var latitude: Double
+                            var longitude: Double
+                            // z data clasi si pripravi reqbody tak kot je v path
+                            for (i in 0 until instanceCount.value.toInt()) {
+
+                                //createing location
+                                latitude = Random.nextDouble(
+                                    latitudeMin.value.toDouble(),
+                                    latitudeMax.value.toDouble()
                                 )
-                              val randomRegion = allRegions.random()
-                            // potrebujemo se locationID,
-                            */
+                                longitude = Random.nextDouble(
+                                    longitudeMin.value.toDouble(),
+                                    longitudeMax.value.toDouble()
+                                )
+                                // poklici API za create location dobi nazaj locationID in ga vstavi v station
+
+
+                                typeOfStation = stationType.random()
+                                isPermanent = Random.nextBoolean()
+                                region = allRegions.random()
+
+                                println(typeOfStation)
+                                println(region)
+                                println(isPermanent)
+                            }
                         }) {
                         Text("Generate")
                     }
