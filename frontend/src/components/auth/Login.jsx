@@ -14,15 +14,17 @@ const Login = () => {
   
 
 
-    useEffect(() => {
-      axios.post("http://localhost:3002/api/user/logout", {}, { withCredentials: true })
-        .then(() => {
-          console.log("Token cookie cleared");
-        })
-        .catch((err) => {
-          console.error("Logout on entry failed", err);
-        });
-    }, []);
+  useEffect(() => {
+    axios.post("http://localhost:3002/api/user/logout", {}, { withCredentials: true })
+      .then(() => {
+        console.log("Token cookie cleared");
+        localStorage.removeItem("user"); // ⬅️ tukaj izbrišemo user iz localStorage
+      })
+      .catch((err) => {
+        console.error("Logout on entry failed", err);
+      });
+  }, []);
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -32,6 +34,7 @@ const Login = () => {
         { username, password },
         { withCredentials: true }
     );
+      console.log("Login response:", res.data); // Log the response data for debugging
       if (res.status === 200) {
         localStorage.setItem("user", JSON.stringify(res.data.user));
         toast.success("Login successful!");

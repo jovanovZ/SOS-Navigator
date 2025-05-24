@@ -57,6 +57,7 @@ useEffect(() => {
     try {
       const user = localStorage.getItem("user");
       const userId = JSON.parse(user)?.id || JSON.parse(user)?._id;
+      console.log("User ID:", userId);
 
       const response = await axios.get(
         `http://localhost:3002/api/simulation/user/${userId}`,
@@ -200,16 +201,25 @@ useEffect(() => {
                 onMouseEnter={() => setHoveredMenu('simulacije')}
                 onMouseLeave={() => setHoveredMenu(null)}
               >
-                {simulationData?.map((item, index) => (
-                  <div
-                    onClick={() => {setShowCheck(false); setDeletedTrue(); deleteRecentlyAddedStations(); setSimulation(item._id); setSearchingExSimulation(true); setCurrentSimulation(item); setAddedAccident(null); }}
-                    key={index}
-                    className={`px-4 py-3 border-b border-blue-800 cursor-pointer transition duration-200 
-                      ${simulation === item._id ? 'bg-blue-800 font-bold' : 'hover:bg-blue-800 hover:text-white'}`}
-                  >
-                    <span className="text-sm">{item.simulationName}</span>
-                  </div>
-                ))}
+{Array.isArray(simulationData) && simulationData.length > 0 && simulationData.map((item, index) => (
+  <div
+    onClick={() => {
+      setShowCheck(false);
+      setDeletedTrue();
+      deleteRecentlyAddedStations();
+      setSimulation(item._id);
+      setSearchingExSimulation(true);
+      setCurrentSimulation(item);
+      setAddedAccident(null);
+    }}
+    key={index}
+    className={`px-4 py-3 border-b border-blue-800 cursor-pointer transition duration-200 
+      ${simulation === item._id ? 'bg-blue-800 font-bold text-white' : 'hover:bg-blue-800 hover:text-white'}`}
+  >
+    <span className="text-sm">{item.simulationName}</span>
+  </div>
+))}
+
               </div>
             )}
 
