@@ -4,6 +4,7 @@ import { MdEmail } from "react-icons/md";
 import { TbLockPassword } from "react-icons/tb";
 import axios from "axios";
 import { FaPlus } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
 
 export default function Profile() {
   const [user, setUser] = useState(null); // ⬅️ manjkajoča definicija
@@ -20,6 +21,7 @@ export default function Profile() {
   const [simulations, setSimulations] = useState([]);
 
   const [changePassword, setChangePassword] = useState(false);
+  const navigate = useNavigate();
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -52,6 +54,7 @@ useEffect(() => {
 
   fetchSimulations();
 }, []);
+
 
 
   function formatMs(ms) {
@@ -423,6 +426,13 @@ useEffect(() => {
               <tbody>
                 {simulations.map((item) => (
                   <tr
+                    onClick={() => {
+                      localStorage.setItem(
+                        "simulation",
+                        JSON.stringify(item)
+                      );
+                      navigate('/');
+                    }}
                     key={item._id}
                     className="bg-gray-100 cursor-pointer text-gray-800 hover:bg-blue-100 hover:text-blue-900 transition duration-150"
                   >
