@@ -220,7 +220,7 @@ exports.getSimulationsByUserId = async (req, res) => {
       .populate("bestPathId");
     if (simulations.length === 0) {
       return res
-        .status(404)
+        .status(200)
         .json({ message: "No simulations found for this user" });
     }
     return res.status(200).json(simulations);

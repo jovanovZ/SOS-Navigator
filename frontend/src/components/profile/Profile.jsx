@@ -1,10 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Navigation from "../home/Navigation";
 import { MdEmail } from "react-icons/md";
 import { TbLockPassword } from "react-icons/tb";
 import axios from "axios";
+import { FaPlus } from "react-icons/fa";
 
 export default function Profile() {
+  const [user, setUser] = useState(null); // ⬅️ manjkajoča definicija
   const [editUsername, setEditUsername] = useState(false);
   const [editEmail, setEditEmail] = useState(false);
   const [tempEmail, setTempEmail] = useState("");
@@ -23,32 +25,34 @@ export default function Profile() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  useEffect(() => {
-    const localStorageUserInfo = JSON.parse(localStorage.getItem("user"));
-    setUsername(localStorageUserInfo.username);
-    setEmail(localStorageUserInfo.email);
-    setImage(localStorageUserInfo.image);
-    const userId = localStorageUserInfo.id;
+useEffect(() => {
+  const localStorageUserInfo = JSON.parse(localStorage.getItem("user"));
+  setUser(localStorageUserInfo); // ⬅️ to dodaš
 
-    const fetchSimulations = async () => {
-      try {
-        const res = await axios.get(
-          `http://localhost:3002/api/simulation/user/${userId}`,
-          { withCredentials: true }
-        );
+  setUsername(localStorageUserInfo.username);
+  setEmail(localStorageUserInfo.email);
+  setImage(localStorageUserInfo.image);
+  const userId = localStorageUserInfo.id;
 
-        if (res.status === 200) {
-          const simulationsData = res.data || [];
-          setSimulations(simulationsData);
-          console.log(simulationsData);
-        }
-      } catch (error) {
-        console.error("Error fetching simulations:", error);
+  const fetchSimulations = async () => {
+    try {
+      const res = await axios.get(
+        `http://localhost:3002/api/simulation/user/${userId}`,
+        { withCredentials: true }
+      );
+
+      if (res.status === 200) {
+        const simulationsData = res.data || [];
+        setSimulations(simulationsData);
       }
-    };
+    } catch (error) {
+      console.error("Error fetching simulations:", error);
+    }
+  };
 
-    fetchSimulations();
-  }, []);
+  fetchSimulations();
+}, []);
+
 
   function formatMs(ms) {
     const totalSeconds = Math.floor(ms / 1000);
@@ -129,37 +133,40 @@ export default function Profile() {
       console.error("handle change email", error);
     }
   };
-  const handleImageClick = () => {
-    setShowImageInput(!showImageInput);
-  };
-  const handleImageUrlChange = async () => {
-    setShowImageInput(!showImageInput);
-    try {
-      const localStorageUserInfo = JSON.parse(localStorage.getItem("user"));
-      const userId = localStorageUserInfo.id;
 
-      const res = await axios.post(
-        "http://localhost:3002/api/user/changePhoto",
-        { imageUrl: tempImage, userId: userId },
-        { withCredentials: true }
-      );
 
-      if (res.status === 200) {
-        setImage(tempImage);
-        setTempImage("");
-        localStorage.setItem(
-          "user",
-          JSON.stringify({
-            ...localStorageUserInfo,
-            image: res.data.image,
-          })
+  const fileInputRef = useRef();
+  const [loader, setLoader] = useState(false);
+
+  const handleProfileImageChange = async (e) => {
+      setLoader(true)
+      const file = e.target.files[0];
+      if (!file) return;
+    
+      try {    
+        const formData = new FormData();
+        formData.append('image', file);
+        formData.append('userId', JSON.parse(localStorage.getItem("user")).id);
+    
+        const res = await axios.post(
+          'http://localhost:3002/api/user/update-profile-image',
+          formData,
+          { withCredentials: true }
         );
+    
+        // Posodobi lokalni storage z novo sliko
+        const updatedUser = { ...user, image: res.data.image };
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+    
+        window.location.reload();
+      } catch (error) {
+        console.error('Error updating profile image:', error);
+      } finally {
+        setLoader(false);
       }
-      setImage(res.data.image || image);
-    } catch (error) {
-      console.error("Failed to update image with URL", error);
-    }
-  };
+    };
+
+
 
   const handleChangePassword = async () => {
     try {
@@ -196,48 +203,48 @@ export default function Profile() {
       <div className="p-8 mt-16 text-black bg-blue-50 min-h-screen">
         <div className="flex justify-between items-center mb-8 bg-white shadow-md rounded-lg p-6">
           <div className="flex items-center gap-6">
-            {image ? (
-              <img
-                src={image}
-                alt="User profile"
-                className="w-20 h-20 rounded-full object-cover border-2 cursor-pointer"
-                onClick={handleImageClick}
-              />
-            ) : (
-              <div
-                className="w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center text-3xl border-2 cursor-pointer"
-                onClick={handleImageClick}
-              ></div>
-            )}
+<div className="relative w-28 h-28">
+  <img
+    src={user?.image}
+    alt="Profile"
+    className="w-full h-full object-cover rounded-full border-2 border-gray-300"
+  />
 
-            {showImageInput && (
-              <div className="mt-2">
+  {user && username === user.username && (
+    <>
+      <div
+        onClick={() => fileInputRef.current.click()}
+        className="absolute bottom-1 right-1 bg-gray-800 border-2 border-white rounded-full p-1 cursor-pointer hover:bg-gray-900 transition"
+      >
+        <FaPlus className="text-white text-xs" />
+      </div>
+      <input
+        type="file"
+        accept="image/*"
+        ref={fileInputRef}
+        onChange={handleProfileImageChange}
+        className="hidden"
+      />
+    </>
+  )}
+
+  {loader && (
+    <div className="absolute inset-0 bg-white/70 flex items-center justify-center text-sm text-gray-700 rounded-full">
+      Uploading...
+    </div>
+  )}
+</div>
+
+          <div>
+            {editUsername ? (
+              <div className="relative w-[250px]">
                 <input
-                  type="text"
-                  placeholder="Paste image URL here"
-                  value={image}
-                  onChange={(e) => setTempImage(e.target.value)}
-                  className="w-[300px] px-2 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-gray-500"
-                />
-                <button
-                  onClick={handleImageUrlChange}
-                  className="ml-2 px-3 py-1 text-white bg-blue-500 rounded-md hover:bg-blue-600"
-                >
-                  Update Image
-                </button>
-              </div>
-            )}
-
-            <div>
-              {editUsername ? (
-                <div className="relative w-[250px]">
-                  <input
                     type="username"
                     placeholder={username}
                     value={tempUsername}
                     onChange={(e) => setTempUsername(e.target.value)}
                     className="w-full pr-10 focus:bg-gray-200 hover:bg-gray-100 px-2 py-1 border border-gray-400 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-gray-600"
-                  />
+                />
 
                   <div className="absolute inset-y-0 right-0 flex items-center gap-1 pr-2 text-xl">
                     <button

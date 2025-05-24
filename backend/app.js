@@ -23,6 +23,7 @@ app.use(
     credentials: true, // omogoči piškotke
   })
 );
+app.use(express.urlencoded({ extended: true })); // ne vpliva na multer, a dobro imeti
 app.use(express.json()); // za JSON requeste
 app.use(cookieParser());
 app.use("/api/user", userRoutes);

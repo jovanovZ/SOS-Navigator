@@ -4,21 +4,26 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const JWT_SECRET = process.env.JWT_SECRET || "my_secret";
 
-// kreiranje tokena
-const createToken = (user) => {
-  return jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "1d" });
+const { upload } = require('../config/cloudinary');
+const cloudinary = require('cloudinary').v2;
+
+const createToken = (userId) => {
+  return jwt.sign({ id: userId }, JWT_SECRET, { expiresIn: "1d" });
 };
 
 exports.login = async (req, res) => {
   const { username, password } = req.body;
+  console.log("Incoming login body:", req.body); // <== To dodaj
   try {
     const user = await User.findOne({ username });
     if (!user) return res.status(401).json({ message: "Invalid credentials" });
 
+    console.log("User found:", user); // <== To dodaj
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(401).json({ message: "Invalid credentials" });
 
-    const token = createToken(user); // DODAJ TO V VRSTICO PRED res.cookie(...)
+    const token = createToken(user._id); // DODAJ TO V VRSTICO PRED res.cookie(...)
+    console.log('cookie');
 
     res.cookie("token", token, {
       secure: false,
@@ -26,6 +31,7 @@ exports.login = async (req, res) => {
       sameSite: "Strict",
       maxAge: 24 * 60 * 60 * 1000,
     });
+
 
     return res.json({
       user: {
@@ -91,29 +97,33 @@ exports.getProfile = async (req, res) => {
   }
 };
 
+
 exports.updateProfilePhoto = async (req, res) => {
-  const { imageUrl, userId } = req.body;
-  //   if (!req.user.id || !imageUrl) {
-  //     return res.status(400).json({ message: "All fields are required" });
-  //   }
-  if (!imageUrl || !userId) {
-    return res.status(400).json({ message: "All fields are required" });
-  }
   try {
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
+    const { userId } = req.body;
+
+    if (!req.file || !userId) {
+      return res.status(400).json({ message: "Missing image or userId" });
     }
-    user.imageUrl = imageUrl;
-    await user.save();
-    return res.status(200).json({
-      image: user.imageUrl,
-      message: "Profile photo updated successfully",
-    });
+
+    const result = await cloudinary.uploader.upload(req.file.path);
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { imageUrl: result.secure_url },
+      { new: true }
+    );
+
+    res.status(200).json({ message: "Image updated", image: user.imageUrl });
   } catch (error) {
-    return res.status(500).json({ message: "Server error" });
+    console.error("Error uploading profile image:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
+
+
+
 
 exports.updateUsername = async (req, res) => {
   const { username, userId } = req.body;
