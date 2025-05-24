@@ -50,6 +50,10 @@ export default function Homepage() {
   const [hoveredMenu, setHoveredMenu] = useState(null);
 
 
+  const removeSimulationFromLocalStorage = () => {
+  localStorage.removeItem("simulation");
+};
+
   const [simulationData, setSimulationData] = useState([]); 
 
 useEffect(() => {
@@ -100,8 +104,6 @@ useEffect(() => {
 
 
   const [currentSimulation, setCurrentSimulation] = useState(null);
-
-
 
   
   const [stations, setStations] = useState([]); 
@@ -166,6 +168,17 @@ useEffect(() => {
     // lahko me poklices se potem
   }
 
+useEffect(() => {
+  const storedSimulation = localStorage.getItem("simulation");
+  if (storedSimulation) {
+    const parsed = JSON.parse(storedSimulation); // <- to je ključ
+    setCurrentSimulation(parsed);
+    setSimulation(parsed._id); // če želiš nastaviti tudi aktivni ID
+  }
+  console.log("Current simulation from localStorage:", storedSimulation);
+}, []);
+
+
 
 
   return (
@@ -204,6 +217,7 @@ useEffect(() => {
 {Array.isArray(simulationData) && simulationData.length > 0 && simulationData.map((item, index) => (
   <div
     onClick={() => {
+      removeSimulationFromLocalStorage();
       setShowCheck(false);
       setDeletedTrue();
       deleteRecentlyAddedStations();
