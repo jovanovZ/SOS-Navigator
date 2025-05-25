@@ -6,98 +6,26 @@ const User = require("../models/UserModel");
 const Station = require("../models/StationModel");
 
 exports.createSimulation = async (req, res) => {
-  const {
-    userId,
-    accidentId,
-    typeOfServices,
-    bestStationId,
-    bestPathId,
-    responseTime,
-    simulationName,
-  } = req.body;
-  if (
-    !userId ||
-    !accidentId ||
-    !typeOfServices ||
-    !bestStationId ||
-    !bestPathId ||
-    !responseTime ||
-    !simulationName
-  ) {
-    return res.status(400).json({ message: "All fields are required" });
-  }
   try {
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-    const accident = await Accident.findById(accidentId).populate("locationId");
-    if (!accident) {
-      return res.status(404).json({ message: "Accident not found" });
-    }
-    const station = await Station.findById(bestStationId).populate(
-      "locationId"
-    );
-    if (!station) {
-      return res.status(404).json({ message: "Station not found" });
-    }
-    const path = await Path.findById(bestPathId);
-    if (!path) {
-      return res.status(404).json({ message: "Path not found" });
-    }
-
-    //accident je to
-    //station je from
-    const responseFrom = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?lat=${station.locationId.geometry.coordinates[1]}&lon=${station.locationId.geometry.coordinates[0]}&format=json`
-    );
-    const data = await responseFrom.json();
-    const addr = data.address;
-    const locationFrom = `${addr.road || "Cesta"} ${addr.house_number || ""}, ${
-      addr.city || addr.town || addr.village || ""
-    }`;
-
-    const responseTo = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?lat=${accident.locationId.geometry.coordinates[1]}&lon=${accident.locationId.geometry.coordinates[0]}&format=json`
-    );
-    const dataTo = await responseTo.json();
-    const addrTo = dataTo.address;
-    const locationTo = `${addrTo.road || "Cesta"} ${
-      addrTo.house_number || ""
-    }, ${addrTo.city || addrTo.town || addrTo.village || ""}`;
-
+    const {userId, simulationName, accidentId, bestStationId, bestPathId, responseTime, typeOfServices, locationFrom, locationTo} = req.body;
     const newSimulation = new Simulation({
       userId,
-      accidentId,
       simulationName,
-      typeOfServices,
+      accidentId,
       bestStationId,
       bestPathId,
       responseTime,
+      typeOfServices,
       locationFrom,
-      locationTo,
+      locationTo
     });
-    console.log(newSimulation);
     await newSimulation.save();
     return res.status(201).json({
-      simulation: {
-        id: newSimulation._id,
-        userId,
-        accidentId,
-        typeOfServices,
-        simulationName,
-        bestStationId,
-        bestPathId,
-        responseTime,
-        created: newSimulation.created,
-        locationFrom,
-        locationTo,
-      },
       message: "Simulation created successfully",
-    });
+    });   
   } catch (error) {
-    console.error("Simulation save error:", error);
-    return res.status(500).json({ message: "Failed to create simulation" });
+    console.error("Failed to create simulation:", error);
+    res.status(500).json({ message: "Failed to create simulation" });
   }
 };
 
