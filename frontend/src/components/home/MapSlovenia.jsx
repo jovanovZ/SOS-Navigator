@@ -187,7 +187,7 @@ const saveStation = async (station) => {
 
 
 
-export default function MapSlovenia({gasilciVidnost,bolniceVidnost,policijaVidnost,stations, addedAccident, setAddedAccident, accidenceTypes, accidenceType, setAccidenceType, showCheck, setShowCheck, searchingExSimulation, currentSimulation, addObject, addedObject, setAddObject, setAddedObject, setStations }) {
+export default function MapSlovenia({gasilciVidnost,bolniceVidnost,policijaVidnost,stations, addedAccident, setAddedAccident, accidenceTypes, accidenceType, setAccidenceType, showCheck, setShowCheck, searchingExSimulation, currentSimulation, addObject, addedObject, setAddObject, setAddedObject, setStations, newPath }) {
   const [selectedStationId, setSelectedStationId] = useState(null);
 
   const saveAccident = async () => {
@@ -330,12 +330,20 @@ export default function MapSlovenia({gasilciVidnost,bolniceVidnost,policijaVidno
           />
         )}
 
-        {currentSimulation?.bestPathId?.locationPoints?.length > 0 && (
-          <Polyline
-            positions={currentSimulation.bestPathId.locationPoints.map((p) => [p.lat, p.lng])}
-            pathOptions={{ color: 'red', weight: 4 }}
-          />
-        )}
+{newPath?.length > 0 ? (
+  <Polyline
+    positions={newPath.map((p) => [p.lat, p.lng])}
+    pathOptions={{ color: 'blue', weight: 4 }}
+  />
+) : (
+  currentSimulation?.bestPathId?.locationPoints?.length > 0 && (
+    <Polyline
+      positions={currentSimulation.bestPathId.locationPoints.map((p) => [p.lat, p.lng])}
+      pathOptions={{ color: 'red', weight: 4 }}
+    />
+  )
+)}
+
 
         {addObject ? (
           <AddStation setStations={setStations} addedObject={addedObject} setAddObject={setAddObject} setAddedObject={setAddedObject} />

@@ -3,18 +3,22 @@ import { IoMdDownload } from "react-icons/io";
 import { FaCarCrash, FaFire, FaHeartbeat } from "react-icons/fa";
 import { RiCriminalLine } from 'react-icons/ri';
 
-export default function InformationPart({ simulation }) {
+export default function InformationPart({ simulation, newPath, addedAccident, time}) {
   const [fromAddress, setFromAddress] = useState('');
   const [toAddress, setToAddress] = useState('');
+  console.log("SimulationTime:", time)
 
-  const formatTime = (ms) => {
-    if (!simulation?.responseTime) return '0h 0min 0sec';
-    const totalSeconds = Math.floor(ms / 1000);
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-    return `${hours}h ${minutes}min ${seconds}sec`;
-  };
+const formatTime = (ms) => {
+  if (!ms || ms === 0) return '0h 0min 0sec';
+  const totalSeconds = Math.floor(ms / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  return `${hours}h ${minutes}min ${seconds}sec`;
+};
+
+
+
 
   const getAddressFromCoordinates = async (lat, lon) => {
     try {
@@ -52,6 +56,30 @@ useEffect(() => {
   }
 }, [simulation]);
 
+useEffect(() => {
+  const fetchAddresses = async () => {
+    if (!newPath?.length || !addedAccident?.latitude || !addedAccident?.longitude) return;
+
+    const from = newPath[0];
+    const to = {
+      lat: addedAccident.latitude,
+      lng: addedAccident.longitude
+    };
+
+    try {
+      const fromAddr = await getAddressFromCoordinates(from.lat, from.lng);
+      const toAddr = await getAddressFromCoordinates(to.lat, to.lng);
+      setFromAddress(fromAddr);
+      setToAddress(toAddr);
+    } catch (error) {
+      console.error("Napaka pri pridobivanju naslovov:", error);
+    }
+  };
+
+  fetchAddresses();
+}, [newPath, addedAccident]);
+
+
 
   const iconByType = {
     "prometna": <FaCarCrash size={50} className="text-red-500" />,
@@ -69,26 +97,30 @@ useEffect(() => {
 
   return (
     <div className="fixed border-[3px] py-[15px] bg-gray-200 border-black bottom-4 left-[130px] shadow-lg p-4 w-[280px] z-50">
+
+
+
+
       <h1 className="font-bold justify-center flex text-xl mb-1 uppercase">
-        {simulation?.simulationName || 'Naslov simulacije'}
+        {simulation?.simulationName || 'Nova Simulacija'}
       </h1>
 
       <p className="text-md mb-2">
         Potrebna pomoč: <span className="font-semibold uppercase">
-          {helpNeeded[simulation?.accidentId?.typeOfAccident] || "-"}
+          {helpNeeded[simulation?.accidentId?.typeOfAccident] || helpNeeded[addedAccident?.type] || 'N/A'}
         </span>
       </p>
 
       <p className="text-md mb-2">
         Tip nesreče: <span className="font-semibold">
-          {simulation?.accidentId?.typeOfAccident || '-'}
+          {simulation?.accidentId?.typeOfAccident || addedAccident?.type || 'N/A'}
         </span>
       </p>
 
       <div className='w-full flex justify-between'>
         <div>
           <div className="text-lg font-bold text-black mb-2">
-            {formatTime(simulation?.responseTime)}
+            {simulation?.responseTime? formatTime(simulation.responseTime) : time ? formatTime(time): '0h 0min 0sec'}
           </div>
           <p className="text-sm mb-1">
             Od: <span className="font-medium">{fromAddress || 'Nalaganje...'}</span>
@@ -98,7 +130,7 @@ useEffect(() => {
           </p>
         </div>
         <div className='bg-gray-200 flex items-center justify-center w-[120px]'>
-          {iconByType[simulation?.accidentId?.typeOfAccident] || null}
+          {iconByType[simulation?.accidentId?.typeOfAccident] || iconByType[addedAccident?.type] || null}
         </div>
       </div>
 
