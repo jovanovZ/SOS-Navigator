@@ -16,6 +16,7 @@ import { useNavigate } from "react-router-dom";
 import { MdAutorenew } from "react-icons/md";
 
 export default function Homepage() {
+  const IP = process.env.REACT_APP_IP;
 
   const [searchingExSimulation, setSearchingExSimulation] = useState(false); 
   
@@ -49,7 +50,7 @@ useEffect(() => {
       console.log("User ID:", userId);
 
       const response = await axios.get(
-        `http://localhost:3002/api/simulation/user/${userId}`,
+        `http://${IP}/api/simulation/user/${userId}`,
         {
           withCredentials: true,
         }
@@ -70,7 +71,7 @@ useEffect(() => {
 
   const handleLogout = async () => {
     try {
-      await axios.post("http://localhost:3002/api/user/logout", {}, { withCredentials: true });
+      await axios.post(`http://${IP}/api/user/logout`, {}, { withCredentials: true });
       console.log("Token cookie cleared");
       toast.success("Logged out");
       navigate("/login");
@@ -96,7 +97,7 @@ useEffect(() => {
 
     const fetchStations = async () => {
       try {
-        const response = await axios.get("http://localhost:3002/api/station/all", 
+        const response = await axios.get(`http://${IP}/api/station/all`, 
           { withCredentials: true }
         );
         setStations(response.data);

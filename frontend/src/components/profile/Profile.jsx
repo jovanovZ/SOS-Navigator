@@ -7,6 +7,7 @@ import { FaPlus } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 
 export default function Profile() {
+  const IP = process.env.REACT_APP_IP;
   const [user, setUser] = useState(null); // ⬅️ manjkajoča definicija
   const [editUsername, setEditUsername] = useState(false);
   const [editEmail, setEditEmail] = useState(false);
@@ -39,7 +40,7 @@ useEffect(() => {
   const fetchSimulations = async () => {
     try {
       const res = await axios.get(
-        `http://localhost:3002/api/simulation/user/${userId}`,
+        `http://${IP}/api/simulation/user/${userId}`,
         { withCredentials: true }
       );
 
@@ -86,7 +87,7 @@ useEffect(() => {
       const localStorageUserInfo = JSON.parse(localStorage.getItem("user"));
       const userId = localStorageUserInfo.id;
       const res = await axios.post(
-        "http://localhost:3002/api/user/changeUsername",
+        `http://${IP}/api/user/changeUsername`,
         {
           username: tempUsername,
           userId: userId,
@@ -114,7 +115,7 @@ useEffect(() => {
       const localStorageUserInfo = JSON.parse(localStorage.getItem("user"));
       const userId = localStorageUserInfo.id;
       const res = await axios.post(
-        "http://localhost:3002/api/user/changeEmail",
+        `http://${IP}/api/user/changeEmail`,
         {
           email: tempEmail,
           userId: userId,
@@ -152,7 +153,7 @@ useEffect(() => {
         formData.append('userId', JSON.parse(localStorage.getItem("user")).id);
     
         const res = await axios.post(
-          'http://localhost:3002/api/user/update-profile-image',
+          `http://${IP}/api/user/update-profile-image`,
           formData,
           { withCredentials: true }
         );
@@ -176,7 +177,7 @@ useEffect(() => {
       const localStorageUserInfo = JSON.parse(localStorage.getItem("user"));
       const userId = localStorageUserInfo.id;
       const res = await axios.post(
-        "http://localhost:3002/api/user/changePassword",
+        `http://${IP}/api/user/changePassword`,
         {
           userId,
           password: currentPassword,

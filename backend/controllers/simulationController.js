@@ -7,8 +7,7 @@ const Station = require("../models/StationModel");
 
 exports.createSimulation = async (req, res) => {
   try {
-    const {userId, simulationName, accidentId, bestStationId, bestPathId, responseTime, typeOfServices, locationFrom, locationTo} = req.body;
-    const newSimulation = new Simulation({
+    const {
       userId,
       simulationName,
       accidentId,
@@ -17,12 +16,44 @@ exports.createSimulation = async (req, res) => {
       responseTime,
       typeOfServices,
       locationFrom,
-      locationTo
+      locationTo,
+    } = req.body;
+
+    //accident je to
+    //station je from
+    const responseFrom = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${station.locationId.geometry.coordinates[1]}&lon=${station.locationId.geometry.coordinates[0]}&format=json`
+    );
+    const data = await responseFrom.json();
+    const addr = data.address;
+    const locationFromApi = `${addr.road || "Cesta"} ${addr.house_number || ""}, ${
+      addr.city || addr.town || addr.village || ""
+    }`;
+
+    const responseTo = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${accident.locationId.geometry.coordinates[1]}&lon=${accident.locationId.geometry.coordinates[0]}&format=json`
+    );
+    const dataTo = await responseTo.json();
+    const addrTo = dataTo.address;
+    const locationToApi = `${addrTo.road || "Cesta"} ${
+      addrTo.house_number || ""
+    }, ${addrTo.city || addrTo.town || addrTo.village || ""}`;
+
+    const newSimulation = new Simulation({
+      userId,
+      simulationName,
+      accidentId,
+      bestStationId,
+      bestPathId,
+      responseTime,
+      typeOfServices,
+      locationFrom: locationFromApi,
+      locationTo : locationToApi,
     });
     await newSimulation.save();
     return res.status(201).json({
       message: "Simulation created successfully",
-    });   
+    });
   } catch (error) {
     console.error("Failed to create simulation:", error);
     res.status(500).json({ message: "Failed to create simulation" });

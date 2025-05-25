@@ -133,6 +133,7 @@ export const getRegionFromCoordinates = async (lat, lon) => {
 };
 
 const saveStation = async (station) => {
+  const IP = process.env.REACT_APP_IP;
   try {
     const { geometry } = station.locationId || {};
     const [lng, lat] = geometry?.coordinates || [];
@@ -148,7 +149,7 @@ const saveStation = async (station) => {
     }
 
     const locationResponse = await axios.post(
-      "http://localhost:3002/api/location/create",
+      `http://${IP}/api/location/create`,
       {
         lat,
         long: lng,
@@ -166,7 +167,7 @@ const saveStation = async (station) => {
     }
 
     const stationResponse = await axios.post(
-      "http://localhost:3002/api/station/create",
+      `http://${IP}/api/station/create`,
       {
         locationId,
         typeOfStation: station.typeOfStation,
@@ -189,11 +190,12 @@ const saveStation = async (station) => {
 
 export default function MapSlovenia({gasilciVidnost,bolniceVidnost,policijaVidnost,stations, addedAccident, setAddedAccident, accidenceTypes, accidenceType, setAccidenceType, showCheck, setShowCheck, searchingExSimulation, currentSimulation, addObject, addedObject, setAddObject, setAddedObject, setStations, newPath }) {
   const [selectedStationId, setSelectedStationId] = useState(null);
+  const IP = process.env.REACT_APP_IP;
 
   const saveAccident = async () => {
     try {
       const response = await axios.post(
-        "http://localhost:3002/api/accident/create",
+        `http://${IP}/api/accident/create`,
         {
           latitude: addedAccident.latitude,
           longitude: addedAccident.longitude,

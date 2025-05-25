@@ -1,21 +1,19 @@
-import React, {useState, useEffect} from "react";
+import React, { useState, useEffect } from "react";
 import { IoLogoGithub } from "react-icons/io";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
 const Login = () => {
+  const IP = process.env.REACT_APP_IP;
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-
-
-  
-
-
   useEffect(() => {
-    axios.post("http://localhost:3002/api/user/logout", {}, { withCredentials: true })
+    console.log(IP)
+    axios
+      .post(`http://${IP}/api/user/logout`, {}, { withCredentials: true })
       .then(() => {
         console.log("Token cookie cleared");
         localStorage.removeItem("user"); // ⬅️ tukaj izbrišemo user iz localStorage
@@ -25,15 +23,15 @@ const Login = () => {
       });
   }, []);
 
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await axios.post("http://localhost:3002/api/user/login", 
+      const res = await axios.post(
+        `http://${IP}/api/user/login`,
         { username, password },
         { withCredentials: true }
-    );
+      );
       console.log("Login response:", res.data); // Log the response data for debugging
       if (res.status === 200) {
         localStorage.setItem("user", JSON.stringify(res.data.user));
@@ -49,7 +47,7 @@ const Login = () => {
       const user = JSON.parse(localStorage.getItem("user"));
       console.log(user?.username);
     }
-  }
+  };
 
   return (
     <div className="h-screen bg-gradient-to-b from-gray-700 via-gray-500 to-gray-300 flex justify-center items-center">
@@ -81,7 +79,11 @@ const Login = () => {
               className="w-full mt-2 px-3 py-2 rounded bg-gray-500 text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-white/30"
             />
           </div>
-          <button type="submit" disabled={loading} className="bg-gray-500 py-2 rounded hover:bg-gray-600 transition text-white font-semibold flex items-center justify-center">
+          <button
+            type="submit"
+            disabled={loading}
+            className="bg-gray-500 py-2 rounded hover:bg-gray-600 transition text-white font-semibold flex items-center justify-center"
+          >
             {loading ? (
               <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : (
@@ -91,7 +93,10 @@ const Login = () => {
         </form>
         <p className="mt-4 text-sm text-center">
           Don't have an account?{" "}
-          <a href="/register" className="font-semibold hover:text-gray-100 underline">
+          <a
+            href="/register"
+            className="font-semibold hover:text-gray-100 underline"
+          >
             Register
           </a>
         </p>
