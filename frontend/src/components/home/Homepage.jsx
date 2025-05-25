@@ -17,22 +17,7 @@ import { MdAutorenew } from "react-icons/md";
 
 export default function Homepage() {
 
-  const [searchingExSimulation, setSearchingExSimulation] = useState(false);  //ce gledas stare simulacije, ne moras dodajati nesrec (za zdaj)
-
-  // ko je searchingExSimulation true ,moras omogociti dodajanje necrece, kar je ze, hkrati se mora izracunati najblizja postaja glede na tip nesrece. 
-  // potem se izracuna se pot. ko je to vse izracunano, naj se to prikaze na kartici. ko kliknes na kartici "Save", se shrani vse skupaj v bazo
-  // na koncu bomo omogocali se urejanje simulacij, a počasi. mormo vidt kaj nam bo ratal, ker se vse skupaj malo lahko zaplete
-  // zaenkrat imamo ogled simulacije brez prikaza poti. -> je povezano s kartico, miha bo naredil generacijo PDF-ja 
-  // potem je mozno dodajanje nesrec glede na tip, ce kliknes 'Nova simulacija', ce pa gledas stare, pa to ni mozno, oziroma je ta funkcija blokirana
-
-
-  //torej na kratko funkcionalnosti do zdaj:
-  // prikaz zgodovinskih simulacij, povezano s kartico
-  //ce kliknes na novo simulacijo, lahko dodas nesreco
-  // pot se izrise tudi, a ni vredu, na teh podatkih bo treba se delati, saj sem jaz dal le testne
-  // ni shranjevanja simulacij se
-  // ni generacije pdfja
-  // treba je omogocati se dodajanje postaj, ki niso Permanent, da naredimo lahko novo simulacijo
+  const [searchingExSimulation, setSearchingExSimulation] = useState(false); 
   
 
   const [simulation, setSimulation] = useState(1);
@@ -139,9 +124,10 @@ useEffect(() => {
     { id: 4, type: 'naravna nesreča' },
   ]
 
+  const [bestStation, setBestStation] = useState(null);
 
 useEffect(() => {
-  const findClosestByRoad = async () => {
+    const findClosestByRoad = async () => {
     if (!addedAccident || stations.length === 0) return;
 
     const accidentToStationType = {
@@ -159,46 +145,47 @@ useEffect(() => {
     let minDistance = Infinity;
     let finalPath = [];
 
-for (const station of relevantStations) {
-  const coords = station.locationId?.geometry?.coordinates;
-  if (!coords || coords.length !== 2) continue;
+    for (const station of relevantStations) {
+      const coords = station.locationId?.geometry?.coordinates;
+      if (!coords || coords.length !== 2) continue;
 
-  const from = [coords[0], coords[1]];
-  const to = [addedAccident.longitude, addedAccident.latitude];
+      const from = [coords[0], coords[1]];
+      const to = [addedAccident.longitude, addedAccident.latitude];
 
-  try {
-    const response = await axios.post(
-      "https://api.openrouteservice.org/v2/directions/driving-car/geojson",
-      { coordinates: [from, to] },
-      {
-        headers: {
-          Authorization: "5b3ce3597851110001cf6248e144b426a65242b68905aa92335e0183",
-          "Content-Type": "application/json",
-        },
+      try {
+        const response = await axios.post(
+          "https://api.openrouteservice.org/v2/directions/driving-car/geojson",
+          { coordinates: [from, to] },
+          {
+            headers: {
+              Authorization: "5b3ce3597851110001cf6248e144b426a65242b68905aa92335e0183",
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        const route = response.data.features[0];
+        const distance = route.properties.summary.distance;
+        const duration = route.properties.summary.duration; // ⏱ čas v sekundah
+
+        if (distance < minDistance) {
+          minDistance = distance;
+          closestStation = station;
+          finalPath = route.geometry.coordinates.map(coord => ({
+            lng: coord[0],
+            lat: coord[1],
+          }));
+          setTime(duration * 1000); // v milisekundah
+        }
+      } catch (err) {
+        console.error("Napaka pri ORS requestu:", err);
       }
-    );
-
-    const route = response.data.features[0];
-    const distance = route.properties.summary.distance;
-    const duration = route.properties.summary.duration; // ⏱ čas v sekundah
-
-    if (distance < minDistance) {
-      minDistance = distance;
-      closestStation = station;
-      finalPath = route.geometry.coordinates.map(coord => ({
-        lng: coord[0],
-        lat: coord[1],
-      }));
-      setTime(duration * 1000); // v milisekundah
     }
-  } catch (err) {
-    console.error("Napaka pri ORS requestu:", err);
-  }
-}
 
 
     if (closestStation && finalPath.length) {
       setNewPath(finalPath);
+      setBestStation(closestStation);
       console.log("Najbližja postaja:", closestStation);
       console.log("Celotna pot:", finalPath);
     }
@@ -206,15 +193,6 @@ for (const station of relevantStations) {
 
   findClosestByRoad();
 }, [addedAccident, stations]);
-
-
-
-
-
-
-
-
-
 
   const [showCheck, setShowCheck] = useState(false);
 
@@ -235,27 +213,16 @@ for (const station of relevantStations) {
     );
   }
 
-
-  const saveSimulation = async () => {
-    // tole je zate zdravko
-    // ko shranis simulacijo, moras paziti na naslednje:
-    // if(station.region === "notSpecified") {
-    //   shrani najprej to postajo v podatkovno bazo
-    // }
-    // potem pa shrani simulacijo normalno
-    // ce station.region !== "notSpecified" pa samo shrani simulacijo
-    // lahko me poklices se potem
-  }
-
 useEffect(() => {
   const storedSimulation = localStorage.getItem("simulation");
   if (storedSimulation) {
-    const parsed = JSON.parse(storedSimulation); // <- to je ključ
+    const parsed = JSON.parse(storedSimulation); 
     setCurrentSimulation(parsed);
-    setSimulation(parsed._id); // če želiš nastaviti tudi aktivni ID
+    setSimulation(parsed._id); 
   }
   console.log("Current simulation from localStorage:", storedSimulation);
 }, []);
+
 
 
 
@@ -379,7 +346,7 @@ useEffect(() => {
           </div>
         </div>
 
-        <InformationPart simulation={currentSimulation} newPath={newPath} addedAccident={addedAccident} time={time} />
+        <InformationPart  setSearchingExSimulation={setSearchingExSimulation} setShowCheck={setShowCheck} setDeletedTrue={setDeletedTrue} deleteRecentlyAddedStations={deleteRecentlyAddedStations}  simulation={currentSimulation} newPath={newPath} addedAccident={addedAccident} time={time} setNewPath={setNewPath} setAddedAccident={setAddedAccident} setTime={setTime} setCurrentSimulation={setCurrentSimulation} bestStation={bestStation} />
     </div>
   )
 }

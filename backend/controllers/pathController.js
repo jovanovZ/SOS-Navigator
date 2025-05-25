@@ -16,11 +16,6 @@ exports.createPath = async (req, res) => {
   }
   try {
     for (const point of locationPoints) {
-      if (typeof point.lat !== "number" || typeof point.lng !== "number") {
-        return res.status(400).json({
-          message: "Each locationPoint must have lat and lng as numbers",
-        });
-      }
       const location = new Location({
         geometry: {
           type: "Point",

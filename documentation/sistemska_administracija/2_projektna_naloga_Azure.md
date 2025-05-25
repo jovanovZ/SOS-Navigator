@@ -260,5 +260,5 @@ Sliki ki prikazujeta dostop iz javnega omrežja:
 
 ![Prikaz aplikacije iz javnega naslova](/documentation/sistemska_administracija/img/konec.PNG)
 
-![Prikaz aplikacije iz javnega naslova za api](/documentation/sistemska_administracija/img/konec_Api.PNG)
+![Prikaz aplikacije iz javnega naslova za api](/documentation/sistemska_administracija/img/konec_api.PNG)
 
