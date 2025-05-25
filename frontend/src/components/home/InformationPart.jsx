@@ -6,6 +6,8 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 
 export default function InformationPart({ simulation, newPath, addedAccident, time, setNewPath, setTime, setAddedAccident, bestStation, setSearchingExSimulation, setShowCheck, setCurrentSimulation, setDeletedTrue, deleteRecentlyAddedStations }) {
+    const IP = process.env.REACT_APP_IP;
+
   const [fromAddress, setFromAddress] = useState('');
   const [toAddress, setToAddress] = useState('');
   console.log("SimulationTime:", time)
@@ -30,7 +32,7 @@ const saveSimulation = async () => {
     }
 
     const accidentRes = await axios.post(
-      "http://localhost:3002/api/accident/create",
+      `http://${IP}/api/accident/create`,
       {
         latitude: addedAccident.latitude,
         longitude: addedAccident.longitude,
@@ -42,7 +44,7 @@ const saveSimulation = async () => {
     const accidentId = accidentRes.data?.accident?.id;
 
     const pathRes = await axios.post(
-      "http://localhost:3002/api/path/create",
+      `http://${IP}/api/path/create`,
       {
         accidentId,
         locationPoints: newPath,
@@ -56,7 +58,7 @@ const saveSimulation = async () => {
     const locationTo = `${addedAccident.latitude}, ${addedAccident.longitude}`;
 
     await axios.post(
-      "http://localhost:3002/api/simulation/create",
+      `http://${IP}/api/simulation/create`,
       {
         userId,
         simulationName: `Simulacija - ${new Date().toLocaleString()}`,

@@ -5,9 +5,10 @@ import axios from "axios";
 const ProtectedRoute = ({ children }) => {
   const [auth, setAuth] = useState(null); // null = loading, false = not logged in
   const [loading, setLoading] = useState(true);
+  const IP = process.env.REACT_APP_IP;
 
   useEffect(() => {
-    axios.get("http://localhost:3002/api/user/me", { withCredentials: true })
+    axios.get(`http://${IP}/api/user/me`, { withCredentials: true })
       .then((res) => {
         setAuth(true);
       })
