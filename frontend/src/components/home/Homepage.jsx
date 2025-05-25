@@ -124,10 +124,12 @@ useEffect(() => {
     };
     fetchStations();
   }, []);
+
+
+
   
-
-
-  // tole je za sloveniaMaps
+  const [time, setTime] = useState(0); 
+  const [newPath, setNewPath] = useState([]);  // tole je za sloveniaMaps
   const [addedAccident, setAddedAccident] = useState(null);
   const [accidenceType, setAccidenceType] = useState("kriminal");
   const accidenceTypes = [
@@ -136,6 +138,83 @@ useEffect(() => {
     { id: 3, type: 'zdravstveni primer' },
     { id: 4, type: 'naravna nesreča' },
   ]
+
+
+useEffect(() => {
+  const findClosestByRoad = async () => {
+    if (!addedAccident || stations.length === 0) return;
+
+    const accidentToStationType = {
+      "prometna": "Policijska",
+      "kriminal": "Policijska",
+      "zdravstveni primer": "Bolnica",
+      "naravna nesreča": "Gasilci"
+    };
+
+    const relevantStations = stations.filter(
+      (s) => s.typeOfStation === accidentToStationType[addedAccident.type]
+    );
+
+    let closestStation = null;
+    let minDistance = Infinity;
+    let finalPath = [];
+
+for (const station of relevantStations) {
+  const coords = station.locationId?.geometry?.coordinates;
+  if (!coords || coords.length !== 2) continue;
+
+  const from = [coords[0], coords[1]];
+  const to = [addedAccident.longitude, addedAccident.latitude];
+
+  try {
+    const response = await axios.post(
+      "https://api.openrouteservice.org/v2/directions/driving-car/geojson",
+      { coordinates: [from, to] },
+      {
+        headers: {
+          Authorization: "5b3ce3597851110001cf6248e144b426a65242b68905aa92335e0183",
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    const route = response.data.features[0];
+    const distance = route.properties.summary.distance;
+    const duration = route.properties.summary.duration; // ⏱ čas v sekundah
+
+    if (distance < minDistance) {
+      minDistance = distance;
+      closestStation = station;
+      finalPath = route.geometry.coordinates.map(coord => ({
+        lng: coord[0],
+        lat: coord[1],
+      }));
+      setTime(duration * 1000); // v milisekundah
+    }
+  } catch (err) {
+    console.error("Napaka pri ORS requestu:", err);
+  }
+}
+
+
+    if (closestStation && finalPath.length) {
+      setNewPath(finalPath);
+      console.log("Najbližja postaja:", closestStation);
+      console.log("Celotna pot:", finalPath);
+    }
+  };
+
+  findClosestByRoad();
+}, [addedAccident, stations]);
+
+
+
+
+
+
+
+
+
 
   const [showCheck, setShowCheck] = useState(false);
 
@@ -196,7 +275,7 @@ useEffect(() => {
                 <FaPlus size={30} />
                 <span className='text-sm mt-1 text-center'>Dodaj</span>
               </div>
-              <div onClick={() => {setSearchingExSimulation(false); setShowCheck(false); setCurrentSimulation(null); setDeletedTrue(); setAddedAccident(null); deleteRecentlyAddedStations()}} className={`w-full py-4 px-2 flex flex-col items-center hover:bg-blue-800 transition duration-200`}>
+              <div onClick={() => {setSearchingExSimulation(false); setTime(0); setNewPath([]); setShowCheck(false); setCurrentSimulation(null); setDeletedTrue(); setAddedAccident(null); deleteRecentlyAddedStations()}} className={`w-full py-4 px-2 flex flex-col items-center hover:bg-blue-800 transition duration-200`}>
                 <MdAutorenew  size={30} />
                 <span className='text-sm mt-1 text-center'>Nova simulacija</span>
               </div>
@@ -217,6 +296,8 @@ useEffect(() => {
 {Array.isArray(simulationData) && simulationData.length > 0 && simulationData.map((item, index) => (
   <div
     onClick={() => {
+      setNewPath([]);
+      setTime(0);
       removeSimulationFromLocalStorage();
       setShowCheck(false);
       setDeletedTrue();
@@ -291,13 +372,14 @@ useEffect(() => {
                 setAddObject={setAddObject}
                 setAddedObject={setAddedObject}
                 setStations={setStations}
+                newPath={newPath}
               />
               
             </div>
           </div>
         </div>
 
-        <InformationPart simulation={currentSimulation} />
+        <InformationPart simulation={currentSimulation} newPath={newPath} addedAccident={addedAccident} time={time} />
     </div>
   )
 }
