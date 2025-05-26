@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import inputs.InputFieldForText
+import org.bson.types.ObjectId
 
 @Composable
 @Preview
@@ -112,6 +113,10 @@ fun AddAccident() {
                         onClick = {
                            if(accidentId.value.isEmpty() || selectedAccident.value.isEmpty()) {
                                 println("Please fill all fields")
+                                return@Button
+                            }
+                            if (!ObjectId.isValid(accidentId.value) ) {
+                                println("Accident ID must be a valid ObjectId")
                                 return@Button
                             }
                             println("""

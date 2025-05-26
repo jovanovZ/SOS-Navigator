@@ -16,28 +16,38 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import inputs.InputFieldForText
+import org.bson.types.ObjectId
 
 @Composable
 @Preview
 fun AddStation() {
     val locationId = remember { mutableStateOf("") }
-    var isPermanent =  remember { mutableStateOf(false) }
+    var isPermanent = remember { mutableStateOf(false) }
     var expanded = remember { mutableStateOf(false) }
+    var expandedType = remember { mutableStateOf(false) }
+    var selectedType = remember { mutableStateOf("") }
+    val allTypes = remember {
+        mutableStateListOf(
+            "Policijska", "Bolnica", "Gasilci"
+        )
+    }
     var selectedRegion = remember { mutableStateOf("") }
-    val regions = remember { mutableStateListOf(
-        "Pomurska",
-        "Podravska",
-        "Koroška",
-        "Savinjska",
-        "Zasavska",
-        "Posavska",
-        "Jugovzhodna Slovenija",
-        "Osrednjeslovenska",
-        "Gorenjska",
-        "Primorsko-notranjska",
-        "Goriška",
-        "Obalno-kraška"
-    ) }
+    val regions = remember {
+        mutableStateListOf(
+            "Pomurska",
+            "Podravska",
+            "Koroška",
+            "Savinjska",
+            "Zasavska",
+            "Posavska",
+            "Jugovzhodna Slovenija",
+            "Osrednjeslovenska",
+            "Gorenjska",
+            "Primorsko-notranjska",
+            "Goriška",
+            "Obalno-kraška"
+        )
+    }
 
 
     Box(
@@ -64,6 +74,40 @@ fun AddStation() {
                 }
                 Divider(modifier = Modifier.padding(vertical = 8.dp))
 
+                Text("Type of station ", fontSize = 18.sp)
+                Box {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp)
+                            .clickable { expandedType.value = true },
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = if (selectedType.value.isEmpty()) "Select Station" else selectedType.value,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Icon(
+                            imageVector = Icons.Default.ArrowDropDown,
+                            contentDescription = "Dropdown Arrow",
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = expandedType.value,
+                        onDismissRequest = { expandedType.value = false }
+                    ) {
+                        allTypes.forEach { type ->
+                            DropdownMenuItem(onClick = {
+                                selectedType.value = type
+                                expandedType.value = false
+                            }) {
+                                Text(type)
+                            }
+                        }
+                    }
+                }
+                Divider(modifier = Modifier.padding(vertical = 8.dp))
                 Text("Location id", fontSize = 18.sp)
                 InputFieldForText(
                     value = locationId.value,
@@ -124,16 +168,23 @@ fun AddStation() {
                         colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF1E88E5)),
                         shape = RoundedCornerShape(30),
                         onClick = {
-                            if(locationId.value.isEmpty() || selectedRegion.value.isEmpty()) {
+                            if (locationId.value.isEmpty() || selectedRegion.value.isEmpty() || selectedType.value.isEmpty()) {
                                 println("Please fill all fields")
                                 return@Button
                             }
-                            println("""
+                            if (!ObjectId.isValid(locationId.value)) {
+                                println("Location ID must be a valid ObjectId")
+                                return@Button
+                            }
+                            println(
+                                """
                                 Station info:
                                 LocationId:${locationId.value}
+                                Type of station: ${selectedType.value}
                                 Is permanent: ${isPermanent.value}
                                 Region: ${selectedRegion.value}"
-                            """.trimIndent())
+                            """.trimIndent()
+                            )
                         }) {
                         Text("Insert")
                     }

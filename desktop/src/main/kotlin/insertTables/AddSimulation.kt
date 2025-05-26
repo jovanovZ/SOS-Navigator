@@ -18,19 +18,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import inputs.InputFieldForNumber
 import inputs.InputFieldForText
+import org.bson.types.ObjectId
 
 @Composable
 @Preview
 fun AddSimulation() {
     val userId = remember { mutableStateOf("") }
     val accidentId = remember { mutableStateOf("") }
-    var expanded = remember { mutableStateOf(false) }
-    val selectedServices = remember { mutableStateListOf<String>() }
-    val typeOfServices = remember {
-        mutableStateListOf(
-            "Policijska", "Bolnica", "Gasilci"
-        )
-    }
+    val typeOfServices = remember { mutableStateOf("") }
+    val simulationName = remember { mutableStateOf("") }
+
+
     val bestStationId = remember { mutableStateOf("") }
     val bestPathId = remember { mutableStateOf("") }
     val responseTime = remember { mutableStateOf("") }
@@ -70,6 +68,15 @@ fun AddSimulation() {
                 )
                 Divider(modifier = Modifier.padding(vertical = 8.dp))
 
+                Text("Simulation name", fontSize = 18.sp)
+                InputFieldForText(
+                    value = simulationName.value,
+                    onValueChange = { simulationName.value = it },
+                    inputModifier = Modifier.fillMaxWidth(),
+                    label = "Simulation name"
+                )
+                Divider(modifier = Modifier.padding(vertical = 8.dp))
+
                 Text("Accident id", fontSize = 18.sp)
                 InputFieldForText(
                     value = accidentId.value,
@@ -80,48 +87,12 @@ fun AddSimulation() {
                 Divider(modifier = Modifier.padding(vertical = 8.dp))
 
                 Text("Type of service", fontSize = 18.sp)
-                Box {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth().padding(12.dp)
-                            .clickable { expanded.value = true },
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = if (selectedServices.isEmpty()) "Select services" else selectedServices.joinToString(
-                                ", "
-                            ),
-                            modifier = Modifier.weight(1f)
-                        )
-                        Icon(
-                            imageVector = Icons.Default.ArrowDropDown,
-                            contentDescription = "Dropdown Arrow",
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                    DropdownMenu(
-                        expanded = expanded.value,
-                        onDismissRequest = { expanded.value = false }
-                    ) {
-                        typeOfServices.forEach { service ->
-                            DropdownMenuItem(onClick = {
-                                if (selectedServices.contains(service)) {
-                                    selectedServices.remove(service)
-                                } else {
-                                    selectedServices.add(service)
-                                }
-                            }) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Checkbox(
-                                        checked = selectedServices.contains(service),
-                                        onCheckedChange = null
-                                    )
-                                    Text(service, modifier = Modifier.padding(start = 8.dp))
-                                }
-                            }
-                        }
-                    }
-                }
+                InputFieldForText(
+                    value = typeOfServices.value,
+                    onValueChange = { typeOfServices.value = it },
+                    inputModifier = Modifier.fillMaxWidth(),
+                    label = "Type of service"
+                )
                 Divider(modifier = Modifier.padding(vertical = 8.dp))
 
                 Text("Best station id", fontSize = 18.sp)
@@ -159,21 +130,28 @@ fun AddSimulation() {
                         colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF1E88E5)),
                         shape = RoundedCornerShape(30),
                         onClick = {
-                            if (userId.value.isEmpty() || accidentId.value.isEmpty() || selectedServices.isEmpty() || bestStationId.value.isEmpty() || bestPathId.value.isEmpty() || responseTime.value.isEmpty()) {
+                            if (userId.value.isEmpty() || accidentId.value.isEmpty() || bestStationId.value.isEmpty() || bestPathId.value.isEmpty() || responseTime.value.isEmpty()) {
                                 println("Please fill all fields")
                                 return@Button
                             }
+                            if (!ObjectId.isValid(userId.value) || !ObjectId.isValid(accidentId.value) || !ObjectId.isValid(
+                                    bestStationId.value
+                                ) || !ObjectId.isValid(bestPathId.value)
+                            ) {
+                                println("ID must be a valid ObjectId")
+                                return@Button
+                            }
                             println(
-                                    """
+                                """
                                         Simulation info:
                                         User ID: ${userId.value}
                                         Accident ID: ${accidentId.value}
-                                        Selected Services: ${selectedServices.joinToString(", ")}
+                                        Type of service: ${typeOfServices.value}
                                         Best Station ID: ${bestStationId.value}
                                         Best Path ID: ${bestPathId.value}
                                         Response Time: ${responseTime.value} ms
                                     """.trimIndent()
-                                    )
+                            )
 
                         }) {
                         Text("Insert")
