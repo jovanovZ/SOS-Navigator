@@ -11,6 +11,8 @@ router.get('/type/:typeOfServices', simulationController.getSimulationsByService
 router.post('/create', simulationController.createSimulation);
 router.put('/update/:simulationId', simulationController.updateSimulation);
 
+router.put('/change-name', simulationController.changeSimulationName);
+
 router.delete('/delete/:simulationId', simulationController.deleteSimulation);
 
 module.exports = router;

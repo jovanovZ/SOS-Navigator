@@ -5,6 +5,30 @@ const Path = require("../models/PathModel");
 const User = require("../models/UserModel");
 const Station = require("../models/StationModel");
 
+exports.changeSimulationName = async (req, res) => {
+  const { simulationId, newName } = req.body;
+  if (!simulationId || !newName) {
+    return res.status(400).json({ message: "Simulation ID and new name are required" });
+  }
+  try {
+    const simulation = await Simulation.findByIdAndUpdate(
+      simulationId,
+      { simulationName: newName },
+      { new: true }
+    );
+    if (!simulation) {
+      return res.status(404).json({ message: "Simulation not found" });
+    }
+    return res.status(200).json({
+      message: "Simulation name updated successfully",
+      simulation,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: "Failed to update simulation name" });
+  }
+}
+
+
 exports.createSimulation = async (req, res) => {
   try {
     const {
