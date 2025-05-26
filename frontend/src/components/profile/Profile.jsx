@@ -5,6 +5,7 @@ import { TbLockPassword } from "react-icons/tb";
 import axios from "axios";
 import { FaPlus } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 
 export default function Profile() {
   const IP = process.env.REACT_APP_IP;
@@ -18,6 +19,10 @@ export default function Profile() {
   const [image, setImage] = useState("");
   const [tempImage, setTempImage] = useState("");
   const [showImageInput, setShowImageInput] = useState(false);
+
+  const [loading, setLoading] = useState(false);
+  const [passwordLoading, setPasswordLoading] = useState(false)
+  const [imageLoader, setImageLoader] = useState(false)
 
   const [simulations, setSimulations] = useState([]);
 
@@ -38,6 +43,7 @@ useEffect(() => {
   const userId = localStorageUserInfo.id;
 
   const fetchSimulations = async () => {
+    setLoading(true);
     try {
       const res = await axios.get(
         `http://${IP}/api/simulation/user/${userId}`,
@@ -45,11 +51,16 @@ useEffect(() => {
       );
 
       if (res.status === 200) {
-        const simulationsData = res.data || [];
+        const simulationsData = Array.isArray(res.data)
+          ? res.data
+          : res.data.simulations || [];
+        setSimulations(simulationsData);
         setSimulations(simulationsData);
       }
     } catch (error) {
       console.error("Error fetching simulations:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -135,15 +146,16 @@ useEffect(() => {
       }
     } catch (error) {
       console.error("handle change email", error);
+    } finally {
     }
   };
 
 
   const fileInputRef = useRef();
-  const [loader, setLoader] = useState(false);
 
   const handleProfileImageChange = async (e) => {
-      setLoader(true)
+      
+      setImageLoader(true)
       const file = e.target.files[0];
       if (!file) return;
     
@@ -158,21 +170,21 @@ useEffect(() => {
           { withCredentials: true }
         );
     
-        // Posodobi lokalni storage z novo sliko
         const updatedUser = { ...user, image: res.data.image };
         localStorage.setItem('user', JSON.stringify(updatedUser));
     
         window.location.reload();
       } catch (error) {
-        console.error('Error updating profile image:', error);
+        toast.error('Error updating profile image:', error);
       } finally {
-        setLoader(false);
+        setImageLoader(false);
       }
     };
 
 
 
   const handleChangePassword = async () => {
+    setPasswordLoading(true);
     try {
       const localStorageUserInfo = JSON.parse(localStorage.getItem("user"));
       const userId = localStorageUserInfo.id;
@@ -186,19 +198,18 @@ useEffect(() => {
         { withCredentials: true }
       );
       if (res.status === 200) {
-        alert("Password changed successfully!");
+        toast.success("Password changed successfully!");
         setChangePassword(false);
         setCurrentPassword("");
         setNewPassword("");
         setConfirmPassword("");
       } else {
-        alert(res.data.message || "Failed to change password.");
+        toast.warn(res.data.message || "Failed to change password.");
       }
     } catch (error) {
-      alert(
-        error.response?.data?.message ||
-          "Failed to change password. Please check your current password."
-      );
+        toast.error("Failed to change password. Please check your current password");
+    } finally {
+        setPasswordLoading(false);
     }
   };
   return (
@@ -207,37 +218,37 @@ useEffect(() => {
       <div className="p-8 mt-16 text-black bg-blue-50 min-h-screen">
         <div className="flex justify-between items-center mb-8 bg-white shadow-md rounded-lg p-6">
           <div className="flex items-center gap-6">
-<div className="relative w-28 h-28">
-  <img
-    src={user?.image}
-    alt="Profile"
-    className="w-full h-full object-cover rounded-full border-2 border-gray-300"
-  />
+            <div className="relative w-28 h-28">
+              <img
+                src={user?.image}
+                alt="Profile"
+                className="w-full h-full object-cover rounded-full border-2 border-gray-300"
+              />
 
-  {user && username === user.username && (
-    <>
-      <div
-        onClick={() => fileInputRef.current.click()}
-        className="absolute bottom-1 right-1 bg-gray-800 border-2 border-white rounded-full p-1 cursor-pointer hover:bg-gray-900 transition"
-      >
-        <FaPlus className="text-white text-xs" />
-      </div>
-      <input
-        type="file"
-        accept="image/*"
-        ref={fileInputRef}
-        onChange={handleProfileImageChange}
-        className="hidden"
-      />
-    </>
-  )}
+              {user && username === user.username && (
+                <>
+                  <div
+                    onClick={() => fileInputRef.current.click()}
+                    className="absolute bottom-1 right-1 bg-gray-800 border-2 border-white rounded-full p-1 cursor-pointer hover:bg-gray-900 transition"
+                  >
+                    <FaPlus className="text-white text-xs" />
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    ref={fileInputRef}
+                    onChange={handleProfileImageChange}
+                    className="hidden"
+                  />
+                </>
+              )}
 
-  {loader && (
-    <div className="absolute inset-0 bg-white/70 flex items-center justify-center text-sm text-gray-700 rounded-full">
-      Uploading...
-    </div>
-  )}
-</div>
+          {imageLoader && (
+            <div className="absolute inset-0 bg-white/70 flex items-center justify-center rounded-full">
+              <div className="w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          )}
+          </div>
 
           <div>
             {editUsername ? (
@@ -251,13 +262,16 @@ useEffect(() => {
                 />
 
                   <div className="absolute inset-y-0 right-0 flex items-center gap-1 pr-2 text-xl">
-                    <button
-                      className="text-green-600 hover:text-green-800 font-semibold"
-                      title="Shrani"
-                      onClick={handleChangeUsername}
-                    >
-                      ✔
-                    </button>
+
+                      <button
+                        className="text-green-600 hover:text-green-800 font-semibold"
+                        title="Shrani"
+                        onClick={handleChangeUsername}
+                      >
+                        ✔
+                      </button>
+
+
                     <span className="font-semibold mb-1">|</span>
                     <button
                       className="text-red-500 hover:text-red-700 font-semibold"
@@ -351,19 +365,23 @@ useEffect(() => {
             >
               ✖
             </button>
-
-            {currentPassword !== "" &&
-              newPassword !== "" &&
-              confirmPassword !== "" &&
-              newPassword === confirmPassword && (
-                <button
-                  className="absolute bottom-1 right-1 text-green-600 hover:text-green-700 font-bold text-xl"
-                  onClick={handleChangePassword}
-                >
-                  ✔
-                </button>
-              )}
-
+            {
+              passwordLoading ?
+              (             
+              <button
+                  className="w-4 absolute h-4 border-2 bottom-1 right-1 border-gray-400 border-t-transparent rounded-full animate-spin"
+              />
+              ) : (
+                currentPassword !== "" &&
+                newPassword !== "" &&
+                confirmPassword !== "" &&
+                newPassword === confirmPassword && (
+                  <button className="absolute bottom-1 right-1 text-green-600 hover:text-green-700 font-bold text-xl" onClick={handleChangePassword}>
+                    ✔
+                  </button>
+                  )
+              )
+            }
             <div className="flex flex-row justify-between items-center">
               <span className="font-medium mr-2">Current password:</span>
               <input
@@ -424,8 +442,19 @@ useEffect(() => {
                   <th className="px-4 py-2 rounded-r-md">🕒 Čas</th>
                 </tr>
               </thead>
+              {
+                loading ? (
+              <div className="w-[425%]  mx-auto flex items-center justify-center py-4">
+                <div className="h-6 w-6 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+              </div>
+                ) : (!loading && simulations?.length === 0) ? (
+              <div className="w-[300%]  mx-auto flex items-center justify-center py-4">
+                No simulations for you
+              </div>          
+                ) :
               <tbody>
-                {simulations.map((item) => (
+                {
+                simulations?.map((item) => (
                   <tr
                     onClick={() => {
                       localStorage.setItem(
@@ -443,8 +472,11 @@ useEffect(() => {
                     <td className="px-4 py-2">{item.typeOfServices}</td>
                     <td className="px-4 py-2">{formatMs(item.responseTime)}</td>
                   </tr>
-                ))}
+                ))
+                
+                }
               </tbody>
+              }
             </table>
           </div>
         </div>
