@@ -2,29 +2,21 @@ const Station = require("../models/StationModel");
 const Location = require("../models/LocationModel");
 
 exports.createStation = async (req, res) => {
-  const { lat, long, typeOfStation, isPermanent, region } = req.body;
-  if (
-    typeof lat !== "number" ||
-    typeof long !== "number" ||
-    !typeOfStation ||
-    typeof isPermanent === "undefined" ||
-    !region
-  ) {
-    return res.status(400).json({ message: "All fields are required" });
-  }
+  const { latitude, longitude, locationId, typeOfStation, isPermanent, region } = req.body;
+  console.log(req.body);
   try {
     const location = new Location({
       geometry: {
         type: "Point",
-        coordinates: [long, lat],
+        coordinates: [longitude, latitude],
       },
     });
     await location.save();
 
     const newStation = new Station({
-      locationId: location._id,
+      locationId: locationId,
       typeOfStation,
-      isPermanent: Boolean(isPermanent), // pretvorba
+      isPermanent: isPermanent, // pretvorba
       region,
     });
 

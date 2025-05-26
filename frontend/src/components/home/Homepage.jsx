@@ -14,17 +14,20 @@ import { toast } from 'react-toastify';
 import axios from 'axios';
 import { useNavigate } from "react-router-dom";
 import { MdAutorenew } from "react-icons/md";
+import Loading from './Loading';
 
 export default function Homepage() {
   const IP = process.env.REACT_APP_IP;
 
+  const [text, setText] = useState('Loading');
+
   const [searchingExSimulation, setSearchingExSimulation] = useState(false); 
-  
+
+  const [loading, setLoading] = useState(false);
 
   const [simulation, setSimulation] = useState(1);
   const [object, setObject] = useState(1);
   const navigate = useNavigate();
-
 
   const [addObject, setAddObject] = useState(false);
   const [addedObject, setAddedObject] = useState('bolnica');
@@ -44,6 +47,7 @@ export default function Homepage() {
 
 useEffect(() => {
   const fetchSimulations = async () => {
+    setLoading(true)
     try {
       const user = localStorage.getItem("user");
       const userId = JSON.parse(user)?.id || JSON.parse(user)?._id;
@@ -61,6 +65,8 @@ useEffect(() => {
     } catch (error) {
       console.error("Napaka pri pridobivanju simulacij:", error);
       toast.error("Napaka pri pridobivanju simulacij");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -347,7 +353,8 @@ useEffect(() => {
           </div>
         </div>
 
-        <InformationPart  setSearchingExSimulation={setSearchingExSimulation} setShowCheck={setShowCheck} setDeletedTrue={setDeletedTrue} deleteRecentlyAddedStations={deleteRecentlyAddedStations}  simulation={currentSimulation} newPath={newPath} addedAccident={addedAccident} time={time} setNewPath={setNewPath} setAddedAccident={setAddedAccident} setTime={setTime} setCurrentSimulation={setCurrentSimulation} bestStation={bestStation} />
+        <InformationPart setText={setText} setLoading={setLoading}  setSearchingExSimulation={setSearchingExSimulation} setShowCheck={setShowCheck} setDeletedTrue={setDeletedTrue} deleteRecentlyAddedStations={deleteRecentlyAddedStations}  simulation={currentSimulation} newPath={newPath} addedAccident={addedAccident} time={time} setNewPath={setNewPath} setAddedAccident={setAddedAccident} setTime={setTime} setCurrentSimulation={setCurrentSimulation} bestStation={bestStation} />
+        {loading && (<Loading text={text} />)}
     </div>
   )
 }

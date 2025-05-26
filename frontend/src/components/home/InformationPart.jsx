@@ -48,6 +48,9 @@ export default function InformationPart({
   setCurrentSimulation,
   setDeletedTrue,
   deleteRecentlyAddedStations,
+  setSaveSimulationLoading,
+  setText,
+  setLoading
 }) {
   const IP = process.env.REACT_APP_IP;
   const [fromAddress, setFromAddress] = useState("");
@@ -64,6 +67,8 @@ export default function InformationPart({
   };
 
   const saveSimulation = async () => {
+    setLoading(true);
+    setText("Saving simulation")
     try {
       const user = JSON.parse(localStorage.getItem("user"));
       const userId = user?._id || user?.id;
@@ -128,6 +133,9 @@ export default function InformationPart({
     } catch (error) {
       console.error("Napaka pri shranjevanju simulacije:", error);
       toast.error("Napaka pri shranjevanju simulacije.");
+    } finally {
+      setLoading(false)
+      setText("Loading")
     }
   };
 
@@ -397,11 +405,27 @@ export default function InformationPart({
           </div>
           <p className="text-sm mb-1">
             Od:{" "}
-            <span className="font-medium">{fromAddress || "Nalaganje..."}</span>
+<span className="font-medium">
+  {fromAddress || (
+    <span className="inline-flex">
+      <span className="animate-bounce [animation-delay:0ms]">.</span>
+      <span className="animate-bounce [animation-delay:200ms]">.</span>
+      <span className="animate-bounce [animation-delay:400ms]">.</span>
+    </span>
+  )}
+</span>
           </p>
           <p className="text-sm mb-3">
             Do:{" "}
-            <span className="font-medium">{toAddress || "Nalaganje..."}</span>
+<span className="font-medium">
+  {toAddress || (
+    <span className="inline-flex">
+      <span className="animate-bounce [animation-delay:0ms]">. </span>
+      <span className="animate-bounce [animation-delay:200ms]">. </span>
+      <span className="animate-bounce [animation-delay:400ms]">.</span>
+    </span>
+  )}
+</span>
           </p>
         </div>
         <div className="bg-gray-200 flex items-center justify-center w-[120px]">

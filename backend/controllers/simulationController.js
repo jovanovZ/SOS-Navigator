@@ -19,6 +19,16 @@ exports.createSimulation = async (req, res) => {
       locationTo,
     } = req.body;
 
+    const station = await Station.findById(bestStationId).populate(
+      "locationId"
+    );
+    if (!station) {
+      return res.status(404).json({ message: "Station not found" });
+    }
+    const accident = await Accident.findById(accidentId).populate("locationId");
+    if (!accident) {
+      return res.status(404).json({ message: "Accident not found" });
+    }
     //accident je to
     //station je from
     const responseFrom = await fetch(
@@ -26,9 +36,9 @@ exports.createSimulation = async (req, res) => {
     );
     const data = await responseFrom.json();
     const addr = data.address;
-    const locationFromApi = `${addr.road || "Cesta"} ${addr.house_number || ""}, ${
-      addr.city || addr.town || addr.village || ""
-    }`;
+    const locationFromApi = `${addr.road || "Cesta"} ${
+      addr.house_number || ""
+    }, ${addr.city || addr.town || addr.village || ""}`;
 
     const responseTo = await fetch(
       `https://nominatim.openstreetmap.org/reverse?lat=${accident.locationId.geometry.coordinates[1]}&lon=${accident.locationId.geometry.coordinates[0]}&format=json`
@@ -48,7 +58,7 @@ exports.createSimulation = async (req, res) => {
       responseTime,
       typeOfServices,
       locationFrom: locationFromApi,
-      locationTo : locationToApi,
+      locationTo: locationToApi,
     });
     await newSimulation.save();
     return res.status(201).json({
