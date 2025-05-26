@@ -13,16 +13,16 @@ const createToken = (userId) => {
 
 exports.login = async (req, res) => {
   const { username, password } = req.body;
-  console.log("Incoming login body:", req.body); // <== To dodaj
+  console.log("Incoming login body:", req.body); 
   try {
     const user = await User.findOne({ username });
     if (!user) return res.status(401).json({ message: "Invalid credentials" });
 
-    console.log("User found:", user); // <== To dodaj
+    console.log("User found:", user); 
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(401).json({ message: "Invalid credentials" });
 
-    const token = createToken(user._id); // DODAJ TO V VRSTICO PRED res.cookie(...)
+    const token = createToken(user._id);
     console.log('cookie');
 
     res.cookie("token", token, {
