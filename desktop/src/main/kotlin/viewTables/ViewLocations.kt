@@ -71,12 +71,14 @@ fun LocationCard(location: Location, onDelete: (Location) -> Unit, onSave: (Loca
                     label = "Longitude",
                     value = longitude.value.toString(),
                     onValueChange = { longitude.value = it.toDouble() },
+                    inputModifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 InputFieldForNumber(
                     label = "Latitude",
                     value = latitude.value.toString(),
                     onValueChange = { latitude.value = it.toDouble() },
+                    inputModifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
@@ -130,13 +132,25 @@ fun LocationCard(location: Location, onDelete: (Location) -> Unit, onSave: (Loca
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text("Id: ${location._id}")
+                Text(
+                    "Id: ${location._id}",
+                    modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 4.dp)
+                )
                 Spacer(modifier = Modifier.height(4.dp))
-                Text("Longitude: ${location.geometry.coordinates[0]}")
+                Text(
+                    "Longitude: ${location.geometry.coordinates[0]}",
+                    modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 4.dp)
+                )
                 Spacer(modifier = Modifier.height(4.dp))
-                Text("Latitude: ${location.geometry.coordinates[1]}")
-                Spacer(modifier = Modifier.height(4.dp))
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                Text(
+                    "Latitude: ${location.geometry.coordinates[1]}",
+                    modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 4.dp)
+                )
+                Spacer(modifier = Modifier.height(28.dp))
+                Row(
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 40.dp)
+                ) {
                     Button(
                         onClick = {
                             isEditing.value = true
@@ -166,7 +180,7 @@ fun LocationCard(location: Location, onDelete: (Location) -> Unit, onSave: (Loca
 @Composable
 fun ViewLocation() {
     val locationState = remember { mutableStateOf(listOf<Location>()) }
-
+    val loadingState = remember { mutableStateOf(true) }
 
     LaunchedEffect(Unit) {
         locationState.value = runBlocking {
@@ -189,11 +203,14 @@ fun ViewLocation() {
             } catch (e: Exception) {
                 println("Error while fetching locations: ${e.message}")
                 emptyList()
+            } finally {
+                loadingState.value = false
             }
         }
     }
-
-    if (locationState.value.isEmpty()) {
+    if (loadingState.value) {
+        Modal("Loading locations...")
+    } else if (locationState.value.isEmpty()) {
         Modal("No locations found \nPlease generate some locations first.")
     } else {
         Box(

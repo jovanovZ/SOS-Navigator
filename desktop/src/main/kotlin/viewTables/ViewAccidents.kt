@@ -40,8 +40,6 @@ fun AccidentCard(accident: Accident, onDelete: (Accident) -> Unit, onSave: (Acci
     val locationIdInput = remember { mutableStateOf(accident.locationId.toString()) }
     val typeOfAccidentInput = remember { mutableStateOf(accident.typeOfAccident) }
 
-
-
     Surface(
         modifier = Modifier
             .padding(24.dp)
@@ -64,18 +62,21 @@ fun AccidentCard(accident: Accident, onDelete: (Accident) -> Unit, onSave: (Acci
                 InputFieldForText(
                     label = "Location Id",
                     value = locationIdInput.value,
-                    onValueChange = { locationIdInput.value = it })
+                    onValueChange = { locationIdInput.value = it },
+                    inputModifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+                )
                 Spacer(modifier = Modifier.height(4.dp))
                 InputFieldForText(
                     label = "Type of accident",
                     value = typeOfAccidentInput.value,
-                    onValueChange = { typeOfAccidentInput.value = it }
+                    onValueChange = { typeOfAccidentInput.value = it },
+                    inputModifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                     Button(
                         onClick = {
-                            if(locationIdInput.value.isEmpty() || typeOfAccidentInput.value.isEmpty()) {
+                            if (locationIdInput.value.isEmpty() || typeOfAccidentInput.value.isEmpty()) {
                                 println("Please fill all fields")
                                 return@Button
                             }
@@ -108,13 +109,25 @@ fun AccidentCard(accident: Accident, onDelete: (Accident) -> Unit, onSave: (Acci
                 }
 
             } else {
-                Text("Id: ${accident._id}")
+                Text(
+                    "Id: ${accident._id}",
+                    modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 4.dp)
+                )
                 Spacer(modifier = Modifier.height(4.dp))
-                Text("Location Id: ${accident.locationId}")
+                Text(
+                    "Location Id: ${accident.locationId}",
+                    modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 4.dp)
+                )
                 Spacer(modifier = Modifier.height(4.dp))
-                Text("Type of accident: ${accident.typeOfAccident}")
-                Spacer(modifier = Modifier.height(12.dp))
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                Text(
+                    "Type of accident: ${accident.typeOfAccident}",
+                    modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 4.dp)
+                )
+                Spacer(modifier = Modifier.height(28.dp))
+                Row(
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 40.dp)
+                ) {
                     Button(
                         onClick = {
                             isEditing.value = true
@@ -144,7 +157,7 @@ fun AccidentCard(accident: Accident, onDelete: (Accident) -> Unit, onSave: (Acci
 @Composable
 fun ViewAccidents() {
     val accidentsState = remember { mutableStateOf(listOf<Accident>()) }
-
+    val loadingState = remember { mutableStateOf(true) }
 
     LaunchedEffect(Unit) {
         accidentsState.value = runBlocking {
@@ -163,11 +176,14 @@ fun ViewAccidents() {
             } catch (e: Exception) {
                 println("Error while fetching accidents: ${e.message}")
                 emptyList()
+            } finally {
+                loadingState.value = false
             }
         }
     }
-
-    if (accidentsState.value.isEmpty()) {
+    if (loadingState.value) {
+        Modal("Loading accidents...")
+    } else if (accidentsState.value.isEmpty()) {
         Modal("No accidents found \nPlease generate some accidents first.")
     } else {
         Box(
