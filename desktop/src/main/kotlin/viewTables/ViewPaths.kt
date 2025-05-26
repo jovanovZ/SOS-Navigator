@@ -5,8 +5,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.rememberScrollState
 
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
 
@@ -31,82 +33,78 @@ import org.bson.types.ObjectId
 data class PathData(
     val _id: ObjectId = ObjectId(),
     val accidentId: ObjectId,
-    val locationPoints: List<ObjectId>
+    val locationPoints: List<LocationPoint>
 )
 
+data class LocationPoint(
+    val lat: Double,
+    val lng: Double
+)
 
 @Composable
 fun PathCard(path: PathData, onDelete: (PathData) -> Unit, onSave: (PathData) -> Unit) {
     val isEditing = remember { mutableStateOf(false) }
-    val accidentIdInput = remember { mutableStateOf(path.accidentId) }
+    val accidentIdInput = remember { mutableStateOf(path.accidentId.toString()) }
     val locationPointsInput = remember { mutableStateOf(path.locationPoints) }
-    if (isEditing.value) {
 
+    if (isEditing.value) {
         Surface(
             modifier = Modifier
                 .padding(24.dp)
                 .width(400.dp)
-                .height(220.dp)
+                .height(300.dp)
                 .background(Color.White, shape = RoundedCornerShape(12.dp)),
             shape = RoundedCornerShape(8.dp),
-            color = Color(0xFFFFFFFF),
-
-            ) {
+            color = Color(0xFFFFFFFF)
+        ) {
             Column(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text("Id: ${path._id}")
                 Spacer(modifier = Modifier.height(4.dp))
                 InputFieldForText(
-                    value = accidentIdInput.value.toString(),
-                    onValueChange = { accidentIdInput.value = ObjectId(it) },
-                    label = "Accident id"
+                    value = accidentIdInput.value,
+                    onValueChange = { accidentIdInput.value = it },
+                    label = "Accident id",
+                    inputModifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
                 )
                 Spacer(modifier = Modifier.height(4.dp))
-                InputFieldForText(
-                    value = locationPointsInput.value.joinToString(", "),
-                    onValueChange = { input ->
-                        val newPoints = input.split(",")
-                            .map { it.trim() }
-                            .filter { it.isNotEmpty() }
-                            .map {
-                                if (ObjectId.isValid(it)) {
-                                    ObjectId(it)
-                                } else {
-                                    println("Invalid ObjectId: $it")
-                                    return@map ObjectId()
-                                }
+                locationPointsInput.value.forEachIndexed { index, point ->
+                    InputFieldForText(
+                        value = point.lat.toString(),
+                        onValueChange = { newLat ->
+                            locationPointsInput.value = locationPointsInput.value.toMutableList().apply {
+                                this[index] = this[index].copy(lat = newLat.toDoubleOrNull() ?: 0.0)
                             }
-                        if (newPoints.all { it.toHexString().length == 24 }) {
-                            locationPointsInput.value = newPoints
-                        } else {
-                            println("All ObjectIds must be 24-character hex strings")
-                        }
-                    },
-                    label = "Location points (comma separated)"
-                )
-                Spacer(modifier = Modifier.height(4.dp))
+                        },
+                        label = "Latitude ${index + 1}",
+                        inputModifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    InputFieldForText(
+                        value = point.lng.toString(),
+                        onValueChange = { newLng ->
+                            locationPointsInput.value = locationPointsInput.value.toMutableList().apply {
+                                this[index] = this[index].copy(lng = newLng.toDoubleOrNull() ?: 0.0)
+                            }
+                        },
+                        label = "Longitude ${index + 1}",
+                        inputModifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                     Button(
                         onClick = {
-                            if (accidentIdInput.value.toString().isEmpty() || locationPointsInput.value.isEmpty()) {
+                            if (accidentIdInput.value.isEmpty() || locationPointsInput.value.isEmpty()) {
                                 println("Please fill all fields")
                                 return@Button
                             }
-                            if (!ObjectId.isValid(accidentIdInput.value.toString())) {
-                                println("Invalid ObjectId format")
-                                return@Button
-                            }
-                            if (locationPointsInput.value.any { !ObjectId.isValid(it.toString()) }) {
-                                println("Invalid ObjectId format in location points")
-                                return@Button
-                            }
                             val updatedPath = path.copy(
-                                _id = path._id,
-                                accidentId = accidentIdInput.value,
-                                locationPoints = locationPointsInput.value.map { ObjectId(it.toString()) }
+                                accidentId = ObjectId(accidentIdInput.value),
+                                locationPoints = locationPointsInput.value
                             )
                             onSave(updatedPath)
                             isEditing.value = false
@@ -133,25 +131,41 @@ fun PathCard(path: PathData, onDelete: (PathData) -> Unit, onSave: (PathData) ->
             modifier = Modifier
                 .padding(24.dp)
                 .width(400.dp)
-                .height(220.dp)
+                .height(300.dp)
                 .background(Color.White, shape = RoundedCornerShape(12.dp)),
             shape = RoundedCornerShape(8.dp),
-            color = Color(0xFFFFFFFF),
-
-            ) {
+            color = Color(0xFFFFFFFF)
+        ) {
             Column(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text("Id: ${path._id}")
+                Text(
+                    "Id: ${path._id}",
+                    modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 4.dp)
+                )
                 Spacer(modifier = Modifier.height(4.dp))
-                Text("Accident id: ${path.accidentId}")
+                Text(
+                    "Accident id: ${path.accidentId}",
+                    modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 4.dp)
+                )
                 Spacer(modifier = Modifier.height(4.dp))
-                Text("Location points:")
-                Text(path.locationPoints.joinToString(", "))
-                Spacer(modifier = Modifier.height(4.dp))
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                Text(
+                    "Location points:",
+                    modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 4.dp)
+                )
+                path.locationPoints.forEach { point ->
+                    Text(
+                        "Lat: ${point.lat}, Lng: ${point.lng}",
+                        modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 4.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.height(28.dp))
+                Row(
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 40.dp),
+                ) {
                     Button(
                         onClick = {
                             isEditing.value = true
@@ -174,13 +188,13 @@ fun PathCard(path: PathData, onDelete: (PathData) -> Unit, onSave: (PathData) ->
             }
         }
     }
-
 }
 
 
 @Composable
 fun ViewPaths() {
     val pathState = remember { mutableStateOf(listOf<PathData>()) }
+    val loadingState = remember { mutableStateOf(true) }
 
     LaunchedEffect(Unit) {
         pathState.value = runBlocking {
@@ -193,17 +207,25 @@ fun ViewPaths() {
                     PathData(
                         _id = doc.getObjectId("_id"),
                         accidentId = doc.getObjectId("accidentId"),
-                        locationPoints = doc.getList("locationPoints", ObjectId::class.java)
+                        locationPoints = doc.getList("locationPoints", Document::class.java).map { point ->
+                            LocationPoint(
+                                lat = point.getDouble("lat"),
+                                lng = point.getDouble("lng")
+                            )
+                        }
                     )
                 }
             } catch (e: Exception) {
-                println("Error while fetching locations: ${e.message}")
+                println("Error while fetching paths: ${e.message}")
                 emptyList()
+            } finally {
+                loadingState.value = false
             }
         }
     }
-
-    if (pathState.value.isEmpty()) {
+    if (loadingState.value) {
+        Modal("Loading paths...")
+    } else if (pathState.value.isEmpty()) {
         Modal("No paths found \nPlease generate some paths first.")
     } else {
         Box(
@@ -249,7 +271,9 @@ fun ViewPaths() {
                                     "\$set", Document(
                                         "accidentId", editedPath.accidentId
                                     ).append(
-                                        "locationPoints", editedPath.locationPoints
+                                        "locationPoints", editedPath.locationPoints.map { point ->
+                                            Document("lat", point.lat).append("lng", point.lng)
+                                        }
                                     )
                                 )
 

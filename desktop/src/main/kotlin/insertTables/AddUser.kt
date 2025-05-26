@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import inputs.InputFieldForText
+import org.bson.types.ObjectId
 
 @Composable
 @Preview
@@ -124,6 +125,11 @@ fun AddUser() {
                         onClick = {
                             if(username.value.isEmpty() || email.value.isEmpty() || password.value.isEmpty() || imgUrl.value.isEmpty()) {
                                 println("Please fill all fields")
+                                return@Button
+                            }
+                            val invalidIds = historySimulationsId.value.filter { !ObjectId.isValid(it) }
+                            if (invalidIds.isNotEmpty()) {
+                                println("Invalid Simulation IDs: ${invalidIds.joinToString(", ")}")
                                 return@Button
                             }
                             println(

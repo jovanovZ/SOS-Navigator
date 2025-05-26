@@ -13,13 +13,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import inputs.InputFieldForText
+import org.bson.types.ObjectId
 
 @Composable
 @Preview
 fun AddPath() {
     val accidentId = remember { mutableStateOf("") }
-    val arrayOfLocationIds = remember { mutableStateOf(mutableListOf<String>()) }
-    val newLocationId = remember { mutableStateOf("") }
+    val locationPoints = remember { mutableStateOf(mutableListOf<Map<String, Double>>()) }
+    val newLat = remember { mutableStateOf("") }
+    val newLng = remember { mutableStateOf("") }
 
     Box(
         modifier = Modifier
@@ -54,50 +56,64 @@ fun AddPath() {
                 )
                 Divider(modifier = Modifier.padding(vertical = 8.dp))
 
-                Text("Add Location id (array of locationIds)", fontSize = 18.sp)
+                Text("Latitude", fontSize = 18.sp)
                 InputFieldForText(
-                    value = newLocationId.value,
-                    onValueChange = { newLocationId.value = it },
+                    value = newLat.value,
+                    onValueChange = { newLat.value = it },
                     inputModifier = Modifier.fillMaxWidth(),
-                    label = "Simulation id"
+                    label = "Latitude"
+                )
+                Divider(modifier = Modifier.padding(vertical = 8.dp))
+
+                Text("Longitude", fontSize = 18.sp)
+                InputFieldForText(
+                    value = newLng.value,
+                    onValueChange = { newLng.value = it },
+                    inputModifier = Modifier.fillMaxWidth(),
+                    label = "Longitude"
                 )
                 Button(
                     colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF1E88E5)),
                     shape = RoundedCornerShape(30),
                     onClick = {
-                        if (newLocationId.value.isNotEmpty() && !arrayOfLocationIds.value.contains(newLocationId.value)) {
-                            arrayOfLocationIds.value.add(newLocationId.value)
-                            newLocationId.value = ""
+                        val lat = newLat.value.toDoubleOrNull()
+                        val lng = newLng.value.toDoubleOrNull()
+                        if (lat != null && lng != null) {
+                            locationPoints.value.add(mapOf("lat" to lat, "lng" to lng))
+                            newLat.value = ""
+                            newLng.value = ""
+                        } else {
+                            println("Invalid latitude or longitude")
                         }
                     },
                     modifier = Modifier.padding(top = 8.dp)
                 ) {
-                    Text("Add ID")
+                    Text("Add Location Point")
                 }
 
-                Text("Current Simulation IDs: ${arrayOfLocationIds.value.joinToString(", ")}", fontSize = 14.sp)
-
+                Text("Current Location Points: ${locationPoints.value.joinToString(", ") { "(${it["lat"]}, ${it["lng"]})" }}", fontSize = 14.sp)
 
                 Spacer(modifier = Modifier.height(16.dp))
-
-
 
                 Box(modifier = Modifier.fillMaxWidth().padding(top = 16.dp), contentAlignment = Alignment.BottomEnd) {
                     Button(
                         colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF1E88E5)),
                         shape = RoundedCornerShape(30),
                         onClick = {
-                           if(accidentId.value.isEmpty() || arrayOfLocationIds.value.isEmpty()) {
+                            if (accidentId.value.isEmpty() || locationPoints.value.isEmpty()) {
                                 println("Please fill all fields")
+                                return@Button
+                            }
+                            if (!ObjectId.isValid(accidentId.value)) {
+                                println("Accident ID must be a valid ObjectId")
                                 return@Button
                             }
                             println("""
                                 Path info:
                                 Accident ID: ${accidentId.value}
-                                Location IDs: ${arrayOfLocationIds.value.joinToString(", ")}
+                                Location Points: ${locationPoints.value.joinToString(", ") { "(${it["lat"]}, ${it["lng"]})" }}
                             """.trimIndent()
                             )
-
                         }) {
                         Text("Insert")
                     }

@@ -28,188 +28,255 @@ import kotlinx.coroutines.runBlocking
 import org.bson.Document
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import java.util.Date
 
 
 data class Simulation(
     val _id: ObjectId = ObjectId(),
     val userId: ObjectId,
+    val simulationName: String,
     val accidentId: ObjectId,
-    val typeOfServices: List<String>,
+    val typeOfServices: String,
     val bestStationId: ObjectId,
     val bestPathId: ObjectId,
-    val responseTime: Double
+    val responseTime: Int,
+    val created: Date,
+    val locationFrom: String,
+    val locationTo: String
 )
 
 
 @Composable
 fun SimulationCard(simulation: Simulation, onDelete: (Simulation) -> Unit, onSave: (Simulation) -> Unit) {
     val isEditing = remember { mutableStateOf(false) }
-    val userIdInput = remember { mutableStateOf(simulation.userId) }
-    val accidentIdInput = remember { mutableStateOf(simulation.accidentId) }
+    val userIdInput = remember { mutableStateOf(simulation.userId.toString()) }
+    val simulationNameInput = remember { mutableStateOf(simulation.simulationName) }
+    val accidentIdInput = remember { mutableStateOf(simulation.accidentId.toString()) }
     val typeOfServicesInput = remember { mutableStateOf(simulation.typeOfServices) }
-    val bestStationIdInput = remember { mutableStateOf(simulation.bestStationId) }
-    val bestPathIdInput = remember { mutableStateOf(simulation.bestPathId) }
+    val bestStationIdInput = remember { mutableStateOf(simulation.bestStationId.toString()) }
+    val bestPathIdInput = remember { mutableStateOf(simulation.bestPathId.toString()) }
+
     val responseTimeInput = remember { mutableStateOf(simulation.responseTime) }
 
 
-if (isEditing.value ) {
-    Surface(
-        modifier = Modifier
-            .padding(24.dp)
-            .width(500.dp)
-            .height(320.dp)
-            .background(Color.White, shape = RoundedCornerShape(12.dp)),
-        shape = RoundedCornerShape(8.dp),
-        color = Color(0xFFFFFFFF),
+    if (isEditing.value) {
+        Surface(
+            modifier = Modifier
+                .padding(24.dp)
+                .width(500.dp)
+                .height(380.dp)
+                .background(Color.White, shape = RoundedCornerShape(12.dp)),
+            shape = RoundedCornerShape(8.dp),
+            color = Color(0xFFFFFFFF),
 
-        ) {
-        Column(
-            modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+            Column(
+                modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
 
-        ) {
-            Text("Id: ${simulation._id}")
-            Spacer(modifier = Modifier.height(4.dp))
-            InputFieldForText(
-                value = userIdInput.value.toString(),
-                onValueChange = { userIdInput.value = ObjectId(it) },
-                label = "User id"
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            InputFieldForText(
-                value = accidentIdInput.value.toString(),
-                onValueChange = { accidentIdInput.value = ObjectId(it) },
-                label = "Accident id"
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            InputFieldForText(
-                value = typeOfServicesInput.value.joinToString(", "),
-                onValueChange = { typeOfServicesInput.value = it.split(",").map { it.trim() } },
-                label = "Type of services"
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            InputFieldForText(
-                value = bestStationIdInput.value.toString(),
-                onValueChange = { bestStationIdInput.value = ObjectId(it) },
-                label = "Best station id"
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            InputFieldForText(
-                value = bestPathIdInput.value.toString(),
-                onValueChange = { bestPathIdInput.value = ObjectId(it) },
-                label = "Best path id"
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            InputFieldForNumber(
-                value = responseTimeInput.value.toString(),
-                onValueChange = { responseTimeInput.value = it.toDouble() },
-                label = "Response time"
-            )
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                Button(
-                    onClick = {
-                        if (userIdInput.value.toString().isEmpty() || accidentIdInput.value.toString().isEmpty() ||
-                            typeOfServicesInput.value.isEmpty() || bestStationIdInput.value.toString().isEmpty() ||
-                            bestPathIdInput.value.toString().isEmpty() || responseTimeInput.value.toString()
-                                .isEmpty()
-                        ) {
-                            println("Please fill all fields")
-                            return@Button
-                        }
-                        if (!ObjectId.isValid(userIdInput.value.toString()) ||
-                            !ObjectId.isValid(accidentIdInput.value.toString()) ||
-                            !ObjectId.isValid(bestStationIdInput.value.toString()) ||
-                            !ObjectId.isValid(bestPathIdInput.value.toString())
-                        ) {
-                            println("Invalid ObjectId format")
-                            return@Button
-                        }
-                        if (responseTimeInput.value <= 0) {
-                            println("Response time must be greater than 0")
-                            return@Button
-                        }
-
-                        val updatedSimulation = simulation.copy(
-                            userId = userIdInput.value,
-                            accidentId = accidentIdInput.value,
-                            typeOfServices = typeOfServicesInput.value,
-                            bestStationId = bestStationIdInput.value,
-                            bestPathId = bestPathIdInput.value,
-                            responseTime = responseTimeInput.value
-                        )
-                        onSave(updatedSimulation)
-                        isEditing.value = false
-                    },
-                    colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF1E88E5)),
-                    shape = RoundedCornerShape(30)
                 ) {
-                    Text("Save")
+                Text("Id: ${simulation._id}")
+                Spacer(modifier = Modifier.height(4.dp))
+                InputFieldForText(
+                    value = userIdInput.value,
+                    onValueChange = { userIdInput.value = it },
+                    label = "User id",
+                    inputModifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                InputFieldForText(
+                    value = accidentIdInput.value,
+                    onValueChange = { accidentIdInput.value = it },
+                    label = "Accident id",
+                    inputModifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                InputFieldForText(
+                    value = simulationNameInput.value,
+                    onValueChange = { simulationNameInput.value = it },
+                    label = "Simulation name",
+                    inputModifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                InputFieldForText(
+                    value = typeOfServicesInput.value,
+                    onValueChange = { typeOfServicesInput.value = it },
+                    label = "Type of services",
+                    inputModifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                InputFieldForText(
+                    value = bestStationIdInput.value,
+                    onValueChange = { bestStationIdInput.value = it },
+                    label = "Best station id",
+                    inputModifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                InputFieldForText(
+                    value = bestPathIdInput.value,
+                    onValueChange = { bestPathIdInput.value = it },
+                    label = "Best path id",
+                    inputModifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                InputFieldForNumber(
+                    value = responseTimeInput.value.toString(),
+                    onValueChange = { responseTimeInput.value = it.toIntOrNull() ?: 0 },
+                    label = "Response time",
+                    inputModifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
+                )
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                    Button(
+                        onClick = {
+                            if (userIdInput.value.isEmpty() || accidentIdInput.value.isEmpty() ||
+                                typeOfServicesInput.value.isEmpty() || bestStationIdInput.value.isEmpty() ||
+                                bestPathIdInput.value.isEmpty() || responseTimeInput.value.toString()
+                                    .isEmpty() || simulationNameInput.value.isEmpty()
+                            ) {
+                                println("Please fill all fields")
+                                return@Button
+                            }
+                            if (!ObjectId.isValid(userIdInput.value) ||
+                                !ObjectId.isValid(accidentIdInput.value) ||
+                                !ObjectId.isValid(bestStationIdInput.value) ||
+                                !ObjectId.isValid(bestPathIdInput.value)
+                            ) {
+                                println("Invalid ObjectId format")
+                                return@Button
+                            }
+                            if (responseTimeInput.value <= 0) {
+                                println("Response time must be greater than 0")
+                                return@Button
+                            }
+
+                            val updatedSimulation = simulation.copy(
+                                userId = ObjectId(userIdInput.value),
+                                accidentId = ObjectId(accidentIdInput.value),
+                                typeOfServices = typeOfServicesInput.value,
+                                bestStationId = ObjectId(bestStationIdInput.value),
+                                bestPathId = ObjectId(bestPathIdInput.value),
+                                responseTime = responseTimeInput.value,
+                                simulationName = simulationNameInput.value
+                            )
+                            onSave(updatedSimulation)
+                            isEditing.value = false
+                        },
+                        colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF1E88E5)),
+                        shape = RoundedCornerShape(30)
+                    ) {
+                        Text("Save")
+                    }
+                    Button(
+                        onClick = {
+                            isEditing.value = false
+                        },
+                        colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFFC62828)),
+                        shape = RoundedCornerShape(30)
+                    ) {
+                        Text("Cancel")
+                    }
                 }
-                Button(
-                    onClick = {
-                        isEditing.value = false
-                    },
-                    colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFFC62828)),
-                    shape = RoundedCornerShape(30)
+            }
+        }
+    } else {
+        Surface(
+            modifier = Modifier
+                .padding(24.dp)
+                .width(500.dp)
+                .height(360.dp)
+                .background(Color.White, shape = RoundedCornerShape(12.dp)),
+            shape = RoundedCornerShape(8.dp),
+            color = Color(0xFFFFFFFF),
+
+            ) {
+            Column(
+                modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    "Id: ${simulation._id}",
+                    modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 4.dp)
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    "User id: ${simulation.userId}",
+                    modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 4.dp)
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    "Simulation name: ${simulation.simulationName}",
+                    modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 4.dp)
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    "Accident id: ${simulation.accidentId}",
+                    modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 4.dp)
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    "Type of services: ${simulation.typeOfServices}",
+                    modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 4.dp)
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    "Best station Id: ${simulation.bestStationId}",
+                    modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 4.dp)
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    "Best path Id: ${simulation.bestPathId}",
+                    modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 4.dp)
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    "Response time: ${simulation.responseTime}",
+                    modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 4.dp)
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    "Created: ${simulation.created}",
+                    modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 4.dp)
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    "Address from: ${simulation.locationFrom}",
+                    modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 4.dp)
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    "Address to: ${simulation.locationTo}",
+                    modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 4.dp)
+                )
+                Spacer(modifier = Modifier.height(28.dp))
+
+                Row(
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 40.dp),
                 ) {
-                    Text("Cancel")
+                    Button(
+                        onClick = {
+                            isEditing.value = true
+                        },
+                        colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF1E88E5)),
+                        shape = RoundedCornerShape(30)
+                    ) {
+                        Text("Edit")
+                    }
+                    Button(
+                        onClick = {
+                            onDelete(simulation)
+                        },
+                        colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFFC62828)),
+                        shape = RoundedCornerShape(30)
+                    ) {
+                        Text("Delete")
+                    }
                 }
             }
         }
     }
-} else {
-    Surface(
-        modifier = Modifier
-            .padding(24.dp)
-            .width(500.dp)
-            .height(320.dp)
-            .background(Color.White, shape = RoundedCornerShape(12.dp)),
-        shape = RoundedCornerShape(8.dp),
-        color = Color(0xFFFFFFFF),
-
-        ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text("Id: ${simulation._id}")
-            Spacer(modifier = Modifier.height(4.dp))
-            Text("User id: ${simulation.userId}")
-            Spacer(modifier = Modifier.height(4.dp))
-            Text("Accident id: ${simulation.accidentId}")
-            Spacer(modifier = Modifier.height(4.dp))
-            Text("Type of services: ${simulation.typeOfServices.joinToString(", ")}")
-            Spacer(modifier = Modifier.height(4.dp))
-            Text("Best station Id: ${simulation.bestStationId}")
-            Spacer(modifier = Modifier.height(4.dp))
-            Text("Best path Id: ${simulation.bestPathId}")
-            Spacer(modifier = Modifier.height(4.dp))
-            Text("Response time: ${simulation.responseTime}")
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                Button(
-                    onClick = {
-                        isEditing.value = true
-                    },
-                    colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF1E88E5)),
-                    shape = RoundedCornerShape(30)
-                ) {
-                    Text("Edit")
-                }
-                Button(
-                    onClick = {
-                        onDelete(simulation)
-                    },
-                    colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFFC62828)),
-                    shape = RoundedCornerShape(30)
-                ) {
-                    Text("Delete")
-                }
-            }
-        }
-    }
-}
 
 }
 
@@ -217,6 +284,8 @@ if (isEditing.value ) {
 @Composable
 fun ViewSimulation() {
     val simulationState = remember { mutableStateOf(listOf<Simulation>()) }
+    val loadingState = remember { mutableStateOf(true) }
+
 
     LaunchedEffect(Unit) {
         simulationState.value = runBlocking {
@@ -229,20 +298,28 @@ fun ViewSimulation() {
                         _id = doc.getObjectId("_id"),
                         userId = doc.getObjectId("userId"),
                         accidentId = doc.getObjectId("accidentId"),
-                        typeOfServices = doc.getList("typeOfServices", String::class.java),
+                        typeOfServices = doc.getString("typeOfServices"),
                         bestStationId = doc.getObjectId("bestStationId"),
                         bestPathId = doc.getObjectId("bestPathId"),
-                        responseTime = doc.getDouble("responseTime")
+                        responseTime = doc.getInteger("responseTime"),
+                        created = doc.getDate("created"),
+                        locationFrom = doc.getString("locationFrom"),
+                        locationTo = doc.getString("locationTo"),
+                        simulationName = doc.getString("simulationName")
+
                     )
                 }
             } catch (e: Exception) {
                 println("Error while fetching simulations: ${e.message}")
                 emptyList()
+            } finally {
+                loadingState.value = false
             }
         }
     }
-
-    if (simulationState.value.isEmpty()) {
+    if (loadingState.value) {
+        Modal("Loading simulations...")
+    } else if (simulationState.value.isEmpty()) {
         Modal("No simulations found \nPlease generate some simulations first.")
     } else {
         Box(

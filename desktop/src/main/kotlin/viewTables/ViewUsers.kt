@@ -46,9 +46,7 @@ fun UserCard(user: User, onDelete: (User) -> Unit, onSave: (User) -> Unit) {
     val isEditing = remember { mutableStateOf(false) }
     val nameInput = remember { mutableStateOf(user.name) }
     val emailInput = remember { mutableStateOf(user.email) }
-    val passwordInput = remember { mutableStateOf(user.password) }
     val imageUrlInput = remember { mutableStateOf(user.imageUrl) }
-    val historySimulationsInput = remember { mutableStateOf(user.historySimulations) }
     if (isEditing.value) {
         Surface(
             modifier = Modifier
@@ -70,38 +68,30 @@ fun UserCard(user: User, onDelete: (User) -> Unit, onSave: (User) -> Unit) {
                 InputFieldForText(
                     value = nameInput.value,
                     onValueChange = { nameInput.value = it },
-                    label = "Username"
+                    label = "Username",
+                    inputModifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 InputFieldForText(
                     value = emailInput.value,
                     onValueChange = { emailInput.value = it },
-                    label = "Email"
+                    label = "Email",
+                    inputModifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
                 )
-                Spacer(modifier = Modifier.height(4.dp))
-                //ZA ZDAJ JE TAK TU MOREŠ HEŠIRAT
-                InputFieldForText(
-                    value = passwordInput.value,
-                    onValueChange = { passwordInput.value = it },
-                    label = "Password"
-                )
+
                 Spacer(modifier = Modifier.height(4.dp))
                 InputFieldForText(
                     value = imageUrlInput.value,
                     onValueChange = { imageUrlInput.value = it },
-                    label = "Image url"
+                    label = "Image url",
+                    inputModifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
                 )
                 Spacer(modifier = Modifier.height(4.dp))
-                InputFieldForText(
-                    value = historySimulationsInput.value.joinToString(", "),
-                    onValueChange = { historySimulationsInput.value = it.split(", ").map { ObjectId(it) } },
-                    label = "History simulations (split with comma)"
-                )
-                Text(user.historySimulations.joinToString(", "))
+
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                     Button(
                         onClick = {
-                            if (emailInput.value.isEmpty() || passwordInput.value.isEmpty() || imageUrlInput.value.isEmpty()) {
+                            if (emailInput.value.isEmpty() || imageUrlInput.value.isEmpty()) {
                                 println("Please fill all fields")
                                 return@Button
                             }
@@ -109,9 +99,9 @@ fun UserCard(user: User, onDelete: (User) -> Unit, onSave: (User) -> Unit) {
                                 _id = user._id,
                                 name = user.name,
                                 email = emailInput.value,
-                                password = passwordInput.value,
+                                password = user.password,
                                 imageUrl = imageUrlInput.value,
-                                historySimulations = historySimulationsInput.value
+                                historySimulations = user.historySimulations
                             )
                             onSave(updatedUser)
                             isEditing.value = false
@@ -138,7 +128,7 @@ fun UserCard(user: User, onDelete: (User) -> Unit, onSave: (User) -> Unit) {
             modifier = Modifier
                 .padding(24.dp)
                 .width(600.dp)
-                .height(320.dp)
+                .height(250.dp)
                 .background(Color.White, shape = RoundedCornerShape(12.dp)),
             shape = RoundedCornerShape(8.dp),
             color = Color(0xFFFFFFFF),
@@ -149,20 +139,30 @@ fun UserCard(user: User, onDelete: (User) -> Unit, onSave: (User) -> Unit) {
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text("Id: ${user._id}")
+                Text(
+                    "Id: ${user._id}",
+                    modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 4.dp)
+                )
                 Spacer(modifier = Modifier.height(4.dp))
-                Text("Username: ${user.name}")
+                Text(
+                    "Username: ${user.name}",
+                    modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 4.dp)
+                )
                 Spacer(modifier = Modifier.height(4.dp))
-                Text("Email: ${user.email}")
+                Text(
+                    "Email: ${user.email}",
+                    modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 4.dp)
+                )
                 Spacer(modifier = Modifier.height(4.dp))
-                Text("Password (hashed): ")
-                Text(user.password)
-                Spacer(modifier = Modifier.height(4.dp))
-                Text("Image url: ${user.imageUrl}")
-                Spacer(modifier = Modifier.height(4.dp))
-                Text("History simulations: ")
-                Text(user.historySimulations.joinToString(", "))
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                Text(
+                    "Image url: ${user.imageUrl}",
+                    modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 4.dp)
+                )
+                Spacer(modifier = Modifier.height(28.dp))
+                Row(
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 40.dp),
+                ) {
                     Button(
                         onClick = {
                             isEditing.value = true
@@ -192,9 +192,11 @@ fun UserCard(user: User, onDelete: (User) -> Unit, onSave: (User) -> Unit) {
 @Composable
 fun ViewUsers() {
     val userState = remember { mutableStateOf(listOf<User>()) }
+    val loadingState = remember { mutableStateOf(true) }
 
     LaunchedEffect(Unit) {
         userState.value = runBlocking {
+            //api klic za getall
             try {
                 val db = DataBase.getDatabase()
                 val collection = db.getCollection("users")
@@ -209,15 +211,18 @@ fun ViewUsers() {
                         historySimulations = it.getList("historySimulations", ObjectId::class.java)
                     )
                 }
-
             } catch (e: Exception) {
                 println("Error while fetching users: ${e.message}")
                 emptyList()
+            } finally {
+                loadingState.value = false
             }
         }
     }
 
-    if (userState.value.isEmpty()) {
+    if (loadingState.value) {
+        Modal("Loading users...")
+    } else if (userState.value.isEmpty()) {
         Modal("No users found \nPlease register some users first.")
     } else {
         Box(
@@ -238,6 +243,7 @@ fun ViewUsers() {
                     UserCard(user = user, onDelete = { deletedUser ->
                         runBlocking {
                             try {
+                                //api klic za delete
                                 val db = DataBase.getDatabase()
                                 val collection = db.getCollection("users", Document::class.java)
                                 val filter = Document("_id", deletedUser._id)
@@ -256,6 +262,7 @@ fun ViewUsers() {
                         }
                     }, onSave = { editedUser ->
                         runBlocking {
+                            //api klic za update
                             try {
                                 val db = DataBase.getDatabase()
                                 val collection = db.getCollection("users", Document::class.java)
@@ -272,7 +279,6 @@ fun ViewUsers() {
                                     ).append(
                                         "historySimulations", editedUser.historySimulations
                                     )
-
                                 )
 
                                 val result = collection.updateOne(filter, update).asFlow().toList()
@@ -288,13 +294,9 @@ fun ViewUsers() {
                                 println("Error while updating user: ${e.message}")
                             }
                         }
-
                     })
                 }
             }
         }
-
     }
-
-
 }

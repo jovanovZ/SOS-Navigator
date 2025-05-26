@@ -13,9 +13,7 @@ fun InputFieldForBoolean(
     inputModifier: Modifier = Modifier
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
+        modifier = inputModifier,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
