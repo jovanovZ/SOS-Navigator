@@ -7,8 +7,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { RiCriminalLine } from "react-icons/ri";
 import { toast } from "react-toastify";
 import axios from "axios";
-import * as turf from '@turf/turf';
-import regions from './SR.geojson';
+import Loading from "./Loading";
 
 const hospitalIcon = L.divIcon({
   html: renderToStaticMarkup(<FaHospital color="#8B0000" size={22} />),
@@ -117,26 +116,18 @@ function AddStation({ setStations, addedObject, setAddObject, setAddedObject }) 
 
 // se tole je treba urediti da bo vrnilo regijo, sedaj sem nastavil Osrednjeslovenska za vse
 export const getRegionFromCoordinates = async (lat, lon) => {
-  try {
-    const point = turf.point([lon, lat]);
-
-    for (const feature of regions.features) {
-      if (turf.booleanPointInPolygon(point, turf.feature(feature.geometry))) {
-        return feature.properties.NAME_1 || feature.properties.name || "Osrednjeslovenska";
-      }
-    }
     return "Osrednjeslovenska";
-  } catch (err) {
-    console.error("Napaka pri iskanju regije:", err);
-    return "Osrednjeslovenska";
-  }
 };
 
-const saveStation = async (station) => {
+const saveStation = async (station, setLoading) => {
   const IP = process.env.REACT_APP_IP;
+  setLoading(true);
   try {
     const { geometry } = station.locationId || {};
     const [lng, lat] = geometry?.coordinates || [];
+    console.log(geometry, "geometry");
+    console.log(station, "station");
+    console.log(lng, lat, "lng, lat");
 
     if (!lat || !lng) {
       toast.error("Lokacija ni pravilno določena.");
@@ -145,14 +136,20 @@ const saveStation = async (station) => {
 
     let region = station.region;
     if (region === "notSpecified") {
-      region = await getRegionFromCoordinates(lat, lng);
+      try {
+        region = await getRegionFromCoordinates(lat, lng);
+      } catch (error) {
+        region = "Osrednjeslovenska";
+      }
     }
+
+    console.log(lat)
 
     const locationResponse = await axios.post(
       `http://${IP}/api/location/create`,
       {
-        lat,
         long: lng,
+        lat: lat,
       },
       { withCredentials: true }
     );
@@ -169,6 +166,8 @@ const saveStation = async (station) => {
     const stationResponse = await axios.post(
       `http://${IP}/api/station/create`,
       {
+        latitude: lat,
+        longitude: lng,
         locationId,
         typeOfStation: station.typeOfStation,
         isPermanent: true,
@@ -182,15 +181,19 @@ const saveStation = async (station) => {
 
   } catch (error) {
     toast.error("Napaka pri shranjevanju postaje");
+  } finally {
+    setLoading(false);
   }
 };
 
 
 
 
-export default function MapSlovenia({gasilciVidnost,bolniceVidnost,policijaVidnost,stations, addedAccident, setAddedAccident, accidenceTypes, accidenceType, setAccidenceType, showCheck, setShowCheck, searchingExSimulation, currentSimulation, addObject, addedObject, setAddObject, setAddedObject, setStations, newPath }) {
+export default function MapSlovenia({setLoading, gasilciVidnost,bolniceVidnost,policijaVidnost,stations, addedAccident, setAddedAccident, accidenceTypes, accidenceType, setAccidenceType, showCheck, setShowCheck, searchingExSimulation, currentSimulation, addObject, addedObject, setAddObject, setAddedObject, setStations, newPath }) {
   const [selectedStationId, setSelectedStationId] = useState(null);
   const IP = process.env.REACT_APP_IP;
+
+
 
   const saveAccident = async () => {
     try {
@@ -269,7 +272,7 @@ export default function MapSlovenia({gasilciVidnost,bolniceVidnost,policijaVidno
     <div className="flex flex-col items-start gap-2">
     <button
       onClick={async () => {
-        const saved = await saveStation(station);
+        const saved = await saveStation(station, setLoading);
         if (saved?._id) {
           setStations((prev) =>
             prev.map((s) =>
