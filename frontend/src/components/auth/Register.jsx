@@ -57,9 +57,8 @@ const Register = () => {
     <div className="h-screen bg-gradient-to-b from-gray-700 via-gray-500 to-gray-300 flex justify-center items-center">
       <div className="bg-white/10 backdrop-blur-md p-8 rounded-xl w-80 text-white shadow-2xl border border-white/20">
         <div className="flex flex-col items-center mb-6">
-          <h2 className="text-2xl flex items-center font-semibold gap-2">
-            <IoLogoGithub className="text-3xl" />
-            Logoipsum
+          <h2 className="text-4xl font-extrabold tracking-tight font-mono text-gray-600">
+            SOS<span className="text-gray-700">-Navigator</span>
           </h2>
         </div>
 
