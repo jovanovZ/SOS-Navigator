@@ -38,10 +38,13 @@ export default function Homepage() {
   const [gasilciVidnost, setGasilciVidnost] = useState(true);
   const [hoveredMenu, setHoveredMenu] = useState(null);
 
+  const [editingId, setEditingId] = useState(null);
+  const [newNameValue, setNewNameValue] = useState("");
+
 
   const removeSimulationFromLocalStorage = () => {
-  localStorage.removeItem("simulation");
-};
+    localStorage.removeItem("simulation");
+  };
 
   const [simulationData, setSimulationData] = useState([]); 
 
@@ -232,9 +235,46 @@ useEffect(() => {
 
 
 
+const simulationNameChange = async (id, newName) => {
+  try {
+    await axios.put(`http://${IP}/api/simulation/change-name`, {
+      simulationId: id,
+      newName,
+    }, { withCredentials: true });
+
+    toast.success("Ime simulacije posodobljeno");
+
+    setSimulationData(prev =>
+      prev.map(sim => sim._id === id ? { ...sim, simulationName: newName } : sim)
+    );
+    window.location.reload();
+  } catch (error) {
+    toast.error("Napaka pri spreminjanju imena simulacije");
+  }
+};
+
+
+const [showDeleteModal, setShowDeleteModal] = useState(false);
+const [simulationToDelete, setSimulationToDelete] = useState(null);
+
+
+const deleteSimulation = async (id) => {
+  setLoading(true);
+  try {
+    await axios.delete(`http://${IP}/api/simulation/delete/${id}`, { withCredentials: true });
+    toast.success("Simulacija izbrisana");
+    setSimulationData(prev => prev.filter(sim => sim._id !== id));
+  } catch (error) {
+    toast.error("Napaka pri brisanju simulacije");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
 
   return (
+    <>
     <div className='w-full'>
         <Navigation/>
 
@@ -269,7 +309,9 @@ useEffect(() => {
               >
 {Array.isArray(simulationData) && simulationData.length > 0 && simulationData.map((item, index) => (
   <div
+    key={index}
     onClick={() => {
+      if (editingId === item._id) return;
       setNewPath([]);
       setTime(0);
       removeSimulationFromLocalStorage();
@@ -281,13 +323,57 @@ useEffect(() => {
       setCurrentSimulation(item);
       setAddedAccident(null);
     }}
-    key={index}
-    className={`px-4 py-3 border-b border-blue-800 cursor-pointer transition duration-200 
+    className={`px-4 py-3 border-b border-blue-800 cursor-pointer flex justify-between items-center transition duration-200 
       ${simulation === item._id ? 'bg-blue-800 font-bold text-white' : 'hover:bg-blue-800 hover:text-white'}`}
   >
-    <span className="text-sm">{item.simulationName}</span>
+    {editingId === item._id ? (
+      <input
+        value={newNameValue}
+        onChange={(e) => setNewNameValue(e.target.value)}
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={async (e) => {
+          if (e.key === "Enter") {
+            simulationNameChange(item._id, newNameValue);
+            setEditingId(null);
+          }
+          if (e.key === "Escape") {
+            setEditingId(null);
+          }
+        }}
+        className="bg-blue-900 text-white px-2 py-1 text-sm border border-white rounded w-full max-w-[140px]"
+        autoFocus
+      />
+    ) : (
+      <span className="text-sm truncate max-w-[140px]">{item.simulationName}</span>
+    )}
+
+    <div className="flex gap-2 items-center text-base ml-4">
+      <span
+        title="Uredi ime"
+        onClick={(e) => {
+          e.stopPropagation();
+          setEditingId(item._id);
+          setNewNameValue(item.simulationName);
+        }}
+        className="hover:text-yellow-300"
+      >
+        ✏️
+      </span>
+        <span
+          title="Izbriši simulacijo"
+          onClick={(e) => {
+            e.stopPropagation();
+            setSimulationToDelete(item._id);
+            setShowDeleteModal(true);
+          }}
+          className="hover:text-red-400"
+        >
+          🗑️
+        </span>
+    </div>
   </div>
 ))}
+
 
               </div>
             )}
@@ -356,6 +442,42 @@ useEffect(() => {
         <InformationPart setText={setText} setLoading={setLoading}  setSearchingExSimulation={setSearchingExSimulation} setShowCheck={setShowCheck} setDeletedTrue={setDeletedTrue} deleteRecentlyAddedStations={deleteRecentlyAddedStations}  simulation={currentSimulation} newPath={newPath} addedAccident={addedAccident} time={time} setNewPath={setNewPath} setAddedAccident={setAddedAccident} setTime={setTime} setCurrentSimulation={setCurrentSimulation} bestStation={bestStation} />
         {loading && (<Loading text={text} />)}
     </div>
+
+    {showDeleteModal && (
+      <div className="fixed inset-0  bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white border-[3px] border-black rounded-md  shadow-lg p-4 w-[300px]">
+          <p className="text-gray-700 font-semibold mb-6">Ali res želiš izbrisati simulacijo?</p>
+          <div className="flex justify-between">
+
+            <button
+              onClick={() => {
+                setShowDeleteModal(false);
+                setSimulationToDelete(null);
+              }}
+              className="px-4 py-2 font-semibold text-sm rounded bg-gray-300 hover:bg-gray-400 transition"
+            >
+              Prekliči
+            </button>
+            <button
+              onClick={() => {
+                deleteSimulation(simulationToDelete);
+                setShowDeleteModal(false);
+                setSimulationToDelete(null);
+              }}
+              className="px-4 py-2 text-sm rounded bg-red-500 font-semibold text-white hover:bg-red-600 transition"
+            >
+              {loading ? 
+                <span className="animate-spin w-4 h-4 border-2 border-t-transparent rounded-full"></span>
+               : 'Izbriši'}
+            </button>
+          
+
+          </div>
+        </div>
+      </div>
+    )}
+
+    </>
   )
 }
 
