@@ -15,6 +15,10 @@ import axios from 'axios';
 import { useNavigate } from "react-router-dom";
 import { MdAutorenew } from "react-icons/md";
 import Loading from './Loading';
+import { VscLayoutSidebarRight } from "react-icons/vsc";
+import { BsChevronBarRight, BsChevronBarLeft } from "react-icons/bs";
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer} from 'recharts';
+
 
 export default function Homepage() {
   const IP = process.env.REACT_APP_IP;
@@ -88,6 +92,8 @@ useEffect(() => {
       toast.error("Logout failed");
     }
   };
+
+  const [allAccidents, setAllAccidents] = useState([]);
 
   
 
@@ -271,12 +277,29 @@ const deleteSimulation = async (id) => {
   }
 };
 
+  const [isOpen, setIsOpen] = useState(false);
+
+
+  useEffect(() => {
+  const fetchAllAccidents = async () => {
+    try {
+      const response = await axios.get(`http://${IP}/api/accident/all`, { withCredentials: true });
+      setAllAccidents(response.data);
+    } catch (error) {
+      console.error("Napaka pri pridobivanju nesreč:", error);
+    }
+  };
+
+  fetchAllAccidents();
+}, []);
 
 
   return (
     <>
     <div className='w-full'>
         <Navigation/>
+
+
 
         <div className="flex">
           <div className="w-[100px] z-10 h-[calc(100vh-64px)] top-[70px] fixed bg-blue-900 text-white shadow-md flex flex-col justify-between cursor-pointer">
@@ -476,6 +499,92 @@ const deleteSimulation = async (id) => {
         </div>
       </div>
     )}
+
+    <>
+      <div
+        className={`fixed top-20 right-0 h-[550px] w-[350px] bg-black shadow-lg z-40 transform transition-transform duration-300 ${
+          isOpen ? "translate-x-0" : "translate-x-[330px]"
+        }`}
+      >
+
+        <div
+          onClick={() => setIsOpen(!isOpen)}
+          className="absolute top-0 left-0 h-full w-[20px] bg-blue-950 cursor-pointer flex items-center justify-center text-white font-bold text-lg select-none"
+          title={isOpen ? "Zapri" : "Odpri"}
+        >
+          {isOpen ? <BsChevronBarRight /> : <BsChevronBarLeft />}
+        </div>
+
+<div className="py-3">
+  <div className="text-white">
+    <ResponsiveContainer width="100%" height={250}>
+      <PieChart>
+        <Pie
+          data={[
+            { type: 'Policija', value: stations.filter(s => s.typeOfStation === 'Policijska').length },
+            { type: 'Bolnišnice', value: stations.filter(s => s.typeOfStation === 'Bolnica').length },
+            { type: 'Gasilci', value: stations.filter(s => s.typeOfStation === 'Gasilci').length },
+          ]}
+          dataKey="value"
+          nameKey="type"
+          cx="50%"
+          cy="50%"
+          outerRadius={80}
+          label
+        >
+          <Cell fill="#3b82f6" /> {/* modra za Policija */}
+          <Cell fill="#10b981" /> {/* zelena za Bolnišnice */}
+          <Cell fill="#f59e0b" /> {/* oranžna za Gasilci */}
+        </Pie>
+        <Tooltip />
+        <Legend />
+      </PieChart>
+    </ResponsiveContainer>
+  </div>
+</div>
+
+<div className="py-4 text-white">
+  <ResponsiveContainer width="100%" height={250}>
+    <PieChart>
+      <Pie
+        data={[
+          { type: 'Prometna', value: allAccidents.filter(a => a.typeOfAccident === 'prometna').length },
+          { type: 'Kriminal', value: allAccidents.filter(a => a.typeOfAccident === 'kriminal').length },
+          { type: 'Zdravstveni primer', value: allAccidents.filter(a => a.typeOfAccident === 'zdravstveni primer').length },
+          { type: 'Naravna nesreča', value: allAccidents.filter(a => a.typeOfAccident === 'naravna nesreča').length },
+        ]}
+        dataKey="value"
+        nameKey="type"
+        cx="50%"
+        cy="50%"
+        innerRadius={50}
+        outerRadius={80}
+        paddingAngle={3}
+        label
+      >
+        <Cell fill="#ef4444" /> 
+        <Cell fill="#3b82f6" /> 
+        <Cell fill="#10b981" /> 
+        <Cell fill="#f59e0b" /> 
+      </Pie>
+      <Tooltip />
+    </PieChart>
+  </ResponsiveContainer>
+</div>
+
+
+      </div>
+
+      {!isOpen && (
+        <button
+          onClick={() => setIsOpen(true)}
+          className="fixed bottom-6 right-6 z-50 bg-white text-blue-600 border border-blue-500 shadow-md p-3 rounded-full hover:bg-blue-50 transition"
+          title="Odpri nastavitve"
+        >
+          <VscLayoutSidebarRight size={24} />
+        </button>
+      )}
+    </>
 
     </>
   )
