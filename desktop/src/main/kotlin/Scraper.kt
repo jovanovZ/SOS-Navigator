@@ -9,12 +9,25 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material.Card
 import androidx.compose.material.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.*
+import io.github.cdimascio.dotenv.dotenv
 import it.skrape.core.*
 import it.skrape.fetcher.*
 import it.skrape.selects.*
 import it.skrape.selects.html5.*
+import okhttp3.OkHttpClient
+
+import okhttp3.Request
+import org.json.JSONObject
+import io.github.cdimascio.dotenv.dotenv
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import org.bson.types.ObjectId
+import viewTables.Geometry
+import viewTables.Location
+import viewTables.Modal
+import viewTables.Station
+
 
 data class PoliceStation(
     val name: String,
@@ -27,7 +40,6 @@ data class FireFighterStation(
     val location: String,
     val city: String
 )
-
 
 data class Hospital(
     val name: String,
@@ -150,88 +162,212 @@ fun getHospitals(): List<Hospital> {
     return hospitals
 }
 
+fun getLatLngFromAddress(address: String): Pair<Double, Double>? {
+    val dotenv = dotenv()
+    val apiKey = dotenv["LOCATION_API_KEY"] ?: throw IllegalStateException("API key not found in .env file")
+
+    val client = OkHttpClient()
+    val url = "https://api.opencagedata.com/geocode/v1/json?q=${address.replace(" ", "+")}&key=$apiKey"
+
+    val request = Request.Builder()
+        .url(url)
+        .build()
+
+    client.newCall(request).execute().use { response ->
+        if (!response.isSuccessful) {
+            println("Failed to fetch coordinates: ${response.message}")
+            return null
+        }
+
+        val responseBody = response.body?.string() ?: return null
+        val json = JSONObject(responseBody)
+        val results = json.getJSONArray("results")
+        if (results.length() > 0) {
+            val geometry = results.getJSONObject(0).getJSONObject("geometry")
+            val lat = geometry.getDouble("lat")
+            val lng = geometry.getDouble("lng")
+            return Pair(lat, lng)
+        }
+    }
+    return null
+}
+
+
 @Composable
 fun ScrapePrompt(scraperState: MutableState<Scraper>) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(start = 300.dp)
-            .background(color = Color(0xFFE3F2FD)),
-        contentAlignment = Alignment.Center
-    ) {
-        Card(
-            shape = RoundedCornerShape(12.dp),
-            elevation = 8.dp,
-            backgroundColor = Color.White,
+    val policeStations = remember { mutableStateOf(emptyList<PoliceStation>()) }
+    val fireStations = remember { mutableStateOf(emptyList<FireFighterStation>()) }
+    val hospitals = remember { mutableStateOf(emptyList<Hospital>()) }
+    val complitedScrape = remember { mutableStateOf(false) }
+    val loadingState = remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
 
-            ) {
-            Column(
-                modifier = Modifier.padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = if (scraperState.value == Scraper.NONE) "First select scraper" else "Do you want to scrape ${
-                        scraperState.value.toString().lowercase().replace("_", " ").replaceFirstChar { it.uppercase() }
-                    }?",
-                    fontSize = 24.sp,
-                    color = Color.Black
-                )
 
-                Spacer(modifier = Modifier.height(20.dp))
+    if (complitedScrape.value) {
+        Modal("Scraping completed\n Stations were added successfully")
+    } else if (loadingState.value) {
+        Modal("Scraping in progress\nPlease wait...")
 
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+    } else {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(start = 300.dp)
+                .background(color = Color(0xFFE3F2FD)),
+            contentAlignment = Alignment.Center
+        ) {
+
+            Card(
+                shape = RoundedCornerShape(12.dp),
+                elevation = 8.dp,
+                backgroundColor = Color.White,
+
                 ) {
-                    if (scraperState.value != Scraper.NONE) {
-                        Button(
-                            onClick = { println("Cancelled") },
-                            colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFFC62828)),
-                            shape = RoundedCornerShape(30)
-                        ) {
-                            Text("No", color = Color.White)
-                        }
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = if (scraperState.value == Scraper.NONE) "First select scraper" else "Do you want to scrape ${
+                            scraperState.value.toString().lowercase().replace("_", " ")
+                                .replaceFirstChar { it.uppercase() }
+                        }?",
+                        fontSize = 24.sp,
+                        color = Color.Black
+                    )
 
-                        Button(
-                            onClick = {
-                                when (scraperState.value) {
-                                    Scraper.POLICE -> {
-                                        val policeStations = getPoliceStations()
-                                        println("\nFinal List of Police stations:")
-                                        policeStations.forEach { station ->
-                                            println("${station.name}: ${station.location} (City: ${station.city})")
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        if (scraperState.value != Scraper.NONE) {
+                            Button(
+                                onClick = { println("Cancelled") },
+                                colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFFC62828)),
+                                shape = RoundedCornerShape(30)
+                            ) {
+                                Text("No", color = Color.White)
+                            }
+                            Button(
+                                onClick = {
+                                    loadingState.value = true
+                                    coroutineScope.launch(Dispatchers.IO) {
+                                        when (scraperState.value) {
+                                            Scraper.POLICE -> {
+                                                policeStations.value = getPoliceStations()
+                                                policeStations.value.forEach { station ->
+
+                                                    val coords = getLatLngFromAddress(station.location)?.toList()
+                                                    if (coords == null) {
+                                                        return@forEach
+
+                                                    }
+                                                    val location = Location(
+                                                        geometry = Geometry(
+                                                            type = "Point",
+                                                            coordinates = coords
+                                                        )
+
+                                                    )
+                                                    // poklici api za add location in pridobi id
+
+                                                    val stationFinal = Station(
+                                                        typeOfStation = "Policijska",
+                                                        locationId = ObjectId("682f10869665de5c0ae2714a"),
+                                                        isPermanent = true,
+                                                        region = "Podravska"
+                                                    )
+                                                    //shrani station
+
+                                                    println("Station: ${stationFinal.typeOfStation}, Location: (${location.geometry.coordinates[0]},${location.geometry.coordinates[1]}), Region: ${stationFinal.region}, isPermanent: ${stationFinal.isPermanent}")
+
+                                                }
+                                                complitedScrape.value = true
+
+
+                                            }
+
+                                            Scraper.AMBULANCE -> {
+                                                hospitals.value = getHospitals()
+
+                                                hospitals.value.forEach { station ->
+                                                    val coords = getLatLngFromAddress(station.location)?.toList()
+                                                    if (coords == null) {
+                                                        return@forEach
+
+                                                    }
+                                                    val location = Location(
+                                                        geometry = Geometry(
+                                                            type = "Point",
+                                                            coordinates = coords
+                                                        )
+
+                                                    )
+                                                    // poklici api za add location in pridobi id
+
+                                                    val stationFinal = Station(
+                                                        typeOfStation = "Bolnica",
+                                                        locationId = ObjectId("682f10869665de5c0ae2714a"),
+                                                        isPermanent = true,
+                                                        region = "Podravska"
+                                                    )
+                                                    //shrani station
+                                                    println("Station: ${stationFinal.typeOfStation}, Location: (${location.geometry.coordinates[0]},${location.geometry.coordinates[1]}), Region: ${stationFinal.region}, isPermanent: ${stationFinal.isPermanent}")
+
+                                                }
+                                                complitedScrape.value = true
+
+                                            }
+
+                                            Scraper.FIRE_DEPARTMENT -> {
+                                                fireStations.value = getFireStations()
+
+                                                fireStations.value.forEach { station ->
+                                                    val coords = getLatLngFromAddress(station.location)?.toList()
+                                                    if (coords == null) {
+                                                        return@forEach
+
+                                                    }
+                                                    val location = Location(
+                                                        geometry = Geometry(
+                                                            type = "Point",
+                                                            coordinates = coords
+                                                        )
+
+                                                    )
+                                                    // poklici api za add location in pridobi id
+
+                                                    val stationFinal = Station(
+                                                        typeOfStation = "Gasilci",
+                                                        locationId = ObjectId("682f10869665de5c0ae2714a"),
+                                                        isPermanent = true,
+                                                        region = "Podravska"
+                                                    )
+                                                    //shrani station
+                                                    println("Station: ${stationFinal.typeOfStation}, Location: (${location.geometry.coordinates[0]},${location.geometry.coordinates[1]}), Region: ${stationFinal.region}, isPermanent: ${stationFinal.isPermanent}")
+
+                                                }
+                                                complitedScrape.value = true
+
+                                            }
+
+                                            Scraper.NONE -> {
+                                                println("Printing None")
+                                            }
                                         }
                                     }
-
-                                    Scraper.AMBULANCE -> {
-                                        val hospitals = getHospitals()
-                                        println("\nFinal List of Hospitals:")
-                                        hospitals.forEach { station ->
-                                            println("${station.name}: ${station.location} (City: ${station.city})")
-                                        }
-                                    }
-
-                                    Scraper.FIRE_DEPARTMENT -> {
-                                        val fireStations = getFireStations()
-                                        println("\nFinal List of Fire Fighter Stations:")
-                                        fireStations.forEach { station ->
-                                            println("${station.name}: ${station.location} (City: ${station.city})")
-                                        }
-                                    }
-
-                                    Scraper.NONE -> {
-                                            println("Printing None")
-                                    }
-                                }
-                                println("Scraping ${scraperState.value}")
-                            },
-                            colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF1E88E5)),
-                            shape = RoundedCornerShape(30)
-                        ) {
-                            Text("Scrape", color = Color.White)
+                                },
+                                colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF1E88E5)),
+                                shape = RoundedCornerShape(30)
+                            ) {
+                                Text("Scrape", color = Color.White)
+                            }
                         }
                     }
                 }
             }
+
         }
     }
 }
