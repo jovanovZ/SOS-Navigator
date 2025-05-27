@@ -14,7 +14,7 @@ router.post(
 
 module.exports = router;
 
-
+router.get("/all", userController.getAll);
 router.get("/me", authMiddleware, (req, res) => {
   res.json({ _id: req.user._id });
 });
@@ -36,5 +36,8 @@ router.post("/logout", (req, res) => {
   });
   return res.json({ message: "Logged out" });
 });
+
+router.put("update/:userId", userController.updateUser);
+router.delete("delete/:userId", userController.deleteUser);
 
 module.exports = router;

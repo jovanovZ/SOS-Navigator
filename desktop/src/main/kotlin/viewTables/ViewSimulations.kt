@@ -1,5 +1,6 @@
 package viewTables
 
+import BACKEND_URL
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -28,6 +29,12 @@ import kotlinx.coroutines.runBlocking
 import org.bson.Document
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONArray
+import org.json.JSONObject
 import java.util.Date
 
 
@@ -64,7 +71,7 @@ fun SimulationCard(simulation: Simulation, onDelete: (Simulation) -> Unit, onSav
             modifier = Modifier
                 .padding(24.dp)
                 .width(500.dp)
-                .height(380.dp)
+                .height(400.dp)
                 .background(Color.White, shape = RoundedCornerShape(12.dp)),
             shape = RoundedCornerShape(8.dp),
             color = Color(0xFFFFFFFF),
@@ -184,7 +191,7 @@ fun SimulationCard(simulation: Simulation, onDelete: (Simulation) -> Unit, onSav
             modifier = Modifier
                 .padding(24.dp)
                 .width(500.dp)
-                .height(360.dp)
+                .height(400.dp)
                 .background(Color.White, shape = RoundedCornerShape(12.dp)),
             shape = RoundedCornerShape(8.dp),
             color = Color(0xFFFFFFFF),
@@ -290,24 +297,39 @@ fun ViewSimulation() {
     LaunchedEffect(Unit) {
         simulationState.value = runBlocking {
             try {
-                val db = DataBase.getDatabase()
-                val collection = db.getCollection("simulations")
-                val documents = collection.find().asFlow().toList()
-                documents.map { doc ->
-                    Simulation(
-                        _id = doc.getObjectId("_id"),
-                        userId = doc.getObjectId("userId"),
-                        accidentId = doc.getObjectId("accidentId"),
-                        typeOfServices = doc.getString("typeOfServices"),
-                        bestStationId = doc.getObjectId("bestStationId"),
-                        bestPathId = doc.getObjectId("bestPathId"),
-                        responseTime = doc.getInteger("responseTime"),
-                        created = doc.getDate("created"),
-                        locationFrom = doc.getString("locationFrom"),
-                        locationTo = doc.getString("locationTo"),
-                        simulationName = doc.getString("simulationName")
+                val url = "${BACKEND_URL}/api/simulation/all"
+                val client = OkHttpClient()
+                val request = Request.Builder().url(url).build()
+                val response = client.newCall(request).execute()
+                val responseBody = response.body?.string()
 
-                    )
+                if (responseBody != null) {
+                    val jsonArray = JSONArray(responseBody)
+                    (0 until jsonArray.length()).map { i ->
+                        val obj = jsonArray.getJSONObject(i)
+                        val userIdObj = obj.getJSONObject("userId")
+                        val accidentIdObj = obj.getJSONObject("accidentId")
+                        val bestStationIdObj = obj.getJSONObject("bestStationId")
+                        val bestPathIdObj = obj.getJSONObject("bestPathId")
+                        val dateFormat = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.US)
+                        val createdDate = dateFormat.parse(obj.getString("created"))
+
+                        Simulation(
+                            _id = ObjectId(obj.getString("_id")),
+                            userId = ObjectId(userIdObj.getString("_id")),
+                            simulationName = obj.getString("simulationName"),
+                            accidentId = ObjectId(accidentIdObj.getString("_id")),
+                            typeOfServices = obj.getString("typeOfServices"),
+                            bestStationId = ObjectId(bestStationIdObj.getString("_id")),
+                            bestPathId = ObjectId(bestPathIdObj.getString("_id")),
+                            responseTime = obj.getInt("responseTime"),
+                            created = createdDate,
+                            locationFrom = obj.getString("locationFrom"),
+                            locationTo = obj.getString("locationTo")
+                        )
+                    }
+                } else {
+                    emptyList()
                 }
             } catch (e: Exception) {
                 println("Error while fetching simulations: ${e.message}")
@@ -340,17 +362,22 @@ fun ViewSimulation() {
                     SimulationCard(simulation = simulation, onDelete = { deletedSimulation ->
                         runBlocking {
                             try {
-                                val db = DataBase.getDatabase()
-                                val collection = db.getCollection("simulations", Document::class.java)
-                                val filter = Document("_id", deletedSimulation._id)
+                                val simulationId = deletedSimulation._id
+                                val url = "$BACKEND_URL/api/accident/delete/${simulationId}"
 
-                                val result = collection.deleteOne(filter).asFlow().toList()
-                                if (result.isNotEmpty() && result[0].deletedCount > 0) {
-                                    println("Simulation with ID ${deletedSimulation._id} deleted successfully.")
+                                val client = OkHttpClient()
+                                val request = Request.Builder()
+                                    .url(url)
+                                    .delete()
+                                    .build()
+
+                                if (client.newCall(request).execute().use { res -> res.isSuccessful }) {
+                                    println("Accident with ID ${deletedSimulation._id} deleted successfully.")
                                     simulationState.value =
                                         simulationState.value.filter { it._id != deletedSimulation._id }
                                 } else {
-                                    println("No simulation found with ID ${deletedSimulation._id}.")
+                                    println("No accident found with ID ${deletedSimulation._id}.")
+
                                 }
                             } catch (e: Exception) {
                                 println("Error while deleting simulation: ${e.message}")
@@ -359,29 +386,30 @@ fun ViewSimulation() {
                     }, onSave = { editedSimulation ->
                         runBlocking {
                             try {
-                                val db = DataBase.getDatabase()
-                                val collection = db.getCollection("simulations", Document::class.java)
-                                val filter = Document("_id", editedSimulation._id)
-                                val update = Document(
-                                    "\$set", Document(
-                                        "userId", editedSimulation.userId
-                                    ).append(
-                                        "accidentId", editedSimulation.accidentId
-                                    ).append("typeOfServices", editedSimulation.typeOfServices)
-                                        .append("bestStationId", editedSimulation.bestStationId)
-                                        .append("bestPathId", editedSimulation.bestPathId)
-                                        .append("responseTime", editedSimulation.responseTime)
-
-                                )
-
-                                val result = collection.updateOne(filter, update).asFlow().toList()
-                                if (result.isNotEmpty() && result[0].modifiedCount > 0) {
+                                val simulationId = editedSimulation._id
+                                val url = "$BACKEND_URL/api/simulation/update/${simulationId}"
+                                val client = OkHttpClient()
+                                val json = JSONObject()
+                                    .put("userId", editedSimulation.userId.toString())
+                                    .put("accidentId", editedSimulation.accidentId.toString())
+                                    .put("typeOfServices", editedSimulation.typeOfServices)
+                                    .put("bestStationId", editedSimulation.bestStationId.toString())
+                                    .put("bestPathId", editedSimulation.bestPathId.toString())
+                                    .put("responseTime", editedSimulation.responseTime)
+                                    .toString()
+                                val body = json.toRequestBody("application/json".toMediaTypeOrNull())
+                                val request = Request.Builder()
+                                    .url(url)
+                                    .put(body)
+                                    .build()
+                                val response = client.newCall(request).execute()
+                                if(response.isSuccessful){
                                     println("Simulation with ID ${editedSimulation._id} updated successfully.")
                                     simulationState.value = simulationState.value.map {
                                         if (it._id == editedSimulation._id) editedSimulation else it
                                     }
                                 } else {
-                                    println("No simulation found with ID ${editedSimulation._id}.")
+                                    println("Failed to update simulation with ID ${editedSimulation._id}.")
                                 }
                             } catch (e: Exception) {
                                 println("Error while updating simulation: ${e.message}")

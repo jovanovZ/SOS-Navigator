@@ -2,7 +2,14 @@ const Station = require("../models/StationModel");
 const Location = require("../models/LocationModel");
 
 exports.createStation = async (req, res) => {
-  const { latitude, longitude, locationId, typeOfStation, isPermanent, region } = req.body;
+  const {
+    latitude,
+    longitude,
+    locationId,
+    typeOfStation,
+    isPermanent,
+    region,
+  } = req.body;
   console.log(req.body);
   try {
     const location = new Location({
@@ -21,7 +28,7 @@ exports.createStation = async (req, res) => {
     });
 
     console.log(newStation);
-    console.log('hi')
+    console.log("hi");
 
     await newStation.save();
 
@@ -59,7 +66,13 @@ exports.deleteStation = async (req, res) => {
 exports.updateStation = async (req, res) => {
   const { stationId } = req.params;
   const { locationId, typeOfStation, isPermanent, region } = req.body;
-  if (!stationId || !locationId || !typeOfStation || !isPermanent || !region) {
+  if (
+    !stationId ||
+    !locationId ||
+    !typeOfStation ||
+    typeof isPermanent !== "boolean" ||
+    !region
+  ) {
     return res.status(400).json({ message: "All fields are required" });
   }
   try {

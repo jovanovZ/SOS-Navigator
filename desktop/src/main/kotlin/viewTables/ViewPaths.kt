@@ -1,10 +1,12 @@
 package viewTables
 
+import BACKEND_URL
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.rememberScrollState
 
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -27,8 +29,14 @@ import inputs.InputFieldForText
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.runBlocking
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.bson.Document
 import org.bson.types.ObjectId
+import org.json.JSONArray
+import org.json.JSONObject
 
 data class PathData(
     val _id: ObjectId = ObjectId(),
@@ -137,7 +145,7 @@ fun PathCard(path: PathData, onDelete: (PathData) -> Unit, onSave: (PathData) ->
             color = Color(0xFFFFFFFF)
         ) {
             Column(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -195,26 +203,43 @@ fun PathCard(path: PathData, onDelete: (PathData) -> Unit, onSave: (PathData) ->
 fun ViewPaths() {
     val pathState = remember { mutableStateOf(listOf<PathData>()) }
     val loadingState = remember { mutableStateOf(true) }
+    val gridState = rememberLazyGridState()
 
     LaunchedEffect(Unit) {
         pathState.value = runBlocking {
             try {
-                val db = DataBase.getDatabase()
-                val collection = db.getCollection("paths", Document::class.java)
+                val url = "${BACKEND_URL}/api/path/getAll"
+                val client = OkHttpClient()
+                val request = Request.Builder().url(url).build()
+                val response = client.newCall(request).execute()
+                val responseBody = response.body?.string()
 
-                val documents = collection.find().asFlow().toList()
-                documents.map { doc ->
-                    PathData(
-                        _id = doc.getObjectId("_id"),
-                        accidentId = doc.getObjectId("accidentId"),
-                        locationPoints = doc.getList("locationPoints", Document::class.java).map { point ->
-                            LocationPoint(
-                                lat = point.getDouble("lat"),
-                                lng = point.getDouble("lng")
-                            )
-                        }
-                    )
+                if (responseBody != null) {
+                    val jsonObj = JSONObject(responseBody)
+                    val jsonArr = jsonObj.getJSONArray("paths")
+
+                    (0 until jsonArr.length()).map{ i ->
+                        val obj = jsonArr.getJSONObject(i)
+                        val accidentIdObj = obj.getJSONObject("accidentId")
+                        PathData(
+                            _id = ObjectId(obj.getString("_id")),
+                            accidentId = ObjectId(accidentIdObj.getString("_id")),
+                            locationPoints = obj.getJSONArray("locationPoints").let { points ->
+                                (0 until points.length()).map { j ->
+                                    val point = points.getJSONObject(j)
+                                    LocationPoint(
+                                        lat = point.getDouble("lat"),
+                                        lng = point.getDouble("lng")
+                                    )
+                                }
+                            }
+                        )
+
+                    }
+                }else {
+                    emptyList()
                 }
+
             } catch (e: Exception) {
                 println("Error while fetching paths: ${e.message}")
                 emptyList()
@@ -236,6 +261,7 @@ fun ViewPaths() {
             contentAlignment = Alignment.Center
         ) {
             LazyVerticalGrid(
+                state = gridState,
                 columns = GridCells.Adaptive(minSize = 550.dp),
                 modifier = Modifier
                     .fillMaxSize()
@@ -246,16 +272,21 @@ fun ViewPaths() {
                     PathCard(path = path, onDelete = { deletedPath ->
                         runBlocking {
                             try {
-                                val db = DataBase.getDatabase()
-                                val collection = db.getCollection("paths", Document::class.java)
-                                val filter = Document("_id", deletedPath._id)
+                                val pathId = deletedPath._id
+                                val url = "${BACKEND_URL}/api/path/delete/${pathId}"
 
-                                val result = collection.deleteOne(filter).asFlow().toList()
-                                if (result.isNotEmpty() && result[0].deletedCount > 0) {
-                                    println("Path with ID ${deletedPath._id} deleted successfully.")
+                                val client = OkHttpClient()
+                                val request = Request.Builder()
+                                    .url(url)
+                                    .delete()
+                                    .build()
+
+                                if(client.newCall(request).execute().use { res -> res.isSuccessful }){
+                                    println("Location with ID ${deletedPath._id} deleted successfully.")
                                     pathState.value = pathState.value.filter { it._id != deletedPath._id }
                                 } else {
-                                    println("No path found with ID ${deletedPath._id}.")
+                                    println("No accident found with ID ${deletedPath._id}.")
+
                                 }
                             } catch (e: Exception) {
                                 println("Error while deleting path: ${e.message}")
@@ -264,27 +295,35 @@ fun ViewPaths() {
                     }, onSave = { editedPath ->
                         runBlocking {
                             try {
-                                val db = DataBase.getDatabase()
-                                val collection = db.getCollection("paths", Document::class.java)
-                                val filter = Document("_id", editedPath._id)
-                                val update = Document(
-                                    "\$set", Document(
-                                        "accidentId", editedPath.accidentId
-                                    ).append(
-                                        "locationPoints", editedPath.locationPoints.map { point ->
-                                            Document("lat", point.lat).append("lng", point.lng)
-                                        }
-                                    )
-                                )
+                                val pathId = editedPath._id
+                                val url = "${BACKEND_URL}/api/path/update/${pathId}"
 
-                                val result = collection.updateOne(filter, update).asFlow().toList()
-                                if (result.isNotEmpty() && result[0].modifiedCount > 0) {
+                                val client = OkHttpClient()
+                                val json = JSONObject().apply {
+                                    put("accidentId", editedPath.accidentId.toString())
+                                    put("locationPoints", JSONArray().apply {
+                                        editedPath.locationPoints.forEach { point ->
+                                            put(JSONObject().apply {
+                                                put("lat", point.lat)
+                                                put("lng", point.lng)
+                                            })
+                                        }
+                                    })
+                                }.toString()
+                                val requestBody = json.toRequestBody("application/json".toMediaTypeOrNull())
+                                val request = Request.Builder()
+                                    .url(url)
+                                    .put(requestBody)
+                                    .build()
+
+                                val response = client.newCall(request).execute()
+                                if (response.isSuccessful) {
                                     println("Path with ID ${editedPath._id} updated successfully.")
                                     pathState.value = pathState.value.map {
                                         if (it._id == editedPath._id) editedPath else it
                                     }
                                 } else {
-                                    println("No path found with ID ${editedPath._id}.")
+                                    println("Failed to update path with ID ${editedPath._id}.")
                                 }
                             } catch (e: Exception) {
                                 println("Error while updating path: ${e.message}")

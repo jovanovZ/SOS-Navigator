@@ -1,5 +1,6 @@
 package viewTables
 
+import BACKEND_URL
 import InputFieldForBoolean
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -30,8 +31,13 @@ import inputs.InputFieldForText
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.runBlocking
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.bson.Document
 import org.bson.types.ObjectId
+import org.json.JSONArray
 
 internal data class Station(
     val _id: ObjectId = ObjectId(),
@@ -213,18 +219,28 @@ fun ViewStations() {
     LaunchedEffect(Unit) {
         stationState.value = runBlocking {
             try {
-                //api klic za getall
-                val db = DataBase.getDatabase()
-                val collection = db.getCollection("stations")
-                val stations = collection.find().asFlow().toList()
-                stations.map { doc ->
-                    Station(
-                        _id = doc.getObjectId("_id"),
-                        locationId = doc.getObjectId("locationId"),
-                        typeOfStation = doc.getString("typeOfStation"),
-                        isPermanent = doc.getBoolean("isPermanent"),
-                        region = doc.getString("region")
-                    )
+                val url = "${BACKEND_URL}/api/station/all"
+                val client = OkHttpClient()
+
+                val request = Request.Builder().url(url).build()
+                val response = client.newCall(request).execute()
+                val responseBody = response.body?.string()
+
+                if (responseBody != null) {
+                    val jsonArray = JSONArray(responseBody)
+                    (0 until jsonArray.length()).map { i ->
+                        val obj = jsonArray.getJSONObject(i)
+                        val stationObj = obj.getJSONObject("locationId")
+                        Station(
+                            _id = ObjectId(obj.getString("_id")),
+                            locationId = ObjectId(stationObj.getString("_id")),
+                            typeOfStation = obj.getString("typeOfStation"),
+                            isPermanent = obj.getBoolean("isPermanent"),
+                            region = obj.getString("region")
+                        )
+                    }
+                } else {
+                    emptyList<Station>()
                 }
             } catch (e: Exception) {
                 println("Error while fetching stations: ${e.message}")
@@ -260,18 +276,21 @@ fun ViewStations() {
                     StationCard(station = station, onDelete = { deletedStation ->
                         runBlocking {
                             try {
-                                //api klic za delete
-                                val db = DataBase.getDatabase()
-                                val collection = db.getCollection("stations", Document::class.java)
-                                val filter = Document("_id", deletedStation._id)
+                                val stationId = deletedStation._id
+                                val url = "$BACKEND_URL/api/location/delete/${stationId}"
 
-                                val result = collection.deleteOne(filter).asFlow().toList()
-                                if (result.isNotEmpty() && result[0].deletedCount > 0) {
+                                val client = OkHttpClient()
+                                val request = Request.Builder()
+                                    .url(url)
+                                    .delete()
+                                    .build()
+                                val response = client.newCall(request).execute()
+                                if (response.isSuccessful) {
                                     println("Station with ID ${deletedStation._id} deleted successfully.")
-                                    stationState.value =
-                                        stationState.value.filter { it._id != deletedStation._id }
+                                    stationState.value = stationState.value.filter { it._id != deletedStation._id }
                                 } else {
                                     println("No station found with ID ${deletedStation._id}.")
+
                                 }
                             } catch (e: Exception) {
                                 println("Error while deleting station: ${e.message}")
@@ -280,32 +299,31 @@ fun ViewStations() {
                     }, onSave = { editedStation ->
                         runBlocking {
                             try {
-                                //api klic za update
-                                val db = DataBase.getDatabase()
-                                val collection = db.getCollection("stations", Document::class.java)
-                                val filter = Document("_id", editedStation._id)
-                                val update = Document(
-                                    "\$set", Document(
-                                        "locationId", editedStation.locationId
-                                    ).append(
-                                        "typeOfStation", editedStation.typeOfStation
-                                    ).append(
-                                        "isPermanent", editedStation.isPermanent
-                                    ).append(
-                                        "region", editedStation.region
-                                    )
+                                val stationId = editedStation._id
+                                val url = "$BACKEND_URL/api/station/update/${stationId}"
+                                val client = OkHttpClient()
+                                val json = org.json.JSONObject()
+                                    .put("locationId", editedStation.locationId.toString())
+                                    .put("typeOfStation", editedStation.typeOfStation)
+                                    .put("isPermanent", editedStation.isPermanent)
+                                    .put("region", editedStation.region)
+                                    .toString()
 
-                                )
-
-                                val result = collection.updateOne(filter, update).asFlow().toList()
-                                if (result.isNotEmpty() && result[0].modifiedCount > 0) {
-                                    println("Station with ID ${editedStation._id} updated successfully.")
+                                val body = json.toRequestBody("application/json".toMediaTypeOrNull())
+                                val request = Request.Builder()
+                                    .url(url)
+                                    .put(body)
+                                    .build()
+                                val response = client.newCall(request).execute()
+                                if (response.isSuccessful) {
+                                    println("Station with ID $stationId updated successfully.")
                                     stationState.value = stationState.value.map {
                                         if (it._id == editedStation._id) editedStation else it
                                     }
                                 } else {
-                                    println("No station found with ID ${editedStation._id}.")
+                                    println("Failed to update station: ${response.message}")
                                 }
+
                             } catch (e: Exception) {
                                 println("Error while updating station: ${e.message}")
                             }
