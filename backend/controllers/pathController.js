@@ -136,3 +136,19 @@ exports.getAllPathsByLocation = async (req, res) => {
       .json({ message: "Failed to get a path by ceratin location" });
   }
 };
+exports.getRandomId = async (req, res ) =>{
+   try {
+      const count = await Path.countDocuments();
+      if (count === 0) {
+        return res.status(404).json({ message: "No paths found" });
+      }
+      const random = Math.floor(Math.random() * count);
+      const path = await Path.findOne().skip(random).select("_id");
+      if (!path) {
+        return res.status(404).json({ message: "No path found" });
+      }
+      return res.status(200).json({ id: path._id });
+    } catch (error) {
+      return res.status(500).json({ message: "Failed to get random path ID" });
+    }
+}

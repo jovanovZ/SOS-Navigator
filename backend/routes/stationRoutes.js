@@ -1,20 +1,17 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const stationController = require('../controllers/stationController');
+const stationController = require("../controllers/stationController");
 
-router.get('/all', stationController.getAll);
-router.get('/type/:typeOfStation', stationController.getByCertainType);
-router.get('/location/:locationId', stationController.getByLocation);
-router.get('/region/:region', stationController.getByRegion);
-router.get('/permanent/:isPermanent', stationController.getByPermanence);
+router.get("/all", stationController.getAll);
+router.get("/type/:typeOfStation", stationController.getByCertainType);
+router.get("/location/:locationId", stationController.getByLocation);
+router.get("/region/:region", stationController.getByRegion);
+router.get("/permanent/:isPermanent", stationController.getByPermanence);
+router.get("/randomId", stationController.getRadnomId);
 
+router.post("/create", stationController.createStation);
+router.put("/update/:stationId", stationController.updateStation);
 
-
-
-router.post('/create', stationController.createStation);
-router.put('/update/:stationId', stationController.updateStation);
-
-router.delete('/delete/:stationId', stationController.deleteStation);
-
+router.delete("/delete/:stationId", stationController.deleteStation);
 
 module.exports = router;

@@ -363,7 +363,7 @@ fun ViewSimulation() {
                         runBlocking {
                             try {
                                 val simulationId = deletedSimulation._id
-                                val url = "$BACKEND_URL/api/accident/delete/${simulationId}"
+                                val url = "$BACKEND_URL/api/simulation/delete/${simulationId}"
 
                                 val client = OkHttpClient()
                                 val request = Request.Builder()
@@ -372,11 +372,11 @@ fun ViewSimulation() {
                                     .build()
 
                                 if (client.newCall(request).execute().use { res -> res.isSuccessful }) {
-                                    println("Accident with ID ${deletedSimulation._id} deleted successfully.")
+                                    println("Simulation with ID ${deletedSimulation._id} deleted successfully.")
                                     simulationState.value =
                                         simulationState.value.filter { it._id != deletedSimulation._id }
                                 } else {
-                                    println("No accident found with ID ${deletedSimulation._id}.")
+                                    println("No simulation found with ID ${deletedSimulation._id}.")
 
                                 }
                             } catch (e: Exception) {

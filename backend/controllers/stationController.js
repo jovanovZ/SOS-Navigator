@@ -200,3 +200,19 @@ exports.getByPermanence = async (req, res) => {
       .json({ message: "Failed to get stations by permanence" });
   }
 };
+exports.getRadnomId = async (req,res) =>{
+   try {
+      const count = await Station.countDocuments();
+      if (count === 0) {
+        return res.status(404).json({ message: "No stations found" });
+      }
+      const random = Math.floor(Math.random() * count);
+      const station = await Station.findOne().skip(random).select("_id");
+      if (!station) {
+        return res.status(404).json({ message: "No station found" });
+      }
+      return res.status(200).json({ id: station._id });
+    } catch (error) {
+      return res.status(500).json({ message: "Failed to get random station ID" });
+    }
+}

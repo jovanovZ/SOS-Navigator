@@ -19,6 +19,7 @@ router.get("/me", authMiddleware, (req, res) => {
   res.json({ _id: req.user._id });
 });
 router.get("/info", userController.getProfile);
+router.get("/randomId", userController.getRandomId);
 
 router.post("/register", userController.register);
 

@@ -138,3 +138,20 @@ exports.getByLocation = async (req, res) => {
       .json({ message: "Failed to get accidents by location" });
   }
 };
+
+exports.getRadnomId = async (req, res) => {
+  try {
+    const count = await Accident.countDocuments();
+    if (count === 0) {
+      return res.status(404).json({ message: "No accidents found" });
+    }
+    const random = Math.floor(Math.random() * count);
+    const accident = await Accident.findOne().skip(random).select("_id");
+    if (!accident) {
+      return res.status(404).json({ message: "No accident found" });
+    }
+    return res.status(200).json({ id: accident._id });
+  } catch (error) {
+    return res.status(500).json({ message: "Failed to get random accident ID" });
+  }
+};

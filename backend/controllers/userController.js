@@ -242,3 +242,22 @@ exports.updateUser = async (req, res) => {
       .json({ message: "Failed to update user", error: error.message });
   }
 };
+
+exports.getRandomId = async (req, res) => {
+  try {
+    const count = await User.countDocuments();
+    if (count === 0) {
+      return res.status(404).json({ message: "No users found" });
+    }
+    const random = Math.floor(Math.random() * count);
+    const user = await User.findOne().skip(random).select("_id");
+    if (!user) {
+      return res.status(404).json({ message: "No user found" });
+    }
+    return res.status(200).json({ id: user._id });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: "Failed to get random user ID" });
+  }
+};
