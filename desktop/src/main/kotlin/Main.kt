@@ -6,6 +6,7 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import generate.*
@@ -18,6 +19,7 @@ enum class Mode {
     ABOUT,
     ADD
 }
+
 enum class Tables {
     USER,
     SIMULATION,
@@ -27,12 +29,14 @@ enum class Tables {
     PATH,
     NONE
 }
+
 enum class Scraper {
     POLICE,
     AMBULANCE,
     FIRE_DEPARTMENT,
     NONE
 }
+
 enum class Generator {
     USER,
     SIMULATION,
@@ -42,6 +46,7 @@ enum class Generator {
     PATH,
     NONE
 }
+
 enum class Add {
     USER,
     SIMULATION,
@@ -51,7 +56,6 @@ enum class Add {
     PATH,
     NONE
 }
-
 
 
 @Composable
@@ -65,11 +69,11 @@ fun App(
 ) {
     MaterialTheme {
         Row(modifier = Modifier.fillMaxSize().background(Color(0xF9FAFB))) {
-            SidebarWithDropdown(state, tablesState, scraperState, generatorState,addTableState)
+            SidebarWithDropdown(state, tablesState, scraperState, generatorState, addTableState)
         }
-        when(state.value){
+        when (state.value) {
             Mode.ABOUT -> About()
-            Mode.TABLE -> when(tablesState.value){
+            Mode.TABLE -> when (tablesState.value) {
                 Tables.USER -> ViewUsers()
                 Tables.SIMULATION -> ViewSimulation()
                 Tables.ACCIDENT -> ViewAccidents()
@@ -78,8 +82,9 @@ fun App(
                 Tables.PATH -> ViewPaths()
                 else -> Modal("No table selected")
             }
+
             Mode.SCRAPER -> ScrapePrompt(scraperState)
-            Mode.GENERATOR -> when(generatorState.value){
+            Mode.GENERATOR -> when (generatorState.value) {
                 Generator.USER -> GenerateUser()
                 Generator.SIMULATION -> GenerateSimulation()
                 Generator.ACCIDENT -> GenerateAccident()
@@ -88,7 +93,8 @@ fun App(
                 Generator.PATH -> GeneratePath()
                 else -> Modal("No table selected")
             }
-            Mode.ADD -> when(addTableState.value){
+
+            Mode.ADD -> when (addTableState.value) {
                 Add.USER -> AddUser()
                 Add.SIMULATION -> AddSimulation()
                 Add.ACCIDENT -> AddAccident()
@@ -105,12 +111,14 @@ fun App(
 fun main() = application {
     val stateMode = mutableStateOf(Mode.ABOUT)
     val stateForTable: MutableState<Tables> = remember { mutableStateOf(Tables.NONE) }
-    val stateForScraper: MutableState<Scraper> = remember {   mutableStateOf(Scraper.NONE)}
-    val stateForGenerator: MutableState<Generator> = remember {   mutableStateOf(Generator.NONE)}
-    val stateForAddTables: MutableState<Add> = remember {   mutableStateOf(Add.NONE)}
+    val stateForScraper: MutableState<Scraper> = remember { mutableStateOf(Scraper.NONE) }
+    val stateForGenerator: MutableState<Generator> = remember { mutableStateOf(Generator.NONE) }
+    val stateForAddTables: MutableState<Add> = remember { mutableStateOf(Add.NONE) }
 
 
-    Window(onCloseRequest = ::exitApplication) {
+    Window(
+        onCloseRequest = ::exitApplication, title = "SOS-Navigator", icon = painterResource("transparent.png")
+    ) {
         App(stateMode, stateForTable, stateForScraper, stateForGenerator, stateForAddTables)
     }
 }

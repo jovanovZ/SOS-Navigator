@@ -1,5 +1,6 @@
 package insertTables
 
+import BACKEND_URL
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -13,7 +14,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import inputs.InputFieldForText
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.bson.types.ObjectId
+import org.json.JSONArray
+import org.json.JSONObject
 
 @Composable
 @Preview
@@ -91,7 +98,10 @@ fun AddPath() {
                     Text("Add Location Point")
                 }
 
-                Text("Current Location Points: ${locationPoints.value.joinToString(", ") { "(${it["lat"]}, ${it["lng"]})" }}", fontSize = 14.sp)
+                Text(
+                    "Current Location Points: ${locationPoints.value.joinToString(", ") { "(${it["lat"]}, ${it["lng"]})" }}",
+                    fontSize = 14.sp
+                )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -108,12 +118,42 @@ fun AddPath() {
                                 println("Accident ID must be a valid ObjectId")
                                 return@Button
                             }
-                            println("""
-                                Path info:
-                                Accident ID: ${accidentId.value}
-                                Location Points: ${locationPoints.value.joinToString(", ") { "(${it["lat"]}, ${it["lng"]})" }}
-                            """.trimIndent()
-                            )
+                            try {
+                                val url = "$BACKEND_URL/api/path/create"
+                                val client = OkHttpClient()
+
+                                val pointsArray = JSONArray()
+                                for (point in locationPoints.value) {
+                                    val pointObj = JSONObject()
+                                        .put("lat", point["lat"])
+                                        .put("lng", point["lng"])
+                                    pointsArray.put(pointObj)
+                                }
+
+                                val json = JSONObject()
+                                    .put("accidentId", accidentId.value)
+                                    .put("locationPoints", pointsArray)
+                                    .toString()
+
+                                val body = json.toRequestBody("application/json".toMediaTypeOrNull())
+                                val request = Request.Builder()
+                                    .url(url)
+                                    .post(body)
+                                    .build()
+
+                                val response = client.newCall(request).execute()
+                                if (response.isSuccessful) {
+                                    val responseBody = response.body?.string() ?: ""
+                                    println("Path created: $responseBody")
+                                    accidentId.value = ""
+                                    locationPoints.value.clear()
+                                } else {
+                                    println("Failed to create path: ${response.message}")
+                                }
+                            } catch (e: Exception) {
+                                println("Error inserting path: ${e.message}")
+                            }
+
                         }) {
                         Text("Insert")
                     }

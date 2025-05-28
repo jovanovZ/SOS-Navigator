@@ -1,5 +1,6 @@
 package insertTables
 
+import BACKEND_URL
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -15,25 +16,30 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import inputs.InputFieldForNumber
 import inputs.InputFieldForText
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.bson.types.ObjectId
+import org.json.JSONObject
 
 @Composable
 @Preview
 fun AddAccident() {
-    val accidentId = remember { mutableStateOf("") }
     var expanded = remember { mutableStateOf(false) }
+    val longitude = remember { mutableStateOf("") }
+    val latitude = remember { mutableStateOf("") }
     var selectedAccident = remember { mutableStateOf("") }
-    val typeOfAccident = remember { mutableStateListOf(
-        "Prometna",
-        "Požar",
-        "Naravna nesreča",
-        "Onesnaženje",
-        "Zdravstveni nujni primer",
-        "Eksplozija",
-        "Napad",
-        "Drugo",
-    ) }
+    val typeOfAccident = remember {
+        mutableStateListOf(
+            "prometna",
+            "naravna nesreča",
+            "zdravstveni primer",
+            "kriminal"
+        )
+    }
 
     Box(
         modifier = Modifier
@@ -59,14 +65,6 @@ fun AddAccident() {
                 }
                 Divider(modifier = Modifier.padding(vertical = 8.dp))
 
-                Text("Accident id", fontSize = 18.sp)
-                InputFieldForText(
-                    value = accidentId.value,
-                    onValueChange = { accidentId.value = it },
-                    inputModifier = Modifier.fillMaxWidth(),
-                    label = "Accident id"
-                )
-                Divider(modifier = Modifier.padding(vertical = 8.dp))
 
                 Text("Type of accident", fontSize = 18.sp)
                 Box {
@@ -96,11 +94,27 @@ fun AddAccident() {
                                 selectedAccident.value = region
                                 expanded.value = false
                             }) {
-                                Text(region)
+                                Text(region.replaceFirstChar { it.uppercase() })
                             }
                         }
                     }
                 }
+                Text("Longitude", fontSize = 18.sp)
+                InputFieldForNumber(
+                    value = longitude.value,
+                    onValueChange = { longitude.value = it },
+                    inputModifier = Modifier.fillMaxWidth(),
+                    label = "Longitude"
+                )
+                Divider(modifier = Modifier.padding(vertical = 8.dp))
+
+                Text("Latitude", fontSize = 18.sp)
+                InputFieldForNumber(
+                    value = latitude.value,
+                    onValueChange = { latitude.value = it },
+                    inputModifier = Modifier.fillMaxWidth(),
+                    label = "Latitude"
+                )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -111,20 +125,37 @@ fun AddAccident() {
                         colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF1E88E5)),
                         shape = RoundedCornerShape(30),
                         onClick = {
-                           if(accidentId.value.isEmpty() || selectedAccident.value.isEmpty()) {
+                            if (selectedAccident.value.isEmpty() || longitude.value.isEmpty() || latitude.value.isEmpty()) {
                                 println("Please fill all fields")
                                 return@Button
                             }
-                            if (!ObjectId.isValid(accidentId.value) ) {
-                                println("Accident ID must be a valid ObjectId")
-                                return@Button
+
+                            try{
+                                val url = "${BACKEND_URL}/api/accident/create"
+                                val client = OkHttpClient()
+                                val json = JSONObject()
+                                    .put("latitude", latitude.value.toDouble())
+                                    .put("longitude", longitude.value.toDouble())
+                                    .put("type", selectedAccident.value)
+                                    .toString()
+                                val body = json.toRequestBody("application/json".toMediaTypeOrNull())
+                                val request = Request.Builder()
+                                    .url(url)
+                                    .post(body)
+                                    .build()
+                                val response = client.newCall(request).execute()
+                                if (response.isSuccessful) {
+                                    val responseBody = response.body?.string() ?: ""
+                                    println("Accident created: $responseBody")
+                                    selectedAccident.value = ""
+                                    longitude.value = ""
+                                    latitude.value = ""
+                                } else {
+                                    println("Failed to create accident: ${response.message}")
+                                }
+                            }catch (e : Exception){
+                                println("Error creating accident: ${e.message}")
                             }
-                            println("""
-                                Accident info:
-                                Accident ID: ${accidentId.value}
-                                Type of accident: ${selectedAccident.value}
-                            """.trimIndent()
-                            )
                         }) {
                         Text("Insert")
                     }

@@ -1,5 +1,6 @@
 package viewTables
 
+import BACKEND_URL
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -28,8 +29,14 @@ import inputs.InputFieldForNumber
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.runBlocking
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.bson.Document
 import org.bson.types.ObjectId
+import org.json.JSONArray
+import org.json.JSONObject
 
 
 data class Location(
@@ -185,20 +192,33 @@ fun ViewLocation() {
     LaunchedEffect(Unit) {
         locationState.value = runBlocking {
             try {
-                val db = DataBase.getDatabase()
-                val collection = db.getCollection("locations", Document::class.java)
+                val url = "$BACKEND_URL/api/location/all"
 
-                val documents = collection.find().asFlow().toList()
-                documents.map { doc ->
-                    val geometry = doc.get("geometry", Document::class.java)
-                    Location(
-                        _id = doc.getObjectId("_id"),
-                        geometry = Geometry(
-                            type = geometry.getString("type"),
-                            coordinates = geometry.getList("coordinates", Number::class.java)
-                                .map { it.toDouble() }
+                val client = OkHttpClient()
+                val request = Request.Builder().url(url).build()
+                val response = client.newCall(request).execute()
+                val responseBody = response.body?.string()
+
+                if (responseBody != null) {
+                    val jsonObject = JSONObject(responseBody)
+                    val jsonArray = jsonObject.getJSONArray("locations")
+                    (0 until jsonArray.length()).map { i ->
+                        val obj = jsonArray.getJSONObject(i)
+
+                        Location(
+                            _id = ObjectId(obj.getString("_id")),
+                            geometry = Geometry(
+                                type = obj.getJSONObject("geometry").getString("type"),
+                                coordinates = obj.getJSONObject("geometry")
+                                    .getJSONArray("coordinates")
+                                    .let { coords ->
+                                        (0 until coords.length()).map { coords.getDouble(it) }
+                                    }
+                            )
                         )
-                    )
+                    }
+                } else {
+                    emptyList()
                 }
             } catch (e: Exception) {
                 println("Error while fetching locations: ${e.message}")
@@ -231,16 +251,21 @@ fun ViewLocation() {
                     LocationCard(location = location, onDelete = { deletedLocation ->
                         runBlocking {
                             try {
-                                val db = DataBase.getDatabase()
-                                val collection = db.getCollection("locations", Document::class.java)
-                                val filter = Document("_id", deletedLocation._id)
+                                val locationId = deletedLocation._id
+                                val url = "$BACKEND_URL/api/location/delete/${locationId}"
 
-                                val result = collection.deleteOne(filter).asFlow().toList()
-                                if (result.isNotEmpty() && result[0].deletedCount > 0) {
+                                val client = OkHttpClient()
+                                val request = Request.Builder()
+                                    .url(url)
+                                    .delete()
+                                    .build()
+                                val response = client.newCall(request).execute()
+                                if (response.isSuccessful) {
                                     println("Location with ID ${deletedLocation._id} deleted successfully.")
                                     locationState.value = locationState.value.filter { it._id != deletedLocation._id }
                                 } else {
                                     println("No location found with ID ${deletedLocation._id}.")
+
                                 }
                             } catch (e: Exception) {
                                 println("Error while deleting location: ${e.message}")
@@ -249,24 +274,27 @@ fun ViewLocation() {
                     }, onSave = { editedLocation ->
                         runBlocking {
                             try {
-                                val db = DataBase.getDatabase()
-                                val collection = db.getCollection("locations", Document::class.java)
-                                val filter = Document("_id", editedLocation._id)
-                                val update = Document(
-                                    "\$set", Document(
-                                        "geometry", Document("type", editedLocation.geometry.type)
-                                            .append("coordinates", editedLocation.geometry.coordinates)
-                                    )
-                                )
+                                val locationId = editedLocation._id
+                                val url = "$BACKEND_URL/api/location/update/${locationId}"
+                                val client = OkHttpClient()
+                                val json = JSONObject()
+                                    .put("long", editedLocation.geometry.coordinates[0])
+                                    .put("lat", editedLocation.geometry.coordinates[1])
+                                    .toString()
+                                val body = json.toRequestBody("application/json".toMediaTypeOrNull())
+                                val request = Request.Builder()
+                                    .url(url)
+                                    .put(body)
+                                    .build()
 
-                                val result = collection.updateOne(filter, update).asFlow().toList()
-                                if (result.isNotEmpty() && result[0].modifiedCount > 0) {
+                                if (client.newCall(request).execute().use { res -> res.isSuccessful }) {
                                     println("Location with ID ${editedLocation._id} updated successfully.")
                                     locationState.value = locationState.value.map {
                                         if (it._id == editedLocation._id) editedLocation else it
                                     }
                                 } else {
                                     println("No location found with ID ${editedLocation._id}.")
+
                                 }
                             } catch (e: Exception) {
                                 println("Error while updating location: ${e.message}")

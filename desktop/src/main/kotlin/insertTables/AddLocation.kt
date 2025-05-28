@@ -1,5 +1,6 @@
 package insertTables
 
+import BACKEND_URL
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -13,6 +14,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import inputs.InputFieldForNumber
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
 
 @Composable
 @Preview
@@ -73,12 +79,30 @@ fun AddLocation() {
                             if(longitude.value.isEmpty() || latitude.value.isEmpty()) {
                                 return@Button
                             }
-                            println("""
-                                Location info:
-                                longitude: ${longitude.value}
-                                latitude: ${latitude.value}
-                            """.trimIndent()
-                            )
+                            try{
+                                val url = "${BACKEND_URL}/api/location/create"
+                                val client = OkHttpClient()
+                                val json = JSONObject()
+                                    .put("long", longitude.value.toDouble())
+                                    .put("lat", latitude.value.toDouble())
+                                    .toString()
+                                val body = json.toRequestBody("application/json".toMediaTypeOrNull())
+                                val request = Request.Builder()
+                                    .url(url)
+                                    .post(body)
+                                    .build()
+                                val response = client.newCall(request).execute()
+                                if (response.isSuccessful) {
+                                    val responseBody = response.body?.string() ?: ""
+                                    println("Location created: $responseBody")
+                                    longitude.value = ""
+                                    latitude.value = ""
+                                } else {
+                                    println("Failed to create location: ${response.message}")
+                                }
+                            }catch (e : Exception){
+                                println("Error creating location: ${e.message}")
+                            }
                         }) {
                         Text("Insert")
                     }

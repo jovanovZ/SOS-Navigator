@@ -4,8 +4,8 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const JWT_SECRET = process.env.JWT_SECRET || "my_secret";
 
-const { upload } = require('../config/cloudinary');
-const cloudinary = require('cloudinary').v2;
+const { upload } = require("../config/cloudinary");
+const cloudinary = require("cloudinary").v2;
 
 const createToken = (userId) => {
   return jwt.sign({ id: userId }, JWT_SECRET, { expiresIn: "1d" });
@@ -13,17 +13,17 @@ const createToken = (userId) => {
 
 exports.login = async (req, res) => {
   const { username, password } = req.body;
-  console.log("Incoming login body:", req.body); 
+  console.log("Incoming login body:", req.body);
   try {
     const user = await User.findOne({ username });
     if (!user) return res.status(401).json({ message: "Invalid credentials" });
 
-    console.log("User found:", user); 
+    console.log("User found:", user);
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(401).json({ message: "Invalid credentials" });
 
     const token = createToken(user._id);
-    console.log('cookie');
+    console.log("cookie");
 
     res.cookie("token", token, {
       secure: false,
@@ -31,7 +31,6 @@ exports.login = async (req, res) => {
       sameSite: "Strict",
       maxAge: 24 * 60 * 60 * 1000,
     });
-
 
     return res.json({
       user: {
@@ -97,7 +96,6 @@ exports.getProfile = async (req, res) => {
   }
 };
 
-
 exports.updateProfilePhoto = async (req, res) => {
   try {
     const { userId } = req.body;
@@ -120,10 +118,6 @@ exports.updateProfilePhoto = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
-
-
-
-
 
 exports.updateUsername = async (req, res) => {
   const { username, userId } = req.body;
@@ -189,5 +183,81 @@ exports.updatePasswrord = async (req, res) => {
     return res.status(400).json({ message: "Wrong password" });
   } catch (error) {
     return res.status(500).json({ message: "Server error" });
+  }
+};
+
+exports.getAll = async (req, res) => {
+  try {
+    const users = await User.find().select("-password");
+    return res
+      .status(200)
+      .json({ users, message: "Successfully fetched all users" });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: "Failed to fetch users", error: error.message });
+  }
+};
+exports.deleteUser = async (req, res) => {
+  const { userId } = req.params;
+  if (!userId) {
+    return res.status(400).json({ message: "userId is required" });
+  }
+  try {
+    const user = await User.findByIdAndDelete(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    return res.status(200).json({ message: "User deleted successfully" });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: "Failed to delete user", error: error.message });
+  }
+};
+exports.updateUser = async (req, res) => {
+  const { userId } = req.params;
+  const { username, email, imageUrl } = req.body;
+  console.log(userId);
+  if (!userId || !username || !email || !imageUrl) {
+    return res.status(400).json({ message: "All fields are required" });
+  }
+  try {
+    const user = await User.findByIdAndUpdate(
+      userId,
+      {
+        username,
+        email,
+        imageUrl,
+      },
+      { new: true }
+    ).select("-password");
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    return res.status(200).json({ user, message: "User updated successfully" });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: "Failed to update user", error: error.message });
+  }
+};
+
+exports.getRandomId = async (req, res) => {
+  try {
+    const count = await User.countDocuments();
+    if (count === 0) {
+      return res.status(404).json({ message: "No users found" });
+    }
+    const random = Math.floor(Math.random() * count);
+    const user = await User.findOne().skip(random).select("_id");
+    if (!user) {
+      return res.status(404).json({ message: "No user found" });
+    }
+    return res.status(200).json({ id: user._id });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: "Failed to get random user ID" });
   }
 };

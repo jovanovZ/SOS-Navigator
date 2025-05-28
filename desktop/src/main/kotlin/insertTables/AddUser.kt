@@ -1,5 +1,6 @@
 package insertTables
 
+import BACKEND_URL
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -13,10 +14,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import inputs.InputFieldForText
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.bson.types.ObjectId
+import org.json.JSONObject
 
 @Composable
 @Preview
@@ -24,9 +32,7 @@ fun AddUser() {
     val username = remember { mutableStateOf("") }
     val email = remember { mutableStateOf("") }
     val password = remember { mutableStateOf("") }
-    val imgUrl = remember { mutableStateOf("") }
-    val historySimulationsId = remember { mutableStateOf(mutableListOf<String>()) }
-    val newSimulationId = remember { mutableStateOf("") }
+    val secondPassword = remember { mutableStateOf("") }
     val scrollState = rememberScrollState()
 
     Box(
@@ -77,42 +83,19 @@ fun AddUser() {
                     value = password.value,
                     onValueChange = { password.value = it },
                     inputModifier = Modifier.fillMaxWidth(),
-                    label = "Password"
+                    label = "Password",
+                    keyboardType = KeyboardType.Password,
+                    visualTransformation = PasswordVisualTransformation()
                 )
-                Divider(modifier = Modifier.padding(vertical = 8.dp))
-
-                Text("Image url", fontSize = 18.sp)
+                Text("Enter password again", fontSize = 18.sp)
                 InputFieldForText(
-                    value = imgUrl.value,
-                    onValueChange = { imgUrl.value = it },
+                    value = secondPassword.value,
+                    onValueChange = { secondPassword.value = it },
                     inputModifier = Modifier.fillMaxWidth(),
-                    label = "Image url"
+                    label = "Password",
+                    keyboardType = KeyboardType.Password,
+                    visualTransformation = PasswordVisualTransformation()
                 )
-                Divider(modifier = Modifier.padding(vertical = 8.dp))
-
-                Text("Add Simulation ID", fontSize = 18.sp)
-                InputFieldForText(
-                    value = newSimulationId.value,
-                    onValueChange = { newSimulationId.value = it },
-                    inputModifier = Modifier.fillMaxWidth(),
-                    label = "Simulation ID"
-                )
-                Button(
-                    colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF1E88E5)),
-                    shape = RoundedCornerShape(30),
-                    onClick = {
-                        if (newSimulationId.value.isNotEmpty() && !historySimulationsId.value.contains(newSimulationId.value)) {
-                            historySimulationsId.value.add(newSimulationId.value)
-                            newSimulationId.value = ""
-                        }
-                    },
-                    modifier = Modifier.padding(top = 8.dp)
-                ) {
-                    Text("Add ID")
-                }
-
-                Text("Current Simulation IDs: ${historySimulationsId.value.joinToString(", ")}", fontSize = 14.sp)
-
 
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -123,25 +106,38 @@ fun AddUser() {
                         colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF1E88E5)),
                         shape = RoundedCornerShape(30),
                         onClick = {
-                            if(username.value.isEmpty() || email.value.isEmpty() || password.value.isEmpty() || imgUrl.value.isEmpty()) {
+                            if (username.value.isEmpty() || email.value.isEmpty() || password.value.isEmpty() || secondPassword.value.isEmpty()) {
                                 println("Please fill all fields")
                                 return@Button
                             }
-                            val invalidIds = historySimulationsId.value.filter { !ObjectId.isValid(it) }
-                            if (invalidIds.isNotEmpty()) {
-                                println("Invalid Simulation IDs: ${invalidIds.joinToString(", ")}")
+                            if( password.value != secondPassword.value) {
+                                println("Passwords do not match")
                                 return@Button
                             }
-                            println(
-                                """
-                                    Person info:
-                                    Username: ${username.value}
-                                    Email: ${email.value}
-                                    Password: ${password.value}
-                                    Image URL: ${imgUrl.value}
-                                    History Simulation IDs: ${historySimulationsId.value.joinToString(", ")}
-                                  """.trimIndent()
-                            )
+                            try{
+                                val url = "${BACKEND_URL}/api/user/register"
+                                val client = OkHttpClient()
+                                val json = JSONObject()
+                                    .put("username", username.value)
+                                    .put("email", email.value)
+                                    .put("password", password.value)
+                                    .toString()
+                                val body = json.toRequestBody("application/json".toMediaTypeOrNull())
+                                val request = Request.Builder().url(url).post(body).build()
+                                val response = client.newCall(request).execute()
+                                if(response.isSuccessful){
+                                    val responseBody = response.body?.string() ?: ""
+                                    println("User created: $responseBody")
+                                    username.value = ""
+                                    email.value = ""
+                                    password.value = ""
+                                    secondPassword.value = ""
+                                } else {
+                                    println("Failed to create user: ${response.message}")
+                                }
+                            }catch(e: Exception) {
+                                println("Error inserting user: ${e.message}")
+                            }
                         }) {
                         Text("Insert")
                     }

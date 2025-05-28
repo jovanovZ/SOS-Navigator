@@ -2,9 +2,10 @@ const express = require("express");
 const router = express.Router();
 const pathController = require("../controllers/pathController");
 
-router.get("/getAll", pathController.getAllPaths);
+router.get("/all", pathController.getAllPaths);
 router.get("/getByAccident/:accidentId", pathController.getByAccidentId);
 router.get("/getByLocation/:locationId", pathController.getAllPathsByLocation);
+router.get("/randomId", pathController.getRandomId)
 
 router.post("/create", pathController.createPath);
 

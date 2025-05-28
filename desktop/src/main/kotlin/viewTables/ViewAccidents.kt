@@ -16,17 +16,23 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import db.DataBase
 import inputs.InputFieldForText
+import io.github.cdimascio.dotenv.dotenv
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.runBlocking
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.bson.Document
 import org.bson.types.ObjectId
+import org.json.JSONArray
+import org.json.JSONObject
+import BACKEND_URL
 
 data class Accident(
     val _id: ObjectId = ObjectId(),
@@ -162,16 +168,26 @@ fun ViewAccidents() {
     LaunchedEffect(Unit) {
         accidentsState.value = runBlocking {
             try {
-                val db = DataBase.getDatabase()
-                val collection = db.getCollection("accidents", Document::class.java)
+                val url = "$BACKEND_URL/api/accident/all"
 
-                val documents = collection.find().asFlow().toList()
-                documents.map { doc ->
-                    Accident(
-                        _id = doc.getObjectId("_id"),
-                        locationId = doc.getObjectId("locationId"),
-                        typeOfAccident = doc.getString("typeOfAccident")
-                    )
+                val client = OkHttpClient()
+                val request = Request.Builder().url(url).build()
+                val response = client.newCall(request).execute()
+                val responseBody = response.body?.string()
+
+                if (responseBody != null) {
+                    val jsonArray = JSONArray(responseBody)
+                    (0 until jsonArray.length()).map { i ->
+                        val obj = jsonArray.getJSONObject(i)
+                        val locationIdObj = obj.getJSONObject("locationId")
+                        Accident(
+                            _id = ObjectId(obj.getString("_id")),
+                            locationId = ObjectId(locationIdObj.getString("_id")),
+                            typeOfAccident = obj.getString("typeOfAccident")
+                        )
+                    }
+                } else {
+                    emptyList()
                 }
             } catch (e: Exception) {
                 println("Error while fetching accidents: ${e.message}")
@@ -204,17 +220,23 @@ fun ViewAccidents() {
                     AccidentCard(accident = accident, onDelete = { deletedAccident ->
                         runBlocking {
                             try {
-                                val db = DataBase.getDatabase()
-                                val collection = db.getCollection("accidents", Document::class.java)
-                                val filter = Document("_id", deletedAccident._id)
+                                val accidentId = deletedAccident._id
+                                val url = "$BACKEND_URL/api/accident/delete/${accidentId}"
 
-                                val result = collection.deleteOne(filter).asFlow().toList()
-                                if (result.isNotEmpty() && result[0].deletedCount > 0) {
+                                val client = OkHttpClient()
+                                val request = Request.Builder()
+                                    .url(url)
+                                    .delete()
+                                    .build()
+
+                                if(client.newCall(request).execute().use { res -> res.isSuccessful }){
                                     println("Accident with ID ${deletedAccident._id} deleted successfully.")
                                     accidentsState.value = accidentsState.value.filter { it._id != deletedAccident._id }
                                 } else {
                                     println("No accident found with ID ${deletedAccident._id}.")
+
                                 }
+
                             } catch (e: Exception) {
                                 println("Error while deleting accident: ${e.message}")
                             }
@@ -222,22 +244,27 @@ fun ViewAccidents() {
                     }, onSave = { editedAccident ->
                         runBlocking {
                             try {
-                                val db = DataBase.getDatabase()
-                                val collection = db.getCollection("accidents", Document::class.java)
-                                val filter = Document("_id", editedAccident._id)
-                                val update = Document(
-                                    "\$set", Document("locationId", editedAccident.locationId)
-                                        .append("typeOfAccident", editedAccident.typeOfAccident)
-                                )
-
-                                val result = collection.updateOne(filter, update).asFlow().toList()
-                                if (result.isNotEmpty() && result[0].modifiedCount > 0) {
+                                val accidentId = editedAccident._id
+                                val url = "$BACKEND_URL/api/accident/update/${accidentId}"
+                                val client = OkHttpClient()
+                                val json = JSONObject()
+                                    .put("locationId", editedAccident.locationId.toString())
+                                    .put("typeOfAccident", editedAccident.typeOfAccident)
+                                    .toString()
+                                val body = json.toRequestBody("application/json".toMediaTypeOrNull())
+                                val request = Request.Builder()
+                                    .url(url)
+                                    .put(body)
+                                    .build()
+                                val response = client.newCall(request).execute()
+                                if(response.isSuccessful) {
                                     println("Accident with ID ${editedAccident._id} updated successfully.")
                                     accidentsState.value = accidentsState.value.map {
                                         if (it._id == editedAccident._id) editedAccident else it
                                     }
                                 } else {
                                     println("No accident found with ID ${editedAccident._id}.")
+
                                 }
                             } catch (e: Exception) {
                                 println("Error while updating accident: ${e.message}")

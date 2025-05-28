@@ -2,26 +2,30 @@ const Station = require("../models/StationModel");
 const Location = require("../models/LocationModel");
 
 exports.createStation = async (req, res) => {
-  const { latitude, longitude, locationId, typeOfStation, isPermanent, region } = req.body;
-  console.log(req.body);
+  const {
+    latitude,
+    longitude,
+    typeOfStation,
+    isPermanent,
+    region,
+  } = req.body;
   try {
     const location = new Location({
       geometry: {
         type: "Point",
         coordinates: [longitude, latitude],
       },
-    });
+    }); 
     await location.save();
 
     const newStation = new Station({
-      locationId: locationId,
+      locationId: location._id,
       typeOfStation,
       isPermanent: isPermanent, // pretvorba
       region,
     });
 
     console.log(newStation);
-    console.log('hi')
 
     await newStation.save();
 
@@ -59,7 +63,13 @@ exports.deleteStation = async (req, res) => {
 exports.updateStation = async (req, res) => {
   const { stationId } = req.params;
   const { locationId, typeOfStation, isPermanent, region } = req.body;
-  if (!stationId || !locationId || !typeOfStation || !isPermanent || !region) {
+  if (
+    !stationId ||
+    !locationId ||
+    !typeOfStation ||
+    typeof isPermanent !== "boolean" ||
+    !region
+  ) {
     return res.status(400).json({ message: "All fields are required" });
   }
   try {
@@ -190,3 +200,19 @@ exports.getByPermanence = async (req, res) => {
       .json({ message: "Failed to get stations by permanence" });
   }
 };
+exports.getRadnomId = async (req,res) =>{
+   try {
+      const count = await Station.countDocuments();
+      if (count === 0) {
+        return res.status(404).json({ message: "No stations found" });
+      }
+      const random = Math.floor(Math.random() * count);
+      const station = await Station.findOne().skip(random).select("_id");
+      if (!station) {
+        return res.status(404).json({ message: "No station found" });
+      }
+      return res.status(200).json({ id: station._id });
+    } catch (error) {
+      return res.status(500).json({ message: "Failed to get random station ID" });
+    }
+}

@@ -1,5 +1,6 @@
 package viewTables
 
+import BACKEND_URL
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -27,8 +28,14 @@ import inputs.InputFieldForText
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.runBlocking
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.bson.Document
 import org.bson.types.ObjectId
+import org.json.JSONArray
+import org.json.JSONObject
 
 
 data class User(
@@ -91,13 +98,13 @@ fun UserCard(user: User, onDelete: (User) -> Unit, onSave: (User) -> Unit) {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                     Button(
                         onClick = {
-                            if (emailInput.value.isEmpty() || imageUrlInput.value.isEmpty()) {
+                            if (emailInput.value.isEmpty() || imageUrlInput.value.isEmpty() || nameInput.value.isEmpty()) {
                                 println("Please fill all fields")
                                 return@Button
                             }
                             val updatedUser = user.copy(
                                 _id = user._id,
-                                name = user.name,
+                                name = nameInput.value,
                                 email = emailInput.value,
                                 password = user.password,
                                 imageUrl = imageUrlInput.value,
@@ -196,20 +203,33 @@ fun ViewUsers() {
 
     LaunchedEffect(Unit) {
         userState.value = runBlocking {
-            //api klic za getall
             try {
-                val db = DataBase.getDatabase()
-                val collection = db.getCollection("users")
-                val users = collection.find().asFlow().toList()
-                users.map {
-                    User(
-                        _id = it.getObjectId("_id"),
-                        name = it.getString("username"),
-                        email = it.getString("email"),
-                        password = it.getString("password"),
-                        imageUrl = it.getString("imageUrl"),
-                        historySimulations = it.getList("historySimulations", ObjectId::class.java)
-                    )
+                val url = "${BACKEND_URL}/api/user/all"
+                val client = OkHttpClient()
+                val request = Request.Builder().url(url).build()
+                val response = client.newCall(request).execute()
+                val responseBody = response.body?.string()
+
+                if (responseBody != null) {
+                    val jsonObj = JSONObject(responseBody)
+                    val jsonArray = jsonObj.getJSONArray("users")
+                    (0 until jsonArray.length()).map { i ->
+                        val obj = jsonArray.getJSONObject(i)
+                        val historySimulationsJson = obj.getJSONArray("historySimulations")
+                        val historySimulations = (0 until historySimulationsJson.length()).map { j ->
+                            ObjectId(historySimulationsJson.getString(j))
+                        }
+                        User(
+                            _id = ObjectId(obj.getString("_id")),
+                            name = obj.getString("username"),
+                            email = obj.getString("email"),
+                            password = "",
+                            imageUrl = obj.getString("imageUrl"),
+                            historySimulations = historySimulations
+                        )
+                    }
+                } else {
+                    emptyList<User>()
                 }
             } catch (e: Exception) {
                 println("Error while fetching users: ${e.message}")
@@ -243,18 +263,19 @@ fun ViewUsers() {
                     UserCard(user = user, onDelete = { deletedUser ->
                         runBlocking {
                             try {
-                                //api klic za delete
-                                val db = DataBase.getDatabase()
-                                val collection = db.getCollection("users", Document::class.java)
-                                val filter = Document("_id", deletedUser._id)
-
-                                val result = collection.deleteOne(filter).asFlow().toList()
-                                if (result.isNotEmpty() && result[0].deletedCount > 0) {
-                                    println("User with ID ${deletedUser._id} deleted successfully.")
-                                    userState.value =
-                                        userState.value.filter { it._id != deletedUser._id }
+                                val userId = deletedUser._id.toString()
+                                val url = "$BACKEND_URL/api/user/delete/$userId"
+                                val client = OkHttpClient()
+                                val request = Request.Builder()
+                                    .url(url)
+                                    .delete()
+                                    .build()
+                                val response = client.newCall(request).execute()
+                                if (response.isSuccessful) {
+                                    println("User with ID $userId deleted successfully.")
+                                    userState.value = userState.value.filter { it._id != deletedUser._id }
                                 } else {
-                                    println("No user found with ID ${deletedUser._id}.")
+                                    println("No user found with ID $userId.")
                                 }
                             } catch (e: Exception) {
                                 println("Error while deleting user: ${e.message}")
@@ -262,33 +283,29 @@ fun ViewUsers() {
                         }
                     }, onSave = { editedUser ->
                         runBlocking {
-                            //api klic za update
                             try {
-                                val db = DataBase.getDatabase()
-                                val collection = db.getCollection("users", Document::class.java)
-                                val filter = Document("_id", editedUser._id)
-                                val update = Document(
-                                    "\$set", Document(
-                                        "username", editedUser.name
-                                    ).append(
-                                        "email", editedUser.email
-                                    ).append(
-                                        "password", editedUser.password
-                                    ).append(
-                                        "imageUrl", editedUser.imageUrl
-                                    ).append(
-                                        "historySimulations", editedUser.historySimulations
-                                    )
-                                )
-
-                                val result = collection.updateOne(filter, update).asFlow().toList()
-                                if (result.isNotEmpty() && result[0].modifiedCount > 0) {
-                                    println("User with ID ${editedUser._id} updated successfully.")
+                                val userId = editedUser._id.toString()
+                                val url = "$BACKEND_URL/api/user/update/$userId"
+                                println("Updating user with ID: $userId on server at $url")
+                                val client = OkHttpClient()
+                                val json = JSONObject()
+                                    .put("username", editedUser.name)
+                                    .put("email", editedUser.email)
+                                    .put("imageUrl", editedUser.imageUrl)
+                                    .toString()
+                                val body = json.toRequestBody("application/json".toMediaTypeOrNull())
+                                val request = Request.Builder()
+                                    .url(url)
+                                    .put(body)
+                                    .build()
+                                val response = client.newCall(request).execute()
+                                if (response.isSuccessful) {
+                                    println("User with ID $userId updated successfully.")
                                     userState.value = userState.value.map {
                                         if (it._id == editedUser._id) editedUser else it
                                     }
                                 } else {
-                                    println("No user found with ID ${editedUser._id}.")
+                                    println("Failed to update user: ${response.message}")
                                 }
                             } catch (e: Exception) {
                                 println("Error while updating user: ${e.message}")
