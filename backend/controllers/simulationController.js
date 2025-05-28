@@ -8,7 +8,9 @@ const Station = require("../models/StationModel");
 exports.changeSimulationName = async (req, res) => {
   const { simulationId, newName } = req.body;
   if (!simulationId || !newName) {
-    return res.status(400).json({ message: "Simulation ID and new name are required" });
+    return res
+      .status(400)
+      .json({ message: "Simulation ID and new name are required" });
   }
   try {
     const simulation = await Simulation.findByIdAndUpdate(
@@ -24,10 +26,11 @@ exports.changeSimulationName = async (req, res) => {
       simulation,
     });
   } catch (error) {
-    return res.status(500).json({ message: "Failed to update simulation name" });
+    return res
+      .status(500)
+      .json({ message: "Failed to update simulation name" });
   }
-}
-
+};
 
 exports.createSimulation = async (req, res) => {
   try {
@@ -85,7 +88,9 @@ exports.createSimulation = async (req, res) => {
       locationTo: locationToApi,
     });
     await newSimulation.save();
+    console.log(newSimulation);
     return res.status(201).json({
+      newSimulation,
       message: "Simulation created successfully",
     });
   } catch (error) {

@@ -101,8 +101,7 @@ fun App(
     }
 }
 
-//pregledat se mores za location api, user api
-// poglej tudi za update station
+
 fun main() = application {
     val stateMode = mutableStateOf(Mode.ABOUT)
     val stateForTable: MutableState<Tables> = remember { mutableStateOf(Tables.NONE) }

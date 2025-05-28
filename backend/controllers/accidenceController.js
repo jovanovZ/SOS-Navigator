@@ -24,7 +24,7 @@ exports.createAccident = async (req, res) => {
     });
 
     await newAccident.save();
-
+    console.log(newAccident)
     return res.status(201).json({
       message: "Nesreča uspešno ustvarjena.",
       accident: {

@@ -5,30 +5,27 @@ exports.createStation = async (req, res) => {
   const {
     latitude,
     longitude,
-    locationId,
     typeOfStation,
     isPermanent,
     region,
   } = req.body;
-  console.log(req.body);
   try {
     const location = new Location({
       geometry: {
         type: "Point",
         coordinates: [longitude, latitude],
       },
-    });
+    }); 
     await location.save();
 
     const newStation = new Station({
-      locationId: locationId,
+      locationId: location._id,
       typeOfStation,
       isPermanent: isPermanent, // pretvorba
       region,
     });
 
     console.log(newStation);
-    console.log("hi");
 
     await newStation.save();
 

@@ -218,6 +218,7 @@ exports.deleteUser = async (req, res) => {
 exports.updateUser = async (req, res) => {
   const { userId } = req.params;
   const { username, email, imageUrl } = req.body;
+  console.log(userId);
   if (!userId || !username || !email || !imageUrl) {
     return res.status(400).json({ message: "All fields are required" });
   }

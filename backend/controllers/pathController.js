@@ -27,6 +27,7 @@ exports.createPath = async (req, res) => {
 
     const newPath = new Path({ accidentId, locationPoints });
     await newPath.save();
+    console.log(newPath)
     return res
       .status(200)
       .json({ path: newPath, message: "Path created successfully" });

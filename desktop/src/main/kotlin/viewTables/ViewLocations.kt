@@ -192,7 +192,7 @@ fun ViewLocation() {
     LaunchedEffect(Unit) {
         locationState.value = runBlocking {
             try {
-                val url = "$BACKEND_URL/location/all"
+                val url = "$BACKEND_URL/api/location/all"
 
                 val client = OkHttpClient()
                 val request = Request.Builder().url(url).build()
@@ -200,7 +200,8 @@ fun ViewLocation() {
                 val responseBody = response.body?.string()
 
                 if (responseBody != null) {
-                    val jsonArray = JSONArray(responseBody)
+                    val jsonObject = JSONObject(responseBody)
+                    val jsonArray = jsonObject.getJSONArray("locations")
                     (0 until jsonArray.length()).map { i ->
                         val obj = jsonArray.getJSONObject(i)
 
@@ -274,7 +275,7 @@ fun ViewLocation() {
                         runBlocking {
                             try {
                                 val locationId = editedLocation._id
-                                val url = "$BACKEND_URL/api/accident/update/${locationId}"
+                                val url = "$BACKEND_URL/api/location/update/${locationId}"
                                 val client = OkHttpClient()
                                 val json = JSONObject()
                                     .put("long", editedLocation.geometry.coordinates[0])

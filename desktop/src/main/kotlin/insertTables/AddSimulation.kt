@@ -1,5 +1,6 @@
 package insertTables
 
+import BACKEND_URL
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -18,7 +19,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import inputs.InputFieldForNumber
 import inputs.InputFieldForText
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.bson.types.ObjectId
+import org.json.JSONObject
 
 @Composable
 @Preview
@@ -141,17 +147,39 @@ fun AddSimulation() {
                                 println("ID must be a valid ObjectId")
                                 return@Button
                             }
-                            println(
-                                """
-                                        Simulation info:
-                                        User ID: ${userId.value}
-                                        Accident ID: ${accidentId.value}
-                                        Type of service: ${typeOfServices.value}
-                                        Best Station ID: ${bestStationId.value}
-                                        Best Path ID: ${bestPathId.value}
-                                        Response Time: ${responseTime.value} ms
-                                    """.trimIndent()
-                            )
+                            try{
+                                val url = "${BACKEND_URL}/api/simulation/create"
+                                val client = OkHttpClient()
+                                val json = JSONObject().put("userId", userId.value)
+                                    .put("accidentId", accidentId.value)
+                                    .put("typeOfServices", typeOfServices.value)
+                                    .put("simulationName", simulationName.value)
+                                    .put("bestStationId", bestStationId.value)
+                                    .put("bestPathId", bestPathId.value)
+                                    .put("responseTime", responseTime.value)
+                                    .put("locationFrom",bestStationId.value)
+                                    .put("locationTo", accidentId.value)
+                                    .toString()
+                                val body = json.toRequestBody("application/json".toMediaTypeOrNull())
+                                val request = Request.Builder().url(url).post(body).build()
+
+                                val response = client.newCall(request).execute()
+                                if(response.isSuccessful){
+                                    val responseBody = response.body?.string() ?: ""
+                                    println("Simulation created: $responseBody")
+                                    userId.value = ""
+                                    accidentId.value = ""
+                                    typeOfServices.value = ""
+                                    simulationName.value = ""
+                                    bestStationId.value = ""
+                                    bestPathId.value = ""
+                                    responseTime.value = ""
+                                }else{
+                                    println("Failed to create simulation: ${response.message}")
+                                }
+                            }catch (e:Exception){
+                                println("Error creating simulation: ${e.message}")
+                            }
 
                         }) {
                         Text("Insert")

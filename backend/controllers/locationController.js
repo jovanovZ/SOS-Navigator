@@ -1,10 +1,16 @@
 const Location = require("../models/LocationModel");
 const Station = require("../models/StationModel");
 const Accident = require("../models/AccidenceModel");
+const cookieParser = require("cookie-parser");
 
 exports.createLocation = async (req, res) => {
   const { long, lat } = req.body;
-  if (!long || !lat) {
+  if (
+    long === undefined ||
+    lat === undefined ||
+    long === null ||
+    lat === null
+  ) {
     return res
       .status(400)
       .json({ message: "longitude or latitude is not given" });
@@ -19,7 +25,7 @@ exports.createLocation = async (req, res) => {
     });
 
     await location.save();
-
+    console.log(location);
     return res.status(200).json({
       location,
     });

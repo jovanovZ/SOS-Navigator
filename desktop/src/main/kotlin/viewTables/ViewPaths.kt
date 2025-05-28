@@ -208,7 +208,7 @@ fun ViewPaths() {
     LaunchedEffect(Unit) {
         pathState.value = runBlocking {
             try {
-                val url = "${BACKEND_URL}/api/path/getAll"
+                val url = "${BACKEND_URL}/api/path/all"
                 val client = OkHttpClient()
                 val request = Request.Builder().url(url).build()
                 val response = client.newCall(request).execute()

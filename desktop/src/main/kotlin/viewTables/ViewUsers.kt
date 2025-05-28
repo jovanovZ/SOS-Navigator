@@ -35,6 +35,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.bson.Document
 import org.bson.types.ObjectId
 import org.json.JSONArray
+import org.json.JSONObject
 
 
 data class User(
@@ -210,7 +211,8 @@ fun ViewUsers() {
                 val responseBody = response.body?.string()
 
                 if (responseBody != null) {
-                    val jsonArray = JSONArray(responseBody)
+                    val jsonObj = JSONObject(responseBody)
+                    val jsonArray = jsonObj.getJSONArray("users")
                     (0 until jsonArray.length()).map { i ->
                         val obj = jsonArray.getJSONObject(i)
                         val historySimulationsJson = obj.getJSONArray("historySimulations")
@@ -219,9 +221,9 @@ fun ViewUsers() {
                         }
                         User(
                             _id = ObjectId(obj.getString("_id")),
-                            name = obj.getString("name"),
+                            name = obj.getString("username"),
                             email = obj.getString("email"),
-                            password = obj.getString("password"),
+                            password = "",
                             imageUrl = obj.getString("imageUrl"),
                             historySimulations = historySimulations
                         )
@@ -284,8 +286,9 @@ fun ViewUsers() {
                             try {
                                 val userId = editedUser._id.toString()
                                 val url = "$BACKEND_URL/api/user/update/$userId"
+                                println("Updating user with ID: $userId on server at $url")
                                 val client = OkHttpClient()
-                                val json = org.json.JSONObject()
+                                val json = JSONObject()
                                     .put("username", editedUser.name)
                                     .put("email", editedUser.email)
                                     .put("imageUrl", editedUser.imageUrl)

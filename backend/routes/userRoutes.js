@@ -37,7 +37,8 @@ router.post("/logout", (req, res) => {
   return res.json({ message: "Logged out" });
 });
 
-router.put("update/:userId", userController.updateUser);
-router.delete("delete/:userId", userController.deleteUser);
+router.put("/update/:userId", userController.updateUser);
+
+router.delete("/delete/:userId", userController.deleteUser);
 
 module.exports = router;
