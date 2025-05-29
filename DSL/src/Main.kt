@@ -707,9 +707,756 @@ fun printTokens(scanner: Scanner) {
         printTokens(scanner)
     }
 }
+data class Country(val name: String, val regions: List<Region>)
 
+data class Region(val name: String, val block: Block, val cities: List<City>)
+
+data class City(
+    val name: String,
+    val operations: List<Operation>,
+    val mandatory: MandatoryElements,
+    val additional: AdditionalElements?
+)
+
+data class Block(val corners: List<Coordinate>)
+
+data class Coordinate(val x: Double, val y: Double)
+
+data class Expr(val value: String, val next: Pair<String, Expr>? = null)
+
+fun Expr.evaluate(context: Map<String, Any>): Double {
+    val base = value.toDoubleOrNull() ?: context[value]?.let {
+        when (it) {
+            is Int -> it.toDouble()
+            is Double -> it
+            is Expr -> it.evaluate(context)
+            else -> error("Variable $value is not numeric")
+        }
+    } ?: error("Unknown identifier: $value")
+
+    return next?.let { (op, rhs) ->
+        val right = rhs.evaluate(context)
+        when (op) {
+            "+" -> base + right
+            "-" -> base - right
+            else -> error("Unsupported operator in expression: $op")
+        }
+    } ?: base
+}
+
+fun resolveStringValue(raw: String, context: Map<String, Any>): String {
+    return if (raw.startsWith("\"")) raw else context[raw]?.toString() ?: error("Unknown string identifier: $raw")
+}
+
+fun resolveIntValue(raw: String, context: Map<String, Any>): Int {
+    return raw.toIntOrNull() ?: (context[raw] as? Int ?: error("Unknown int identifier: $raw"))
+}
+
+fun resolveDoubleValue(raw: String, context: Map<String, Any>): Double {
+    return raw.toDoubleOrNull() ?: (context[raw] as? Double ?: error("Unknown double identifier: $raw"))
+}
+
+
+fun buildEvaluationContext(ops: List<Operation>): Map<String, Any> {
+    val ctx = mutableMapOf<String, Any>()
+    for (op in ops) {
+        when (op.value) {
+            is Expr -> ctx[op.variable] = op.value
+            is Number -> ctx[op.variable] = op.value
+            else -> ctx[op.variable] = op.value
+        }
+    }
+    return ctx
+}
+
+data class Operation(val type: String, val variable: String, val value: Any)
+
+data class MandatoryElements(
+    val streets: List<Street>,
+    val stations: List<Station>,
+    val accidents: List<Accident>
+)
+
+data class AdditionalElements(
+    val parks: List<Park>,
+    val hydrants: List<FireHydrant>,
+    val heatmaps: List<CircleHeatmap>
+)
+
+data class Street(
+    val name: String,
+    val preBendOps: List<Operation>,
+    val bend: Bend,
+    val postBendOps: List<Operation>,
+    val line: Line
+)
+
+data class Bend(val start: Coordinate, val end: Coordinate, val angle: Expr)
+
+data class Line(val start: Coordinate, val end: Coordinate)
+
+data class Station(
+    val name: String,
+    val preAddressOps: List<Operation>,
+    val address: String,
+    val midOps: List<Operation>,
+    val units: Int,
+    val postOps: List<Operation>,
+    val type: String
+)
+
+data class Accident(
+    val name: String,
+    val preAddressOps: List<Operation>,
+    val address: String,
+    val postOps: List<Operation>,
+    val type: String
+)
+
+data class Park(
+    val name: String,
+    val operations: List<Operation>,
+    val block: Block
+)
+
+data class FireHydrant(
+    val name: String,
+    val operations: List<Operation>,
+    val point: Coordinate
+)
+
+data class CircleHeatmap(
+    val name: String,
+    val operations: List<Operation>,
+    val center: Coordinate,
+    val radius: Expr
+)
+
+
+data class IfElse(
+    val left: Expr,
+    val comparator: String,
+    val right: Expr,
+    val thenOps: List<Operation>,
+    val elseOps: List<Operation>?
+)
+
+
+
+class Parser(private val scanner: Scanner) {
+    private var currentToken: Token = scanner.getToken()
+
+    private fun match(expectedSymbol: Int): Token {
+        if (currentToken.symbol == expectedSymbol) {
+            val matched = currentToken
+            currentToken = scanner.getToken()
+            return matched
+        } else {
+            error("Expected ${name(expectedSymbol)} but found ${name(currentToken.symbol)} ${currentToken.symbol} at ${currentToken.startRow}:${currentToken.startColumn}")
+        }
+    }
+
+    // Country ::= country string{ Regions }
+    fun parseCountry() : Country {
+        match(COUNTRY)
+        val name = match(STRING).lexeme
+        match(LBRACE)
+        val regions = parseRegions()
+        match(RBRACE)
+        return Country(name,regions)
+    }
+
+
+    /*
+    Regions  ::= Region Regions'
+    Regions' ::= Region Regions' | ε
+    Region   ::= region string { Block Cities }
+    preskocimo Regions' z uporabo  while zanko
+    */
+    private fun parseRegions() : List<Region> {
+        val regions = mutableListOf<Region>()
+        while (currentToken.symbol == REGION) {
+            regions.add(parseRegion())
+        }
+        return regions
+    }
+
+
+    private fun parseRegion() : Region {
+        match(REGION)
+        val name = match(STRING).lexeme
+        match(LBRACE)
+        val block = parseBlock()
+        val cities = parseCities()
+        match(RBRACE)
+        return Region(name, block, cities)
+    }
+
+    /*
+    Cities ::= City Cities'
+    Cities' ::= City Cities' | ε
+    City ::= city string { Expression }
+    preskocimo Cities' z uporabo  while zanko
+    */
+
+    private fun parseCities() : List<City> {
+        val cities = mutableListOf<City>()
+        while (currentToken.symbol == CITY) {
+            cities.add(parseCity())
+        }
+        return cities
+    }
+
+
+    private fun parseCity() : City {
+        match(CITY)
+        val name = match(STRING).lexeme
+        match(LBRACE)
+        //Expression ::= Operations MandatoryElementsList AdditionalElementsList
+        val ops = parseOperations()
+        val mandatory = parseMandatoryElementsList()
+        val additional = parseAdditionalElementsList()
+        match(RBRACE)
+        return City(name, ops, mandatory, additional)
+    }
+
+
+
+    /*
+    Operations ::= Operation Operations | ε
+    Operation ::= AssignString | AssignInt | AssignCoord | AssignDouble | IfElse
+    */
+
+    private fun parseOperations(): List<Operation> {
+        val ops = mutableListOf<Operation>()
+        while (currentToken.symbol in setOf(DEC_STRING, DEC_INT, DEC_COORD, DEC_DOUBLE, IF)) {
+            if (currentToken.symbol == IF) {
+                val ifelse = parseIfElse()
+                ops.add(Operation("ifelse", "", ifelse))
+            } else {
+                ops.add(parseOperation())
+            }
+        }
+        return ops
+    }
+
+
+    private fun parseOperation(): Operation {
+        return when (currentToken.symbol) {
+            DEC_STRING -> {
+                match(DEC_STRING)
+                val variable = match(VAR).lexeme
+                match(ASSIGN)
+                val value = match(STRING).lexeme
+                Operation("dec_string", variable, value)
+            }
+            DEC_INT -> {
+                match(DEC_INT)
+                val variable = match(VAR).lexeme
+                match(ASSIGN)
+                val value = match(INT).lexeme.toInt()
+                Operation("dec_int", variable, value)
+            }
+            DEC_COORD -> {
+                match(DEC_COORD)
+                val variable = match(VAR).lexeme
+                match(ASSIGN)
+                val value = parseCoordinate()
+                Operation("dec_coord", variable, value)
+            }
+            DEC_DOUBLE -> {
+                match(DEC_DOUBLE)
+                val variable = match(VAR).lexeme
+                match(ASSIGN)
+                val value = match(DOUBLE).lexeme.toDouble()
+                Operation("dec_double", variable, value)
+            }
+            else -> error("Unsupported operation")
+        }
+    }
+
+
+
+
+    //Coordinate ::= ( Expr, Expr )
+    private fun parseCoordinate() : Coordinate {
+        match(LPAREN)
+        val x = parseExpr().value.toDouble()
+        match(COMMA)
+        val y = parseExpr().value.toDouble()
+        match(RPAREN)
+        return Coordinate(x, y)
+    }
+
+
+
+    /*
+    Expr ::= int Expr' | var Expr' | double Expr'
+    Expr' ::= + Expr | - Expr | ε
+    */
+    private fun parseExpr() : Expr {
+        val valueToken = match(currentToken.symbol)
+        val value = valueToken.lexeme
+        return if (currentToken.symbol == PLUS || currentToken.symbol == MINUS) {
+            val op = match(currentToken.symbol).lexeme
+            val right = parseExpr()
+            Expr(value, Pair(op, right))
+        } else {
+            Expr(value)
+        }
+    }
+
+
+    /*
+    IfElse ::= if ( Expr Compare Expr ) { Operations } IfElse'
+    Compare ::= == | != | < | >
+    IfElse' ::= else { Operations } | ε
+    */
+    private fun parseIfElse() : IfElse {
+        match(IF)
+        match(LPAREN)
+        val left = parseExpr()
+        val comparator = match(currentToken.symbol).lexeme
+        val right = parseExpr()
+        match(RPAREN)
+        match(LBRACE)
+        val thenOps = parseOperations()
+        match(RBRACE)
+        var elseOps: List<Operation>? = null
+        if (currentToken.symbol == ELSE) {
+            match(ELSE)
+            match(LBRACE)
+            elseOps = parseOperations()
+            match(RBRACE)
+        }
+        return IfElse(left, comparator, right, thenOps,elseOps)
+    }
+
+
+
+    /*
+    MandatoryElementsList ::= MandatoryElements MandatoryElements'
+    MandatoryElements ::= Streets Stations Accidents
+    MandatoryElements' ::= MandatoryElementsList | ε
+    */
+
+    private fun parseMandatoryElementsList() : MandatoryElements {
+        val streets = mutableListOf<Street>()
+        val stations = mutableListOf<Station>()
+        val accidents = mutableListOf<Accident>()
+        while (currentToken.symbol in setOf(STREET, STATION, ACCIDENT)) {
+            when (currentToken.symbol) {
+                STREET -> streets.add(parseStreet())
+                STATION -> stations.add(parseStation())
+                ACCIDENT -> accidents.add(parseAccident())
+            }
+        }
+        return MandatoryElements(streets, stations, accidents)
+    }
+
+
+
+
+    /*
+    AdditionalElementsList ::= AdditionalElements AdditionalElements'
+    AdditionalElements ::= Parks FireHydrants CircleHeatmaps
+    AdditionalElements' ::= AdditionalElementsList | ε
+    */
+
+    private fun parseAdditionalElementsList() : AdditionalElements? {
+        val parks = mutableListOf<Park>()
+        val hydrants = mutableListOf<FireHydrant>()
+        val heatmaps = mutableListOf<CircleHeatmap>()
+        while (currentToken.symbol in setOf(PARK, FIRE_HYDRANT, CIRCLE_HEATMAP)) {
+            when (currentToken.symbol) {
+                PARK -> parks.add(parsePark())
+                FIRE_HYDRANT -> hydrants.add(parseFireHydrant())
+                CIRCLE_HEATMAP -> heatmaps.add(parseCircleHeatmap())
+            }
+        }
+        return if (parks.isEmpty() && hydrants.isEmpty() && heatmaps.isEmpty()) null
+        else AdditionalElements(parks, hydrants, heatmaps)
+    }
+
+
+
+    /*
+    Streets ::= Street Streets'
+    Streets' ::= Street Streets' | ε
+    Street ::= street string { Operations Bend Operations Line }
+    */
+
+    private fun parseStreet() : Street{
+        match(STREET)
+        val name = match(STRING).lexeme
+        match(LBRACE)
+        val preBendOps = parseOperations()
+        val bend = parseBend()
+        val postBendOps = parseOperations()
+        val line = parseLine()
+        match(RBRACE)
+        return Street(name, preBendOps, bend, postBendOps, line)
+    }
+
+    /*
+    Stations ::= Station Stations'
+    Stations' ::= Station Stations' | ε
+    Station ::= station string { Operations Address Operations AvailableUnits Operations StationType}
+    */
+
+    private fun parseStation() : Station{
+        match(STATION)
+        val name = match(STRING).lexeme
+        match(LBRACE)
+        val preOps = parseOperations()
+        match(ADDRESS)
+        match(ASSIGN)
+        val address = match(currentToken.symbol).lexeme
+        val midOps = parseOperations()
+        match(AVAILABLE_UNITS)
+        match(ASSIGN)
+        val units = match(currentToken.symbol).lexeme.toInt()
+        val postOps = parseOperations()
+        match(STATION_TYPE)
+        match(ASSIGN)
+        val type = match(currentToken.symbol).lexeme
+        match(RBRACE)
+        return Station(name, preOps, address, midOps, units, postOps, type)
+    }
+
+    /*
+    Accidents ::= Accident Accidents'
+    Accidents' ::= Accident Accidents' | ε
+    Accident ::= accident string {Operations Address Operations AccidentType}
+    */
+
+
+    private fun parseAccident():Accident{
+        match(ACCIDENT)
+        val name = match(STRING).lexeme
+        match(LBRACE)
+        val preOps = parseOperations()
+        match(ADDRESS)
+        match(ASSIGN)
+        val address = match(currentToken.symbol).lexeme
+        val postOps = parseOperations()
+        match(ACCIDENT_TYPE)
+        match(ASSIGN)
+        val type = match(currentToken.symbol).lexeme
+        match(RBRACE)
+        return Accident(name, preOps, address, postOps, type)
+    }
+
+    /*
+    Parks ::= Park Parks'
+    Parks' ::= Park Parks' | ε
+    Park ::= park string { Operations Block }
+    */
+
+    private fun parsePark(): Park{
+        match(PARK)
+        val name = match(STRING).lexeme
+        match(LBRACE)
+        val ops = parseOperations()
+        val block =parseBlock()
+        match(RBRACE)
+        return Park(name, ops, block)
+    }
+
+
+    /*
+    FireHydrants ::= FireHydrant FireHydrants'
+    FireHydrants' ::= FireHydrant FireHydrants' | ε
+    FireHydrant ::= fire_hydrant string { Operations Point }
+    */
+
+    private fun parseFireHydrant() : FireHydrant {
+        match(FIRE_HYDRANT)
+        val name = match(STRING).lexeme
+        match(LBRACE)
+        val ops = parseOperations()
+        match(POINT)
+        val coord = parseCoordinate()
+        match(RBRACE)
+        return FireHydrant(name, ops, coord)
+    }
+
+    /*
+    CircleHeatmaps ::= CircleHeatmap CircleHeatmaps'
+    CircleHeatmaps' ::= CircleHeatmap CircleHeatmaps' | ε
+    CircleHeatmap ::= circle_heatmap string { Operations Circle }
+    */
+
+    private fun parseCircleHeatmap() : CircleHeatmap {
+        match(CIRCLE_HEATMAP)
+        val name = match(STRING).lexeme
+        match(LBRACE)
+        val ops = parseOperations()
+        match(CIRCLE)
+        match(LPAREN)
+        val center = parseCoordinate()
+        match(COMMA)
+        val radius = parseExpr()
+        match(RPAREN)
+        match(RBRACE)
+        return CircleHeatmap(name, ops, center, radius)
+    }
+
+    //Point ::= point Coordinate
+    private fun parsePoint() {
+        match(POINT)
+        parseCoordinate()
+    }
+
+    //Block ::= block ( Coordinate , Coordinate , Coordinate , Coordinate )
+    private fun parseBlock() : Block {
+        match(BLOCK)
+        match(LPAREN)
+        val corners = listOf(
+            parseCoordinate(),
+            { match(COMMA); parseCoordinate() }(),
+            { match(COMMA); parseCoordinate() }(),
+            { match(COMMA); parseCoordinate() }()
+        )
+        match(RPAREN)
+        return Block(corners)
+    }
+
+    //Bend ::= bend ( Coordinate , Coordinate, Angle )
+    private fun parseBend() : Bend {
+        match(BEND)
+        match(LPAREN)
+        val start = parseCoordinate()
+        match(COMMA)
+        val end = parseCoordinate()
+        match(COMMA)
+        val angle = parseExpr()
+        match(RPAREN)
+        return Bend(start, end, angle)
+    }
+
+    //Line ::= line ( Coordinate , Coordinate )
+    private fun parseLine() : Line {
+        match(LINE)
+        match(LPAREN)
+        val start = parseCoordinate()
+        match(COMMA)
+        val end = parseCoordinate()
+        match(RPAREN)
+        return Line(start, end)
+    }
+
+}
+
+
+fun generateCircleCoordinates(center: Coordinate, radius: Double, numPoints: Int = 50): List<String> {
+    return (0..numPoints).map { i ->
+        val angle = 2 * PI * i / numPoints
+        val lat = center.x + radius * sin(angle)
+        val lon = center.y + radius * cos(angle)
+        "[%.6f,%.6f]".format(lat, lon)
+    }
+}
+
+fun generateBendCoordinates(start: Coordinate, end: Coordinate, angleDegrees: Double, segments: Int = 100): List<String> {
+    val coords = mutableListOf<String>()
+    coords.add("[${start.x},${start.y}]")
+
+    val dx = end.x - start.x
+    val dy = end.y - start.y
+    val length = sqrt(dx * dx + dy * dy)
+    val angleRad = Math.toRadians(angleDegrees)
+
+    for (i in 1..segments) {
+        val t = i.toDouble() / (segments + 1)
+        val x = start.x + dx * t
+        val y = start.y + dy * t
+
+        val nx = -dy / length
+        val ny = dx / length
+        val offset = sin(t * Math.PI) * angleRad * 0.1 * length
+
+        coords.add("[${x + nx * offset},${y + ny * offset}]")
+    }
+
+    coords.add("[${end.x},${end.y}]")
+    return coords
+}
+
+
+fun main() {
+    val inputStream = FileInputStream("C:\\Users\\user\\IdeaProjects\\prevajanjeJezik\\src\\input2.txt")
+    val scanner = Scanner(Lexer, inputStream)
+    val parser = Parser(scanner)
+
+    try {
+        val country = parser.parseCountry()
+        println("✅ AST parsed successfully.")
+
+        val features = mutableListOf<String>()
+
+        for (region in country.regions) {
+            val coords = region.block.corners.map { "[${it.x},${it.y}]" }.toMutableList()
+            if (coords.first() != coords.last()) coords += coords.first()
+            features += """
+                {
+                  "type": "Feature",
+                  "geometry": {
+                    "type": "Polygon",
+                    "coordinates": [ [${coords.joinToString(",")}] ]
+                  },
+                  "properties": { "name": "${region.name.trim('"')}", "type": "region" }
+                }
+            """.trimIndent()
+
+            for (city in region.cities) {
+                val allOps = mutableListOf<Operation>()
+                allOps += city.operations
+                city.mandatory.streets.forEach { allOps += it.preBendOps + it.postBendOps }
+                city.mandatory.stations.forEach { allOps += it.preAddressOps + it.midOps + it.postOps }
+                city.mandatory.accidents.forEach { allOps += it.preAddressOps + it.postOps }
+                city.additional?.parks?.forEach { allOps += it.operations }
+                city.additional?.hydrants?.forEach { allOps += it.operations }
+                city.additional?.heatmaps?.forEach { allOps += it.operations }
+                val context = buildEvaluationContext(allOps)
+
+                for (street in city.mandatory.streets) {
+                    val angle = street.bend.angle.evaluate(context)
+                    val bendCoords = generateBendCoordinates(street.bend.start, street.bend.end, angle)
+                    features += """
+                        {
+                          "type": "Feature",
+                          "geometry": {
+                            "type": "LineString",
+                            "coordinates": [ ${bendCoords.joinToString(",")} ]
+                          },
+                          "properties": { "name": "${street.name.trim('"')}_bend", "type": "bend", "angle": $angle }
+                        }
+                    """.trimIndent()
+
+                    val lineCoords = listOf(
+                        "[${street.line.start.x},${street.line.start.y}]",
+                        "[${street.line.end.x},${street.line.end.y}]"
+                    )
+                    features += """
+                        {
+                          "type": "Feature",
+                          "geometry": {
+                            "type": "LineString",
+                            "coordinates": [ ${lineCoords.joinToString(",")} ]
+                          },
+                          "properties": { "name": "${street.name.trim('"')}_line", "type": "line" }
+                        }
+                    """.trimIndent()
+                }
+
+                city.mandatory.stations.forEach { s ->
+                    val stationContext = buildEvaluationContext(s.preAddressOps + s.midOps + s.postOps)
+                    val address = resolveStringValue(s.address, stationContext)
+                    val units = resolveIntValue(s.units.toString(), stationContext)
+                    val type = resolveStringValue(s.type, stationContext)
+
+                    features += """
+                        {
+                          "type": "Feature",
+                          "geometry": null,
+                          "properties": {
+                            "name": "${s.name.trim('"')}",
+                            "type": "station",
+                            "address": "${address.trim('"')}",
+                            "available_units": ${units},
+                            "station_type": "${type.trim('"')}"
+                          }
+                        }
+                    """.trimIndent()
+                }
+
+                city.mandatory.accidents.forEach { a ->
+                    val accidentContext = buildEvaluationContext(a.preAddressOps + a.postOps)
+                    val address = resolveStringValue(a.address, accidentContext)
+                    val type = resolveStringValue(a.type, accidentContext)
+
+                    features += """
+                        {
+                          "type": "Feature",
+                          "geometry": null,
+                          "properties": {
+                            "name": "${a.name.trim('"')}",
+                            "type": "accident",
+                            "address": "${address.trim('"')}",
+                            "accident_type": "${type.trim('"')}"
+                          }
+                        }
+                    """.trimIndent()
+                }
+
+                city.additional?.parks?.forEach { park ->
+                    val parkCoords = park.block.corners.map { "[${it.x},${it.y}]" }.toMutableList()
+                    if (parkCoords.first() != parkCoords.last()) parkCoords += parkCoords.first()
+                    features += """
+                        {
+                          "type": "Feature",
+                          "geometry": {
+                            "type": "Polygon",
+                            "coordinates": [ [${parkCoords.joinToString(",")}] ]
+                          },
+                          "properties": { "name": "${park.name.trim('"')}", "type": "park" }
+                        }
+                    """.trimIndent()
+                }
+
+                city.additional?.hydrants?.forEach { hydrant ->
+                    val p = hydrant.point
+                    features += """
+                        {
+                          "type": "Feature",
+                          "geometry": {
+                            "type": "Point",
+                            "coordinates": [${p.x},${p.y}]
+                          },
+                          "properties": { "name": "${hydrant.name.trim('"')}", "type": "fire_hydrant" }
+                        }
+                    """.trimIndent()
+                }
+
+                city.additional?.heatmaps?.forEach { heatmap ->
+                    val center = heatmap.center
+                    val radius = heatmap.radius.evaluate(context)
+                    val circleCoords = generateCircleCoordinates(center, radius)
+                    features += """
+                        {
+                          "type": "Feature",
+                          "geometry": {
+                            "type": "Polygon",
+                            "coordinates": [ [${circleCoords.joinToString(",")}] ]
+                          },
+                          "properties": { "name": "${heatmap.name.trim('"')}", "type": "circle_heatmap", "radius": $radius }
+                        }
+                    """.trimIndent()
+                }
+            }
+        }
+
+        val geoJson = """
+            {
+              "type": "FeatureCollection",
+              "features": [
+                ${features.joinToString(",\n")}
+              ]
+            }
+        """.trimIndent()
+
+        File("output.geojson").writeText(geoJson)
+        println("✅ GeoJSON written to output.geojson")
+
+    } catch (e: Exception) {
+        println("❌ Error while parsing or exporting: ${e.message}")
+    }
+}
+
+/*
 fun main(args: Array<String>) {
     val inputstream = FileInputStream("input1.txt")
     printTokens(Scanner(Lexer,inputstream))
 
-}
+}/*
