@@ -1,0 +1,42 @@
+country "Slovenia" {
+  region "Podravska" {
+    block ( (15.532470290006904,46.61014344380476), (15.332470290006905, 46.410143443804756), (16.032470290006906, 46.46014344380476), (16.082470290006903, 46.56014344380476) )
+    city "Maribor" {
+      street "Koroska cesta" {
+        dec_int lanes = 2
+        if (2 > 1) {
+          dec_string result = "more than one lane"
+        } else {
+          dec_string result = "one or less lanes"
+        }
+        dec_double angle = 2.0
+        bend ( (15.632543059121843,46.55955903872433), (15.634500122349635,46.55936352415094), angle)
+        dec_double width = 3.5
+        line ( (15.634500122349635,46.55936352415094), (15.63610117859065,46.55910405438436) )
+      }
+
+      station "Policijska postaja" {
+         dec_string addressTemp = "Central Station"
+         address = addressTemp
+         available_units = 5
+         station_type = "Policija"
+      }
+      accident "Nesreca" {
+         dec_string description = "Minor accident with no injuries"
+         address = "456 Elm St"
+         accident_type = description
+      }
+      park "Mestni Park" {
+          block ( (15.645102773663638,46.56629331557161), (15.645102773663638,46.56406510217272), (15.649701349687518,46.56406510217272), (15.649701349687518, 46.56629331557161) )
+      }
+      fire_hydrant "Hydrant" {
+          point (15.642507100269341, 46.55360901515817)
+      }
+      circle_heatmap "Heatmap" {
+          dec_string heatmap_name = "Heatmap Example"
+          dec_double addRadius = 0.004
+          circle ( (15.667293137492493,46.49195545746025), addRadius )
+      }
+    }
+  }
+}
