@@ -130,7 +130,7 @@ fun AddAccident() {
                                 return@Button
                             }
 
-                            try{
+                            try {
                                 val url = "${BACKEND_URL}/api/accident/create"
                                 val client = OkHttpClient()
                                 val json = JSONObject()
@@ -143,17 +143,18 @@ fun AddAccident() {
                                     .url(url)
                                     .post(body)
                                     .build()
-                                val response = client.newCall(request).execute()
-                                if (response.isSuccessful) {
-                                    val responseBody = response.body?.string() ?: ""
-                                    println("Accident created: $responseBody")
-                                    selectedAccident.value = ""
-                                    longitude.value = ""
-                                    latitude.value = ""
-                                } else {
-                                    println("Failed to create accident: ${response.message}")
+                                client.newCall(request).execute().use { response ->
+                                    if (response.isSuccessful) {
+                                        val responseBody = response.body?.string() ?: ""
+                                        println("Accident created: $responseBody")
+                                        selectedAccident.value = ""
+                                        longitude.value = ""
+                                        latitude.value = ""
+                                    } else {
+                                        println("Failed to create accident: ${response.message}")
+                                    }
                                 }
-                            }catch (e : Exception){
+                            } catch (e: Exception) {
                                 println("Error creating accident: ${e.message}")
                             }
                         }) {

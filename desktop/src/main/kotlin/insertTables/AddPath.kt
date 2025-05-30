@@ -141,14 +141,15 @@ fun AddPath() {
                                     .post(body)
                                     .build()
 
-                                val response = client.newCall(request).execute()
-                                if (response.isSuccessful) {
-                                    val responseBody = response.body?.string() ?: ""
-                                    println("Path created: $responseBody")
-                                    accidentId.value = ""
-                                    locationPoints.value.clear()
-                                } else {
-                                    println("Failed to create path: ${response.message}")
+                                client.newCall(request).execute().use { response ->
+                                    if (response.isSuccessful) {
+                                        val responseBody = response.body?.string() ?: ""
+                                        println("Path created: $responseBody")
+                                        accidentId.value = ""
+                                        locationPoints.value.clear()
+                                    } else {
+                                        println("Failed to create path: ${response.message}")
+                                    }
                                 }
                             } catch (e: Exception) {
                                 println("Error inserting path: ${e.message}")

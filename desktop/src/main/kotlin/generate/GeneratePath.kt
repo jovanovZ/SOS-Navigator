@@ -204,43 +204,49 @@ fun GeneratePath() {
                                             .url("${BACKEND_URL}/api/accident/randomId")
                                             .get()
                                             .build()
-                                        val idResponse = client.newCall(idRequest).execute()
-                                        val idJson = JSONObject(idResponse.body?.string() ?: "")
-                                        val accidentId = idJson.getString("id")
 
-                                        val pointsArray = JSONArray()
-                                        for (j in 0 until numberOfPoints.value.toInt()) {
-                                            latitude = Random.nextDouble(
-                                                latitudeMin.value.toDouble(),
-                                                latitudeMax.value.toDouble()
-                                            )
-                                            longitude = Random.nextDouble(
-                                                longitudeMin.value.toDouble(),
-                                                longitudeMax.value.toDouble()
-                                            )
+                                        client.newCall(idRequest).execute().use { idResponse ->
+                                            val idJson = JSONObject(idResponse.body?.string() ?: "")
+                                            val accidentId = idJson.getString("id")
 
-                                            val pointObj = JSONObject()
-                                                .put("lat", latitude)
-                                                .put("lng", longitude)
-                                            pointsArray.put(pointObj)
-                                        }
-                                        val pathJson = JSONObject()
-                                            .put("accidentId", accidentId)
-                                            .put("locationPoints", pointsArray)
-                                        val body =
-                                            pathJson.toString().toRequestBody("application/json".toMediaTypeOrNull())
-                                        val pathRequest = Request.Builder()
-                                            .url("${BACKEND_URL}/api/path/create")
-                                            .post(body)
-                                            .build()
-                                        val pathResponse = client.newCall(pathRequest).execute()
-                                        if (pathResponse.isSuccessful) {
-                                            val responseString = pathResponse.body?.string() ?: ""
-                                            val responseJson = JSONObject(responseString)
-                                            val createdPath = responseJson.getJSONObject("path")
-                                            println("Path created successfully : $createdPath")
-                                        } else {
-                                            println("Failed to create path: ${pathResponse.message}")
+                                            val pointsArray = JSONArray()
+                                            for (j in 0 until numberOfPoints.value.toInt()) {
+                                                val latitude = Random.nextDouble(
+                                                    latitudeMin.value.toDouble(),
+                                                    latitudeMax.value.toDouble()
+                                                )
+                                                val longitude = Random.nextDouble(
+                                                    longitudeMin.value.toDouble(),
+                                                    longitudeMax.value.toDouble()
+                                                )
+                                                val pointObj = JSONObject()
+                                                    .put("lat", latitude)
+                                                    .put("lng", longitude)
+                                                pointsArray.put(pointObj)
+                                            }
+
+                                            val pathJson = JSONObject()
+                                                .put("accidentId", accidentId)
+                                                .put("locationPoints", pointsArray)
+
+                                            val body = pathJson.toString()
+                                                .toRequestBody("application/json".toMediaTypeOrNull())
+
+                                            val pathRequest = Request.Builder()
+                                                .url("${BACKEND_URL}/api/path/create")
+                                                .post(body)
+                                                .build()
+
+                                            client.newCall(pathRequest).execute().use { pathResponse ->
+                                                if (pathResponse.isSuccessful) {
+                                                    val responseString = pathResponse.body?.string() ?: ""
+                                                    val responseJson = JSONObject(responseString)
+                                                    val createdPath = responseJson.getJSONObject("path")
+                                                    println("Path created successfully : $createdPath")
+                                                } else {
+                                                    println("Failed to create path: ${pathResponse.message}")
+                                                }
+                                            }
                                         }
                                     } catch (e: Exception) {
                                         errorMessage.value = "Error generating path: ${e.message}"

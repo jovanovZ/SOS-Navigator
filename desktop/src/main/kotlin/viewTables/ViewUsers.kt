@@ -207,29 +207,30 @@ fun ViewUsers() {
                 val url = "${BACKEND_URL}/api/user/all"
                 val client = OkHttpClient()
                 val request = Request.Builder().url(url).build()
-                val response = client.newCall(request).execute()
-                val responseBody = response.body?.string()
+                client.newCall(request).execute().use { response ->
+                    val responseBody = response.body?.string()
 
-                if (responseBody != null) {
-                    val jsonObj = JSONObject(responseBody)
-                    val jsonArray = jsonObj.getJSONArray("users")
-                    (0 until jsonArray.length()).map { i ->
-                        val obj = jsonArray.getJSONObject(i)
-                        val historySimulationsJson = obj.getJSONArray("historySimulations")
-                        val historySimulations = (0 until historySimulationsJson.length()).map { j ->
-                            ObjectId(historySimulationsJson.getString(j))
+                    if (responseBody != null) {
+                        val jsonObj = JSONObject(responseBody)
+                        val jsonArray = jsonObj.getJSONArray("users")
+                        (0 until jsonArray.length()).map { i ->
+                            val obj = jsonArray.getJSONObject(i)
+                            val historySimulationsJson = obj.getJSONArray("historySimulations")
+                            val historySimulations = (0 until historySimulationsJson.length()).map { j ->
+                                ObjectId(historySimulationsJson.getString(j))
+                            }
+                            User(
+                                _id = ObjectId(obj.getString("_id")),
+                                name = obj.getString("username"),
+                                email = obj.getString("email"),
+                                password = "",
+                                imageUrl = obj.getString("imageUrl"),
+                                historySimulations = historySimulations
+                            )
                         }
-                        User(
-                            _id = ObjectId(obj.getString("_id")),
-                            name = obj.getString("username"),
-                            email = obj.getString("email"),
-                            password = "",
-                            imageUrl = obj.getString("imageUrl"),
-                            historySimulations = historySimulations
-                        )
+                    } else {
+                        emptyList<User>()
                     }
-                } else {
-                    emptyList<User>()
                 }
             } catch (e: Exception) {
                 println("Error while fetching users: ${e.message}")
@@ -270,12 +271,13 @@ fun ViewUsers() {
                                     .url(url)
                                     .delete()
                                     .build()
-                                val response = client.newCall(request).execute()
-                                if (response.isSuccessful) {
-                                    println("User with ID $userId deleted successfully.")
-                                    userState.value = userState.value.filter { it._id != deletedUser._id }
-                                } else {
-                                    println("No user found with ID $userId.")
+                                client.newCall(request).execute().use { response ->
+                                    if (response.isSuccessful) {
+                                        println("User with ID $userId deleted successfully.")
+                                        userState.value = userState.value.filter { it._id != deletedUser._id }
+                                    } else {
+                                        println("No user found with ID $userId.")
+                                    }
                                 }
                             } catch (e: Exception) {
                                 println("Error while deleting user: ${e.message}")
@@ -298,14 +300,15 @@ fun ViewUsers() {
                                     .url(url)
                                     .put(body)
                                     .build()
-                                val response = client.newCall(request).execute()
-                                if (response.isSuccessful) {
-                                    println("User with ID $userId updated successfully.")
-                                    userState.value = userState.value.map {
-                                        if (it._id == editedUser._id) editedUser else it
+                                client.newCall(request).execute().use { response ->
+                                    if (response.isSuccessful) {
+                                        println("User with ID $userId updated successfully.")
+                                        userState.value = userState.value.map {
+                                            if (it._id == editedUser._id) editedUser else it
+                                        }
+                                    } else {
+                                        println("Failed to update user: ${response.message}")
                                     }
-                                } else {
-                                    println("Failed to update user: ${response.message}")
                                 }
                             } catch (e: Exception) {
                                 println("Error while updating user: ${e.message}")

@@ -300,36 +300,38 @@ fun ViewSimulation() {
                 val url = "${BACKEND_URL}/api/simulation/all"
                 val client = OkHttpClient()
                 val request = Request.Builder().url(url).build()
-                val response = client.newCall(request).execute()
-                val responseBody = response.body?.string()
+                client.newCall(request).execute().use { response ->
+                    val responseBody = response.body?.string()
 
-                if (responseBody != null) {
-                    val jsonArray = JSONArray(responseBody)
-                    (0 until jsonArray.length()).map { i ->
-                        val obj = jsonArray.getJSONObject(i)
-                        val userIdObj = obj.getJSONObject("userId")
-                        val accidentIdObj = obj.getJSONObject("accidentId")
-                        val bestStationIdObj = obj.getJSONObject("bestStationId")
-                        val bestPathIdObj = obj.getJSONObject("bestPathId")
-                        val dateFormat = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.US)
-                        val createdDate = dateFormat.parse(obj.getString("created"))
+                    if (responseBody != null) {
+                        val jsonArray = JSONArray(responseBody)
+                        (0 until jsonArray.length()).map { i ->
+                            val obj = jsonArray.getJSONObject(i)
+                            val userIdObj = obj.getJSONObject("userId")
+                            val accidentIdObj = obj.getJSONObject("accidentId")
+                            val bestStationIdObj = obj.getJSONObject("bestStationId")
+                            val bestPathIdObj = obj.getJSONObject("bestPathId")
+                            val dateFormat =
+                                java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.US)
+                            val createdDate = dateFormat.parse(obj.getString("created"))
 
-                        Simulation(
-                            _id = ObjectId(obj.getString("_id")),
-                            userId = ObjectId(userIdObj.getString("_id")),
-                            simulationName = obj.getString("simulationName"),
-                            accidentId = ObjectId(accidentIdObj.getString("_id")),
-                            typeOfServices = obj.getString("typeOfServices"),
-                            bestStationId = ObjectId(bestStationIdObj.getString("_id")),
-                            bestPathId = ObjectId(bestPathIdObj.getString("_id")),
-                            responseTime = obj.getInt("responseTime"),
-                            created = createdDate,
-                            locationFrom = obj.getString("locationFrom"),
-                            locationTo = obj.getString("locationTo")
-                        )
+                            Simulation(
+                                _id = ObjectId(obj.getString("_id")),
+                                userId = ObjectId(userIdObj.getString("_id")),
+                                simulationName = obj.getString("simulationName"),
+                                accidentId = ObjectId(accidentIdObj.getString("_id")),
+                                typeOfServices = obj.getString("typeOfServices"),
+                                bestStationId = ObjectId(bestStationIdObj.getString("_id")),
+                                bestPathId = ObjectId(bestPathIdObj.getString("_id")),
+                                responseTime = obj.getInt("responseTime"),
+                                created = createdDate,
+                                locationFrom = obj.getString("locationFrom"),
+                                locationTo = obj.getString("locationTo")
+                            )
+                        }
+                    } else {
+                        emptyList()
                     }
-                } else {
-                    emptyList()
                 }
             } catch (e: Exception) {
                 println("Error while fetching simulations: ${e.message}")
@@ -371,13 +373,14 @@ fun ViewSimulation() {
                                     .delete()
                                     .build()
 
-                                if (client.newCall(request).execute().use { res -> res.isSuccessful }) {
-                                    println("Simulation with ID ${deletedSimulation._id} deleted successfully.")
-                                    simulationState.value =
-                                        simulationState.value.filter { it._id != deletedSimulation._id }
-                                } else {
-                                    println("No simulation found with ID ${deletedSimulation._id}.")
-
+                                client.newCall(request).execute().use { response ->
+                                    if (response.isSuccessful) {
+                                        println("Simulation with ID ${deletedSimulation._id} deleted successfully.")
+                                        simulationState.value =
+                                            simulationState.value.filter { it._id != deletedSimulation._id }
+                                    } else {
+                                        println("No simulation found with ID ${deletedSimulation._id}.")
+                                    }
                                 }
                             } catch (e: Exception) {
                                 println("Error while deleting simulation: ${e.message}")
@@ -402,14 +405,15 @@ fun ViewSimulation() {
                                     .url(url)
                                     .put(body)
                                     .build()
-                                val response = client.newCall(request).execute()
-                                if(response.isSuccessful){
-                                    println("Simulation with ID ${editedSimulation._id} updated successfully.")
-                                    simulationState.value = simulationState.value.map {
-                                        if (it._id == editedSimulation._id) editedSimulation else it
+                                client.newCall(request).execute().use { response ->
+                                    if (response.isSuccessful) {
+                                        println("Simulation with ID ${editedSimulation._id} updated successfully.")
+                                        simulationState.value = simulationState.value.map {
+                                            if (it._id == editedSimulation._id) editedSimulation else it
+                                        }
+                                    } else {
+                                        println("Failed to update simulation with ID ${editedSimulation._id}.")
                                     }
-                                } else {
-                                    println("Failed to update simulation with ID ${editedSimulation._id}.")
                                 }
                             } catch (e: Exception) {
                                 println("Error while updating simulation: ${e.message}")

@@ -110,11 +110,11 @@ fun AddUser() {
                                 println("Please fill all fields")
                                 return@Button
                             }
-                            if( password.value != secondPassword.value) {
+                            if (password.value != secondPassword.value) {
                                 println("Passwords do not match")
                                 return@Button
                             }
-                            try{
+                            try {
                                 val url = "${BACKEND_URL}/api/user/register"
                                 val client = OkHttpClient()
                                 val json = JSONObject()
@@ -124,18 +124,19 @@ fun AddUser() {
                                     .toString()
                                 val body = json.toRequestBody("application/json".toMediaTypeOrNull())
                                 val request = Request.Builder().url(url).post(body).build()
-                                val response = client.newCall(request).execute()
-                                if(response.isSuccessful){
-                                    val responseBody = response.body?.string() ?: ""
-                                    println("User created: $responseBody")
-                                    username.value = ""
-                                    email.value = ""
-                                    password.value = ""
-                                    secondPassword.value = ""
-                                } else {
-                                    println("Failed to create user: ${response.message}")
+                                client.newCall(request).execute().use { response ->
+                                    if (response.isSuccessful) {
+                                        val responseBody = response.body?.string() ?: ""
+                                        println("User created: $responseBody")
+                                        username.value = ""
+                                        email.value = ""
+                                        password.value = ""
+                                        secondPassword.value = ""
+                                    } else {
+                                        println("Failed to create user: ${response.message}")
+                                    }
                                 }
-                            }catch(e: Exception) {
+                            } catch (e: Exception) {
                                 println("Error inserting user: ${e.message}")
                             }
                         }) {
