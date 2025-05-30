@@ -13,20 +13,15 @@ import androidx.compose.runtime.*
 import io.github.cdimascio.dotenv.dotenv
 import it.skrape.core.*
 import it.skrape.fetcher.*
-import it.skrape.selects.*
-import it.skrape.selects.html5.*
 import okhttp3.OkHttpClient
 
 import okhttp3.Request
 import org.json.JSONObject
-import io.github.cdimascio.dotenv.dotenv
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import org.bson.types.ObjectId
-import viewTables.Geometry
-import viewTables.Location
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.RequestBody.Companion.toRequestBody
 import viewTables.Modal
-import viewTables.Station
 
 
 data class PoliceStation(
@@ -192,18 +187,49 @@ fun getLatLngFromAddress(address: String): Pair<Double, Double>? {
     return null
 }
 
+fun sendRequestForCreating(long: Double, lat: Double, typeOfStation: String) {
+    val client = OkHttpClient()
+
+    try {
+        val url = "${BACKEND_URL}/api/station/create"
+        val json = JSONObject().put("longitude", long)
+            .put("latitude", lat)
+            .put("typeOfStation", typeOfStation)
+            .put("isPermanent", true)
+            .put("region", "Podravska")
+            .toString()
+        val body =
+            json.toRequestBody("application/json".toMediaTypeOrNull())
+        val request = Request.Builder().url(url).post(body).build()
+        client.newCall(request).execute().use { response ->
+            if (response.isSuccessful) {
+                val responseString = response.body?.string() ?: ""
+                val responseJson = JSONObject(responseString)
+                val stationResponse = responseJson.getJSONObject("station")
+                println("Station created successfully: $stationResponse")
+            } else {
+                println("Failed to add station: ${response.message}")
+            }
+        }
+    } catch (e: Exception) {
+        println("Error createing station: ${e.message}")
+    }
+}
 
 @Composable
 fun ScrapePrompt(scraperState: MutableState<Scraper>) {
     val policeStations = remember { mutableStateOf(emptyList<PoliceStation>()) }
     val fireStations = remember { mutableStateOf(emptyList<FireFighterStation>()) }
     val hospitals = remember { mutableStateOf(emptyList<Hospital>()) }
-    val complitedScrape = remember { mutableStateOf(false) }
+    val completedScrape = remember { mutableStateOf(false) }
     val loadingState = remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
+    LaunchedEffect(scraperState.value) {
+        completedScrape.value = false
+        loadingState.value = false
+    }
 
-
-    if (complitedScrape.value) {
+    if (completedScrape.value) {
         Modal("Scraping completed\n Stations were added successfully")
     } else if (loadingState.value) {
         Modal("Scraping in progress\nPlease wait...")
@@ -257,33 +283,15 @@ fun ScrapePrompt(scraperState: MutableState<Scraper>) {
                                             Scraper.POLICE -> {
                                                 policeStations.value = getPoliceStations()
                                                 policeStations.value.forEach { station ->
-
                                                     val coords = getLatLngFromAddress(station.location)?.toList()
                                                     if (coords == null) {
                                                         return@forEach
 
                                                     }
-                                                    val location = Location(
-                                                        geometry = Geometry(
-                                                            type = "Point",
-                                                            coordinates = coords
-                                                        )
-
-                                                    )
-                                                    // poklici api za add location in pridobi id
-
-                                                    val stationFinal = Station(
-                                                        typeOfStation = "Policijska",
-                                                        locationId = ObjectId("682f10869665de5c0ae2714a"),
-                                                        isPermanent = true,
-                                                        region = "Podravska"
-                                                    )
-                                                    //shrani station
-
-                                                    println("Station: ${stationFinal.typeOfStation}, Location: (${location.geometry.coordinates[0]},${location.geometry.coordinates[1]}), Region: ${stationFinal.region}, isPermanent: ${stationFinal.isPermanent}")
+                                                    sendRequestForCreating(coords[0], coords[1], "Policijska")
 
                                                 }
-                                                complitedScrape.value = true
+                                                completedScrape.value = true
 
 
                                             }
@@ -297,26 +305,9 @@ fun ScrapePrompt(scraperState: MutableState<Scraper>) {
                                                         return@forEach
 
                                                     }
-                                                    val location = Location(
-                                                        geometry = Geometry(
-                                                            type = "Point",
-                                                            coordinates = coords
-                                                        )
-
-                                                    )
-                                                    // poklici api za add location in pridobi id
-
-                                                    val stationFinal = Station(
-                                                        typeOfStation = "Bolnica",
-                                                        locationId = ObjectId("682f10869665de5c0ae2714a"),
-                                                        isPermanent = true,
-                                                        region = "Podravska"
-                                                    )
-                                                    //shrani station
-                                                    println("Station: ${stationFinal.typeOfStation}, Location: (${location.geometry.coordinates[0]},${location.geometry.coordinates[1]}), Region: ${stationFinal.region}, isPermanent: ${stationFinal.isPermanent}")
-
+                                                    sendRequestForCreating(coords[0], coords[1], "Bolnica")
                                                 }
-                                                complitedScrape.value = true
+                                                completedScrape.value = true
 
                                             }
 
@@ -329,26 +320,9 @@ fun ScrapePrompt(scraperState: MutableState<Scraper>) {
                                                         return@forEach
 
                                                     }
-                                                    val location = Location(
-                                                        geometry = Geometry(
-                                                            type = "Point",
-                                                            coordinates = coords
-                                                        )
-
-                                                    )
-                                                    // poklici api za add location in pridobi id
-
-                                                    val stationFinal = Station(
-                                                        typeOfStation = "Gasilci",
-                                                        locationId = ObjectId("682f10869665de5c0ae2714a"),
-                                                        isPermanent = true,
-                                                        region = "Podravska"
-                                                    )
-                                                    //shrani station
-                                                    println("Station: ${stationFinal.typeOfStation}, Location: (${location.geometry.coordinates[0]},${location.geometry.coordinates[1]}), Region: ${stationFinal.region}, isPermanent: ${stationFinal.isPermanent}")
-
+                                                    sendRequestForCreating(coords[0], coords[1], "Gasilci")
                                                 }
-                                                complitedScrape.value = true
+                                                completedScrape.value = true
 
                                             }
 

@@ -189,11 +189,15 @@ fun GenerateLocation() {
                                             .toString()
                                         val body = json.toRequestBody(("application/json").toMediaTypeOrNull())
                                         val request = Request.Builder().url(url).post(body).build()
-                                        val response = client.newCall(request).execute()
-                                        if (response.isSuccessful) {
-                                            println("Location created successfully: $latitude, $longitude")
-                                        } else {
-                                            println("Failed to create location: ${response.message}")
+                                        client.newCall(request).execute().use { response ->
+                                            if (response.isSuccessful) {
+                                                val responseString = response.body?.string() ?: ""
+                                                val responseJson = JSONObject(responseString)
+                                                val locationResponse = responseJson.getJSONObject("location")
+                                                println("Location created successfully: $locationResponse")
+                                            } else {
+                                                println("Failed to add station: ${response.message}")
+                                            }
                                         }
                                     } catch (e: Exception) {
                                         errorMessage.value = "Error generating location: ${e.message}"

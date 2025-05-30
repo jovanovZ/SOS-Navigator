@@ -145,68 +145,79 @@ fun GenerateSimulation() {
                                             .url("${BACKEND_URL}/api/user/randomId")
                                             .get()
                                             .build()
-                                        val userIdResponse = client.newCall(userIdRequest).execute()
-                                        val userIdJson = JSONObject(userIdResponse.body?.string() ?: "")
-                                        val userId = userIdJson.getString("id")
+                                        client.newCall(userIdRequest).execute().use { userIdResponse ->
+                                            val userIdJson = JSONObject(userIdResponse.body?.string() ?: "")
+                                            val userId = userIdJson.getString("id")
 
-                                        //pridobi random accidentId
-                                        val accidentIdRequest = Request.Builder()
-                                            .url("${BACKEND_URL}/api/accident/randomId")
-                                            .get()
-                                            .build()
-                                        val accidentIdResponse = client.newCall(accidentIdRequest).execute()
-                                        val accidentIdJson = JSONObject(accidentIdResponse.body?.string() ?: "")
-                                        val accidentId = accidentIdJson.getString("id")
+                                            //pridobi random accidentId
+                                            val accidentIdRequest = Request.Builder()
+                                                .url("${BACKEND_URL}/api/accident/randomId")
+                                                .get()
+                                                .build()
+                                            client.newCall(accidentIdRequest).execute().use { accidentIdResponse ->
+                                                val accidentIdJson = JSONObject(accidentIdResponse.body?.string() ?: "")
+                                                val accidentId = accidentIdJson.getString("id")
 
 
-                                        //pridobi random stationId
-                                        val stationIdRequest = Request.Builder()
-                                            .url("${BACKEND_URL}/api/station/randomId")
-                                            .get()
-                                            .build()
-                                        val stationIdResponse = client.newCall(stationIdRequest).execute()
-                                        val stationIdJson = JSONObject(stationIdResponse.body?.string() ?: "")
-                                        val stationId = stationIdJson.getString("id")
+                                                //pridobi random stationId
+                                                val stationIdRequest = Request.Builder()
+                                                    .url("${BACKEND_URL}/api/station/randomId")
+                                                    .get()
+                                                    .build()
+                                                client.newCall(stationIdRequest).execute().use { stationIdResponse ->
+                                                    val stationIdJson =
+                                                        JSONObject(stationIdResponse.body?.string() ?: "")
+                                                    val stationId = stationIdJson.getString("id")
 
-                                        //pridobi random pathId
-                                        val pathIdRequest = Request.Builder()
-                                            .url("${BACKEND_URL}/api/path/randomId")
-                                            .get()
-                                            .build()
-                                        val pathIdResponse = client.newCall(pathIdRequest).execute()
-                                        val pathIdJson = JSONObject(pathIdResponse.body?.string() ?: "")
-                                        val pathId = pathIdJson.getString("id")
+                                                    //pridobi random pathId
+                                                    val pathIdRequest = Request.Builder()
+                                                        .url("${BACKEND_URL}/api/path/randomId")
+                                                        .get()
+                                                        .build()
+                                                    client.newCall(pathIdRequest).execute().use { pathIdResponse ->
+                                                        val pathIdJson = JSONObject(pathIdResponse.body?.string() ?: "")
+                                                        val pathId = pathIdJson.getString("id")
 
-                                        simulationName = "Generirana simulacija $i"
+                                                        simulationName = "Generirana simulacija $i"
 
-                                        typeOfServices = generateRandomServices()
+                                                        typeOfServices = generateRandomServices()
 
-                                        responseTime =
-                                            Random.nextInt(responseTimeMin.value.toInt(), responseTimeMax.value.toInt())
-                                        responseTime *= 1000
+                                                        responseTime =
+                                                            Random.nextInt(
+                                                                responseTimeMin.value.toInt(),
+                                                                responseTimeMax.value.toInt()
+                                                            )
+                                                        responseTime *= 1000
 
-                                        val url = "${BACKEND_URL}/api/simulation/create"
-                                        val json = JSONObject()
-                                            .put("simulationName", simulationName)
-                                            .put("userId", userId)
-                                            .put("accidentId", accidentId)
-                                            .put("bestStationId", stationId)
-                                            .put("bestPathId", pathId)
-                                            .put("typeOfServices", typeOfServices)
-                                            .put("responseTime", responseTime)
-                                            .put("locationFrom", stationId)
-                                            .put("locationTo", accidentId)
-                                            .toString()
-                                        val body = json.toRequestBody(("application/json").toMediaTypeOrNull())
-                                        val request = Request.Builder().url(url).post(body).build()
-                                        val response = client.newCall(request).execute()
-                                        if (response.isSuccessful) {
-                                            val responseString = response.body?.string() ?: ""
-                                            val responseJson = JSONObject(responseString)
-                                            val newSimulation = responseJson.getJSONObject("newSimulation")
-                                            println("Simulation created successfully: $newSimulation")
-                                        } else {
-                                            println("Failed to create simulation: ${response.message}")
+                                                        val url = "${BACKEND_URL}/api/simulation/create"
+                                                        val json = JSONObject()
+                                                            .put("simulationName", simulationName)
+                                                            .put("userId", userId)
+                                                            .put("accidentId", accidentId)
+                                                            .put("bestStationId", stationId)
+                                                            .put("bestPathId", pathId)
+                                                            .put("typeOfServices", typeOfServices)
+                                                            .put("responseTime", responseTime)
+                                                            .put("locationFrom", stationId)
+                                                            .put("locationTo", accidentId)
+                                                            .toString()
+                                                        val body =
+                                                            json.toRequestBody(("application/json").toMediaTypeOrNull())
+                                                        val request = Request.Builder().url(url).post(body).build()
+                                                        client.newCall(request).execute().use { response ->
+                                                            if (response.isSuccessful) {
+                                                                val responseString = response.body?.string() ?: ""
+                                                                val responseJson = JSONObject(responseString)
+                                                                val newSimulation =
+                                                                    responseJson.getJSONObject("newSimulation")
+                                                                println("Simulation created successfully: $newSimulation")
+                                                            } else {
+                                                                println("Failed to create simulation: ${response.message}")
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
                                         }
                                     } catch (e: Exception) {
                                         errorMessage.value = "Error generating simulation: ${e.message}"

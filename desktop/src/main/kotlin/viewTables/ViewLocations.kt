@@ -196,29 +196,30 @@ fun ViewLocation() {
 
                 val client = OkHttpClient()
                 val request = Request.Builder().url(url).build()
-                val response = client.newCall(request).execute()
-                val responseBody = response.body?.string()
+                client.newCall(request).execute().use { response ->
+                    val responseBody = response.body?.string()
 
-                if (responseBody != null) {
-                    val jsonObject = JSONObject(responseBody)
-                    val jsonArray = jsonObject.getJSONArray("locations")
-                    (0 until jsonArray.length()).map { i ->
-                        val obj = jsonArray.getJSONObject(i)
+                    if (responseBody != null) {
+                        val jsonObject = JSONObject(responseBody)
+                        val jsonArray = jsonObject.getJSONArray("locations")
+                        (0 until jsonArray.length()).map { i ->
+                            val obj = jsonArray.getJSONObject(i)
 
-                        Location(
-                            _id = ObjectId(obj.getString("_id")),
-                            geometry = Geometry(
-                                type = obj.getJSONObject("geometry").getString("type"),
-                                coordinates = obj.getJSONObject("geometry")
-                                    .getJSONArray("coordinates")
-                                    .let { coords ->
-                                        (0 until coords.length()).map { coords.getDouble(it) }
-                                    }
+                            Location(
+                                _id = ObjectId(obj.getString("_id")),
+                                geometry = Geometry(
+                                    type = obj.getJSONObject("geometry").getString("type"),
+                                    coordinates = obj.getJSONObject("geometry")
+                                        .getJSONArray("coordinates")
+                                        .let { coords ->
+                                            (0 until coords.length()).map { coords.getDouble(it) }
+                                        }
+                                )
                             )
-                        )
+                        }
+                    } else {
+                        emptyList()
                     }
-                } else {
-                    emptyList()
                 }
             } catch (e: Exception) {
                 println("Error while fetching locations: ${e.message}")
@@ -259,13 +260,15 @@ fun ViewLocation() {
                                     .url(url)
                                     .delete()
                                     .build()
-                                val response = client.newCall(request).execute()
-                                if (response.isSuccessful) {
-                                    println("Location with ID ${deletedLocation._id} deleted successfully.")
-                                    locationState.value = locationState.value.filter { it._id != deletedLocation._id }
-                                } else {
-                                    println("No location found with ID ${deletedLocation._id}.")
+                                client.newCall(request).execute().use { response ->
+                                    if (response.isSuccessful) {
+                                        println("Location with ID ${deletedLocation._id} deleted successfully.")
+                                        locationState.value =
+                                            locationState.value.filter { it._id != deletedLocation._id }
+                                    } else {
+                                        println("No location found with ID ${deletedLocation._id}.")
 
+                                    }
                                 }
                             } catch (e: Exception) {
                                 println("Error while deleting location: ${e.message}")
@@ -287,14 +290,15 @@ fun ViewLocation() {
                                     .put(body)
                                     .build()
 
-                                if (client.newCall(request).execute().use { res -> res.isSuccessful }) {
-                                    println("Location with ID ${editedLocation._id} updated successfully.")
-                                    locationState.value = locationState.value.map {
-                                        if (it._id == editedLocation._id) editedLocation else it
+                                client.newCall(request).execute().use { response ->
+                                    if (response.isSuccessful) {
+                                        println("Location with ID ${editedLocation._id} updated successfully.")
+                                        locationState.value = locationState.value.map {
+                                            if (it._id == editedLocation._id) editedLocation else it
+                                        }
+                                    } else {
+                                        println("No location found with ID ${editedLocation._id}.")
                                     }
-                                } else {
-                                    println("No location found with ID ${editedLocation._id}.")
-
                                 }
                             } catch (e: Exception) {
                                 println("Error while updating location: ${e.message}")

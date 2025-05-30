@@ -203,11 +203,15 @@ fun GenerateAccident() {
 
                                         val body = json.toRequestBody("application/json".toMediaTypeOrNull())
                                         val request = Request.Builder().url(url).post(body).build()
-                                        val response = client.newCall(request).execute()
-                                        if (response.isSuccessful) {
-                                            println("Accident generated successfully: $typeOfAccident at ($latitude, $longitude)")
-                                        } else {
-                                            println("Failed to generate accident: ${response.message}")
+                                        client.newCall(request).execute().use { response ->
+                                            if (response.isSuccessful) {
+                                                val responseString = response.body?.string() ?: ""
+                                                val responseJson = JSONObject(responseString)
+                                                val stationResponse = responseJson.getJSONObject("station")
+                                                println("Station created successfully: $stationResponse")
+                                            } else {
+                                                println("Failed to add station: ${response.message}")
+                                            }
                                         }
                                     } catch (e: Exception) {
                                         errorMessage.value = "Error generating accident: ${e.message}"

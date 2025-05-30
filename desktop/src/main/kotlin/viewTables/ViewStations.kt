@@ -223,24 +223,25 @@ fun ViewStations() {
                 val client = OkHttpClient()
 
                 val request = Request.Builder().url(url).build()
-                val response = client.newCall(request).execute()
-                val responseBody = response.body?.string()
+                client.newCall(request).execute().use { response ->
+                    val responseBody = response.body?.string()
 
-                if (responseBody != null) {
-                    val jsonArray = JSONArray(responseBody)
-                    (0 until jsonArray.length()).map { i ->
-                        val obj = jsonArray.getJSONObject(i)
-                        val stationObj = obj.getJSONObject("locationId")
-                        Station(
-                            _id = ObjectId(obj.getString("_id")),
-                            locationId = ObjectId(stationObj.getString("_id")),
-                            typeOfStation = obj.getString("typeOfStation"),
-                            isPermanent = obj.getBoolean("isPermanent"),
-                            region = obj.getString("region")
-                        )
+                    if (responseBody != null) {
+                        val jsonArray = JSONArray(responseBody)
+                        (0 until jsonArray.length()).map { i ->
+                            val obj = jsonArray.getJSONObject(i)
+                            val stationObj = obj.getJSONObject("locationId")
+                            Station(
+                                _id = ObjectId(obj.getString("_id")),
+                                locationId = ObjectId(stationObj.getString("_id")),
+                                typeOfStation = obj.getString("typeOfStation"),
+                                isPermanent = obj.getBoolean("isPermanent"),
+                                region = obj.getString("region")
+                            )
+                        }
+                    } else {
+                        emptyList<Station>()
                     }
-                } else {
-                    emptyList<Station>()
                 }
             } catch (e: Exception) {
                 println("Error while fetching stations: ${e.message}")
@@ -284,13 +285,13 @@ fun ViewStations() {
                                     .url(url)
                                     .delete()
                                     .build()
-                                val response = client.newCall(request).execute()
-                                if (response.isSuccessful) {
-                                    println("Station with ID ${deletedStation._id} deleted successfully.")
-                                    stationState.value = stationState.value.filter { it._id != deletedStation._id }
-                                } else {
-                                    println("No station found with ID ${deletedStation._id}.")
-
+                                client.newCall(request).execute().use { response ->
+                                    if (response.isSuccessful) {
+                                        println("Station with ID ${deletedStation._id} deleted successfully.")
+                                        stationState.value = stationState.value.filter { it._id != deletedStation._id }
+                                    } else {
+                                        println("No station found with ID ${deletedStation._id}.")
+                                    }
                                 }
                             } catch (e: Exception) {
                                 println("Error while deleting station: ${e.message}")
@@ -314,14 +315,15 @@ fun ViewStations() {
                                     .url(url)
                                     .put(body)
                                     .build()
-                                val response = client.newCall(request).execute()
-                                if (response.isSuccessful) {
-                                    println("Station with ID $stationId updated successfully.")
-                                    stationState.value = stationState.value.map {
-                                        if (it._id == editedStation._id) editedStation else it
+                                client.newCall(request).execute().use { response ->
+                                    if (response.isSuccessful) {
+                                        println("Station with ID $stationId updated successfully.")
+                                        stationState.value = stationState.value.map {
+                                            if (it._id == editedStation._id) editedStation else it
+                                        }
+                                    } else {
+                                        println("Failed to update station: ${response.message}")
                                     }
-                                } else {
-                                    println("Failed to update station: ${response.message}")
                                 }
 
                             } catch (e: Exception) {
