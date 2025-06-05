@@ -30,11 +30,10 @@ import kotlin.random.Random
 @Preview
 fun GenerateStation() {
     val instanceCount = remember { mutableStateOf("") }
-    val faker = Faker()
     val allRegions = listOf(
         "Pomurska",
         "Podravska",
-        "KoroĹˇka",
+        "Koroška",
         "Savinjska",
         "Zasavska",
         "Posavska",
