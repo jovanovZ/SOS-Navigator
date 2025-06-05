@@ -1,6 +1,7 @@
 const Station = require("../models/StationModel");
 const Location = require("../models/LocationModel");
 
+
 const haversineDistance = (coords1, coords2) => {
   const toRad = (deg) => (deg * Math.PI) / 180;
   const [lon1, lat1] = coords1;
@@ -266,5 +267,47 @@ exports.findNearestStationsByType = async (req, res) => {
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Failed to find nearest stations" });
+  }
+};
+
+exports.findAllStationsInRadius = async (req, res) => {
+  const { long, lat, radius, type } = req.query;
+  // log, lat to je center point od kroga; radius je v metrih
+  if (!long || !lat || !radius || !type) {
+    return res
+      .status(400)
+      .json({ message: "longitude, latitude and radius must be given" });
+  }
+  const radiusInRadians = Number(radius) / 6378137;
+
+  try {
+    const locations = await Location.find({
+      geometry: {
+        $geoWithin: {
+          $centerSphere: [[Number(long), Number(lat)], radiusInRadians],
+        },
+      },
+    });
+    if (locations.length === 0) {
+      return res.status(404).json({ message: "No locations in this radius" });
+    }
+
+    const locationIds = locations.map((loc) => loc._id);
+    const stations = await Station.find({
+      typeOfStation: type,
+      locationId: { $in: locationIds },
+    }).populate("locationId");
+
+    if (stations.length === 0) {
+      return res.status(404).json({ message: "No stations in this radius" });
+    }
+
+    return res
+      .status(200)
+      .json({ stations, message: "Successfully found stations in radius" });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: "Failed to find locations in radius" });
   }
 };

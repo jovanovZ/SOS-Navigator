@@ -8,6 +8,11 @@ router.get("/location/:locationId", accidentController.getByLocation);
 router.get("/randomId", accidentController.getRadnomId);
 
 router.post("/create", accidentController.createAccident);
+router.post(
+  "/generateRandomInRadius",
+  accidentController.generateRandomAccidentsInRadius
+);
+
 router.put("/update/:accidentId", accidentController.updateAccident);
 
 router.delete("/delete/:accidentId", accidentController.deleteAccident);

@@ -49,12 +49,32 @@ export default function Homepage() {
 
   const [editingId, setEditingId] = useState(null);
   const [newNameValue, setNewNameValue] = useState("");
+  const [time, setTime] = useState(0);
+  const [newPath, setNewPath] = useState([]); // tole je za sloveniaMaps
+  const [addedAccident, setAddedAccident] = useState(null);
+  const [accidenceType, setAccidenceType] = useState("kriminal");
+  const [fiveNearestStations, setFiveNearesStations] = useState([]);
+
+  const [allAccidents, setAllAccidents] = useState([]);
+  const [currentSimulation, setCurrentSimulation] = useState(null);
+  const [bestStation, setBestStation] = useState(null);
+
+  const [simulationData, setSimulationData] = useState([]);
+  const [isOpen, setIsOpen] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [simulationToDelete, setSimulationToDelete] = useState(null);
+  const [showCheck, setShowCheck] = useState(false);
+  const [showInfo, setShowInfo] = useState(true);
+  const [accidenceTypes, setAccidenceTypes] = useState([
+    { id: 1, type: "prometna" },
+    { id: 2, type: "kriminal" },
+    { id: 3, type: "zdravstveni primer" },
+    { id: 4, type: "naravna nesreča" },
+  ]);
 
   const removeSimulationFromLocalStorage = () => {
     localStorage.removeItem("simulation");
   };
-
-  const [simulationData, setSimulationData] = useState([]);
 
   useEffect(() => {
     const fetchSimulations = async () => {
@@ -99,8 +119,6 @@ export default function Homepage() {
     }
   };
 
-  const [allAccidents, setAllAccidents] = useState([]);
-
   const addObjectData = [
     {
       id: 1,
@@ -118,8 +136,6 @@ export default function Homepage() {
       type: "Gasilci",
     },
   ];
-
-  const [currentSimulation, setCurrentSimulation] = useState(null);
 
   const [stations, setStations] = useState([]);
   useEffect(() => {
@@ -139,20 +155,6 @@ export default function Homepage() {
     fetchStations();
   }, []);
 
-  const [time, setTime] = useState(0);
-  const [newPath, setNewPath] = useState([]); // tole je za sloveniaMaps
-  const [addedAccident, setAddedAccident] = useState(null);
-  const [accidenceType, setAccidenceType] = useState("kriminal");
-  const [fiveNearestStations, setFiveNearesStations] = useState([]);
-
-  const accidenceTypes = [
-    { id: 1, type: "prometna" },
-    { id: 2, type: "kriminal" },
-    { id: 3, type: "zdravstveni primer" },
-    { id: 4, type: "naravna nesreča" },
-  ];
-
-  const [bestStation, setBestStation] = useState(null);
   useEffect(() => {
     const findClosestByRoad = async () => {
       if (!addedAccident) return;
@@ -174,7 +176,6 @@ export default function Homepage() {
         );
         const nearest = res.data.nearestStations;
         setFiveNearesStations(nearest);
-        console.log("MIHAAA-------------", nearest);
 
         let closestStation = null;
         let minDistance = Infinity;
@@ -193,7 +194,7 @@ export default function Homepage() {
               {
                 headers: {
                   Authorization:
-                    "5b3ce3597851110001cf6248e144b426a65242b68905aa92335e0183",
+                    "5b3ce3597851110001cf624801f5f69a289c476da754157ff8ab9298",
                   "Content-Type": "application/json",
                 },
               }
@@ -230,8 +231,6 @@ export default function Homepage() {
 
     findClosestByRoad();
   }, [addedAccident]);
-
-  const [showCheck, setShowCheck] = useState(false);
 
   const deleteRecentlyAddedStations = () => {
     setStations((prev) =>
@@ -284,9 +283,6 @@ export default function Homepage() {
     }
   };
 
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [simulationToDelete, setSimulationToDelete] = useState(null);
-
   const deleteSimulation = async (id) => {
     setLoading(true);
     try {
@@ -301,8 +297,6 @@ export default function Homepage() {
       setLoading(false);
     }
   };
-
-  const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
     const fetchAllAccidents = async () => {
@@ -369,7 +363,23 @@ export default function Homepage() {
                 className={`w-full py-4 px-2 flex flex-col items-center hover:bg-blue-800 transition duration-200`}
               >
                 <MdAutorenew size={30} />
-                <span className="text-sm mt-1 text-center">
+                <span
+                  className="text-sm mt-1 text-center"
+                  onClick={() => {
+                    setShowInfo((prev) => {
+                      if (prev) {
+                        setAccidenceTypes([
+                          ...accidenceTypes,
+                          { id: 5, type: "Št nesreč" },
+                          { id: 6, type: "Radius (m)" },
+                        ]);
+                      } else {
+                        setAccidenceTypes(accidenceTypes.slice(0, -2));
+                      }
+                      return !prev;
+                    });
+                  }}
+                >
                   Predlog za postajo
                 </span>
               </div>
@@ -561,24 +571,26 @@ export default function Homepage() {
             </div>
           </div>
         </div>
+        {showInfo ? (
+          <InformationPart
+            setText={setText}
+            setLoading={setLoading}
+            setSearchingExSimulation={setSearchingExSimulation}
+            setShowCheck={setShowCheck}
+            setDeletedTrue={setDeletedTrue}
+            deleteRecentlyAddedStations={deleteRecentlyAddedStations}
+            simulation={currentSimulation}
+            newPath={newPath}
+            addedAccident={addedAccident}
+            time={time}
+            setNewPath={setNewPath}
+            setAddedAccident={setAddedAccident}
+            setTime={setTime}
+            setCurrentSimulation={setCurrentSimulation}
+            bestStation={bestStation}
+          />
+         ) : null} 
 
-        <InformationPart
-          setText={setText}
-          setLoading={setLoading}
-          setSearchingExSimulation={setSearchingExSimulation}
-          setShowCheck={setShowCheck}
-          setDeletedTrue={setDeletedTrue}
-          deleteRecentlyAddedStations={deleteRecentlyAddedStations}
-          simulation={currentSimulation}
-          newPath={newPath}
-          addedAccident={addedAccident}
-          time={time}
-          setNewPath={setNewPath}
-          setAddedAccident={setAddedAccident}
-          setTime={setTime}
-          setCurrentSimulation={setCurrentSimulation}
-          bestStation={bestStation}
-        />
         {loading && <Loading text={text} />}
       </div>
 
