@@ -8,6 +8,7 @@ router.get("/location/:locationId", stationController.getByLocation);
 router.get("/region/:region", stationController.getByRegion);
 router.get("/permanent/:isPermanent", stationController.getByPermanence);
 router.get("/randomId", stationController.getRadnomId);
+router.get("/getFiveNearestStations/:long/:lat/:type", stationController.findNearestStationsByType);
 
 router.post("/create", stationController.createStation);
 router.put("/update/:stationId", stationController.updateStation);

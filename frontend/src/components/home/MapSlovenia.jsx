@@ -77,8 +77,8 @@ function ClickToAddAccident({ setAddedAccident, type, setCheck, searchingExSimul
       const { lat, lng } = e.latlng;
       console.log("Clicked coordinates:", lat, lng);
       setAddedAccident({
-        latitude: lat,
         longitude: lng,
+        latitude: lat,
         type: type,
       });
 
@@ -200,8 +200,8 @@ export default function MapSlovenia({setLoading, gasilciVidnost,bolniceVidnost,p
       const response = await axios.post(
         `http://${IP}/api/accident/create`,
         {
-          latitude: addedAccident.latitude,
           longitude: addedAccident.longitude,
+          latitude: addedAccident.latitude,
           type: addedAccident.type,
         },
         { withCredentials: true }
@@ -243,8 +243,8 @@ export default function MapSlovenia({setLoading, gasilciVidnost,bolniceVidnost,p
           <Marker
             key={station._id || index}
             position={[
-              station.locationId?.geometry?.coordinates[1],
               station.locationId?.geometry?.coordinates[0],
+              station.locationId?.geometry?.coordinates[1],
             ]}
             icon={
               station.typeOfStation === "Bolnica"
@@ -260,8 +260,8 @@ export default function MapSlovenia({setLoading, gasilciVidnost,bolniceVidnost,p
 {selectedStationId === (station._id || index) && (
 <Popup
   position={[
-    station.locationId?.geometry?.coordinates[1],
     station.locationId?.geometry?.coordinates[0],
+    station.locationId?.geometry?.coordinates[1],
   ]}
   onClose={() => setSelectedStationId(null)}
   closeButton={false}
@@ -328,8 +328,8 @@ export default function MapSlovenia({setLoading, gasilciVidnost,bolniceVidnost,p
         {currentSimulation?.accidentId?.locationId?.geometry?.coordinates && (
           <Marker
             position={[
-              currentSimulation.accidentId.locationId.geometry.coordinates[1],
-              currentSimulation.accidentId.locationId.geometry.coordinates[0]
+              currentSimulation.accidentId.locationId.geometry.coordinates[0],
+              currentSimulation.accidentId.locationId.geometry.coordinates[1]
             ]}
             icon={getAccidentIcon(currentSimulation.accidentId.typeOfAccident)}
           />

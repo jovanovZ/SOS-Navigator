@@ -1,21 +1,32 @@
 const Station = require("../models/StationModel");
 const Location = require("../models/LocationModel");
 
+const haversineDistance = (coords1, coords2) => {
+  const toRad = (deg) => (deg * Math.PI) / 180;
+  const [lon1, lat1] = coords1;
+  const [lon2, lat2] = coords2;
+
+  const R = 6371; // Earth radius in km
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+};
+
 exports.createStation = async (req, res) => {
-  const {
-    latitude,
-    longitude,
-    typeOfStation,
-    isPermanent,
-    region,
-  } = req.body;
+  const { latitude, longitude, typeOfStation, isPermanent, region } = req.body;
   try {
     const location = new Location({
       geometry: {
         type: "Point",
         coordinates: [longitude, latitude],
       },
-    }); 
+    });
     await location.save();
 
     const newStation = new Station({
@@ -200,19 +211,60 @@ exports.getByPermanence = async (req, res) => {
       .json({ message: "Failed to get stations by permanence" });
   }
 };
-exports.getRadnomId = async (req,res) =>{
-   try {
-      const count = await Station.countDocuments();
-      if (count === 0) {
-        return res.status(404).json({ message: "No stations found" });
-      }
-      const random = Math.floor(Math.random() * count);
-      const station = await Station.findOne().skip(random).select("_id");
-      if (!station) {
-        return res.status(404).json({ message: "No station found" });
-      }
-      return res.status(200).json({ id: station._id });
-    } catch (error) {
-      return res.status(500).json({ message: "Failed to get random station ID" });
+exports.getRadnomId = async (req, res) => {
+  try {
+    const count = await Station.countDocuments();
+    if (count === 0) {
+      return res.status(404).json({ message: "No stations found" });
     }
-}
+    const random = Math.floor(Math.random() * count);
+    const station = await Station.findOne().skip(random).select("_id");
+    if (!station) {
+      return res.status(404).json({ message: "No station found" });
+    }
+    return res.status(200).json({ id: station._id });
+  } catch (error) {
+    return res.status(500).json({ message: "Failed to get random station ID" });
+  }
+};
+
+exports.findNearestStationsByType = async (req, res) => {
+  const { long, lat, type } = req.params;
+
+  if (!long || !lat) {
+    return res.status(400).json({ message: "No long, lat given" });
+  }
+
+  try {
+    const longitude = parseFloat(long);
+    const latitude = parseFloat(lat);
+
+    const stations = await Station.find({ typeOfStation: type }).populate(
+      "locationId"
+    );
+
+    const validStations = stations.filter(
+      (station) =>
+        station.locationId &&
+        station.locationId.geometry &&
+        Array.isArray(station.locationId.geometry.coordinates)
+    );
+
+    const stationsWithDistance = validStations.map((station) => {
+      const coords = station.locationId.geometry.coordinates;
+      const distance = haversineDistance([longitude, latitude], coords);
+      return { station, distance };
+    });
+
+    stationsWithDistance.sort((a, b) => a.distance - b.distance);
+
+    const nearestStations = stationsWithDistance
+      .slice(0, 5)
+      .map((s) => s.station);
+
+    return res.status(200).json({ nearestStations });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Failed to find nearest stations" });
+  }
+};

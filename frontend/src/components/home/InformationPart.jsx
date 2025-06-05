@@ -55,7 +55,7 @@ export default function InformationPart({
   const IP = process.env.REACT_APP_IP;
   const [fromAddress, setFromAddress] = useState("");
   const [toAddress, setToAddress] = useState("");
-  console.log("SimulationTime:", time);
+  // console.log("SimulationTime:", time);
 
   const formatTime = (ms) => {
     if (!ms || ms === 0) return "0h 0min 0sec";

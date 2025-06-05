@@ -122,51 +122,6 @@ exports.findAllLocationsInRadius = async (req, res) => {
   }
 };
 
-exports.findNearestStation = async (req, res) => {
-  const { locationId } = req.params;
-  if (!locationId) {
-    return res.status(400).json({ message: "No locationId given" });
-  }
-
-  try {
-    const location = await Location.findById(locationId);
-    if (!location) {
-      return res.status(404).json({ message: "Location not found" });
-    }
-    const [longitude, latitude] = location.geometry.coordinates;
-
-    const nearestLocation = await Location.findOne({
-      _id: { $ne: location._id },
-      geometry: {
-        $near: {
-          $geometry: {
-            type: "Point",
-            coordinates: [longitude, latitude],
-          },
-        },
-      },
-    });
-
-    if (!nearestLocation) {
-      return res.status(404).json({ message: "No nearby location found" });
-    }
-
-    const nearestStation = await Station.findOne({
-      locationId: nearestLocation._id,
-    }).populate("locationId");
-
-    if (!nearestStation) {
-      return res.status(404).json({ message: "No nearby station found" });
-    }
-
-    return res.status(200).json({ nearestStation });
-  } catch (error) {
-    return res
-      .status(500)
-      .json({ message: "Failed to find stations for given location" });
-  }
-};
-
 exports.findAllStationsInRadius = async (req, res) => {
   const { long, lat, radius } = req.query;
   // log, lat to je center point od kroga; radius je v metrih
