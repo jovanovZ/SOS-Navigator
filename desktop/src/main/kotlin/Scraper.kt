@@ -11,6 +11,7 @@ import androidx.compose.material.Card
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import io.github.cdimascio.dotenv.dotenv
+import io.github.serpro69.kfaker.Faker
 import it.skrape.core.*
 import it.skrape.fetcher.*
 import okhttp3.OkHttpClient
@@ -186,6 +187,23 @@ fun getLatLngFromAddress(address: String): Pair<Double, Double>? {
     }
     return null
 }
+fun getRandomRegion():String{
+    val allRegions = listOf(
+        "Pomurska",
+        "Podravska",
+        "Koroška",
+        "Savinjska",
+        "Zasavska",
+        "Posavska",
+        "Jugovzhodna Slovenija",
+        "Osrednjeslovenska",
+        "Gorenjska",
+        "Primorsko-notranjska",
+        "Goriška",
+        "Obalno-kraška",
+    )
+    return allRegions.random()
+}
 
 fun sendRequestForCreating(long: Double, lat: Double, typeOfStation: String) {
     val client = OkHttpClient()
@@ -196,7 +214,7 @@ fun sendRequestForCreating(long: Double, lat: Double, typeOfStation: String) {
             .put("latitude", lat)
             .put("typeOfStation", typeOfStation)
             .put("isPermanent", true)
-            .put("region", "Podravska")
+            .put("region", getRandomRegion())
             .toString()
         val body =
             json.toRequestBody("application/json".toMediaTypeOrNull())
