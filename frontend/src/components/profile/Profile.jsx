@@ -21,8 +21,8 @@ export default function Profile() {
   const [showImageInput, setShowImageInput] = useState(false);
 
   const [loading, setLoading] = useState(false);
-  const [passwordLoading, setPasswordLoading] = useState(false)
-  const [imageLoader, setImageLoader] = useState(false)
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [imageLoader, setImageLoader] = useState(false);
 
   const [simulations, setSimulations] = useState([]);
 
@@ -33,41 +33,39 @@ export default function Profile() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-useEffect(() => {
-  const localStorageUserInfo = JSON.parse(localStorage.getItem("user"));
-  setUser(localStorageUserInfo); // ⬅️ to dodaš
+  useEffect(() => {
+    const localStorageUserInfo = JSON.parse(localStorage.getItem("user"));
+    setUser(localStorageUserInfo); // ⬅️ to dodaš
 
-  setUsername(localStorageUserInfo.username);
-  setEmail(localStorageUserInfo.email);
-  setImage(localStorageUserInfo.image);
-  const userId = localStorageUserInfo.id;
+    setUsername(localStorageUserInfo.username);
+    setEmail(localStorageUserInfo.email);
+    setImage(localStorageUserInfo.image);
+    const userId = localStorageUserInfo.id;
 
-  const fetchSimulations = async () => {
-    setLoading(true);
-    try {
-      const res = await axios.get(
-        `http://${IP}/api/simulation/user/${userId}`,
-        { withCredentials: true }
-      );
+    const fetchSimulations = async () => {
+      setLoading(true);
+      try {
+        const res = await axios.get(
+          `http://${IP}/api/simulation/user/${userId}`,
+          { withCredentials: true }
+        );
 
-      if (res.status === 200) {
-        const simulationsData = Array.isArray(res.data)
-          ? res.data
-          : res.data.simulations || [];
-        setSimulations(simulationsData);
-        setSimulations(simulationsData);
+        if (res.status === 200) {
+          const simulationsData = Array.isArray(res.data)
+            ? res.data
+            : res.data.simulations || [];
+          setSimulations(simulationsData);
+          setSimulations(simulationsData);
+        }
+      } catch (error) {
+        console.error("Error fetching simulations:", error);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Error fetching simulations:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
-  fetchSimulations();
-}, []);
-
-
+    fetchSimulations();
+  }, []);
 
   function formatMs(ms) {
     const totalSeconds = Math.floor(ms / 1000);
@@ -150,38 +148,34 @@ useEffect(() => {
     }
   };
 
-
   const fileInputRef = useRef();
 
   const handleProfileImageChange = async (e) => {
-      
-      setImageLoader(true)
-      const file = e.target.files[0];
-      if (!file) return;
-    
-      try {    
-        const formData = new FormData();
-        formData.append('image', file);
-        formData.append('userId', JSON.parse(localStorage.getItem("user")).id);
-    
-        const res = await axios.post(
-          `http://${IP}/api/user/update-profile-image`,
-          formData,
-          { withCredentials: true }
-        );
-    
-        const updatedUser = { ...user, image: res.data.image };
-        localStorage.setItem('user', JSON.stringify(updatedUser));
-    
-        window.location.reload();
-      } catch (error) {
-        toast.error('Error updating profile image:', error);
-      } finally {
-        setImageLoader(false);
-      }
-    };
+    setImageLoader(true);
+    const file = e.target.files[0];
+    if (!file) return;
 
+    try {
+      const formData = new FormData();
+      formData.append("image", file);
+      formData.append("userId", JSON.parse(localStorage.getItem("user")).id);
 
+      const res = await axios.post(
+        `http://${IP}/api/user/update-profile-image`,
+        formData,
+        { withCredentials: true }
+      );
+
+      const updatedUser = { ...user, image: res.data.image };
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+
+      window.location.reload();
+    } catch (error) {
+      toast.error("Error updating profile image:", error);
+    } finally {
+      setImageLoader(false);
+    }
+  };
 
   const handleChangePassword = async () => {
     setPasswordLoading(true);
@@ -207,9 +201,11 @@ useEffect(() => {
         toast.warn(res.data.message || "Failed to change password.");
       }
     } catch (error) {
-        toast.error("Failed to change password. Please check your current password");
+      toast.error(
+        "Failed to change password. Please check your current password"
+      );
     } finally {
-        setPasswordLoading(false);
+      setPasswordLoading(false);
     }
   };
   return (
@@ -243,34 +239,32 @@ useEffect(() => {
                 </>
               )}
 
-          {imageLoader && (
-            <div className="absolute inset-0 bg-white/70 flex items-center justify-center rounded-full">
-              <div className="w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+              {imageLoader && (
+                <div className="absolute inset-0 bg-white/70 flex items-center justify-center rounded-full">
+                  <div className="w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+              )}
             </div>
-          )}
-          </div>
 
-          <div>
-            {editUsername ? (
-              <div className="relative w-[250px]">
-                <input
+            <div>
+              {editUsername ? (
+                <div className="relative w-[250px]">
+                  <input
                     type="username"
                     placeholder={username}
                     value={tempUsername}
                     onChange={(e) => setTempUsername(e.target.value)}
                     className="w-full pr-10 focus:bg-gray-200 hover:bg-gray-100 px-2 py-1 border border-gray-400 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-gray-600"
-                />
+                  />
 
                   <div className="absolute inset-y-0 right-0 flex items-center gap-1 pr-2 text-xl">
-
-                      <button
-                        className="text-green-600 hover:text-green-800 font-semibold"
-                        title="Shrani"
-                        onClick={handleChangeUsername}
-                      >
-                        ✔
-                      </button>
-
+                    <button
+                      className="text-green-600 hover:text-green-800 font-semibold"
+                      title="Shrani"
+                      onClick={handleChangeUsername}
+                    >
+                      ✔
+                    </button>
 
                     <span className="font-semibold mb-1">|</span>
                     <button
@@ -365,23 +359,21 @@ useEffect(() => {
             >
               ✖
             </button>
-            {
-              passwordLoading ?
-              (             
-              <button
-                  className="w-4 absolute h-4 border-2 bottom-1 right-1 border-gray-400 border-t-transparent rounded-full animate-spin"
-              />
-              ) : (
-                currentPassword !== "" &&
-                newPassword !== "" &&
-                confirmPassword !== "" &&
-                newPassword === confirmPassword && (
-                  <button className="absolute bottom-1 right-1 text-green-600 hover:text-green-700 font-bold text-xl" onClick={handleChangePassword}>
-                    ✔
-                  </button>
-                  )
+            {passwordLoading ? (
+              <button className="w-4 absolute h-4 border-2 bottom-1 right-1 border-gray-400 border-t-transparent rounded-full animate-spin" />
+            ) : (
+              currentPassword !== "" &&
+              newPassword !== "" &&
+              confirmPassword !== "" &&
+              newPassword === confirmPassword && (
+                <button
+                  className="absolute bottom-1 right-1 text-green-600 hover:text-green-700 font-bold text-xl"
+                  onClick={handleChangePassword}
+                >
+                  ✔
+                </button>
               )
-            }
+            )}
             <div className="flex flex-row justify-between items-center">
               <span className="font-medium mr-2">Current password:</span>
               <input
@@ -442,7 +434,7 @@ useEffect(() => {
                   <th className="px-4 py-2 rounded-r-md">🕒 Čas</th>
                 </tr>
               </thead>
-              {
+              {/* {
                 loading ? (
               <div className="w-[425%]  mx-auto flex items-center justify-center py-4">
                 <div className="h-6 w-6 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
@@ -451,17 +443,13 @@ useEffect(() => {
               <div className="w-[300%]  mx-auto flex items-center justify-center py-4">
                 No simulations for you
               </div>          
-                ) :
+                ) : */}
               <tbody>
-                {
-                simulations?.map((item) => (
+                {simulations?.map((item) => (
                   <tr
                     onClick={() => {
-                      localStorage.setItem(
-                        "simulation",
-                        JSON.stringify(item)
-                      );
-                      navigate('/');
+                      localStorage.setItem("simulation", JSON.stringify(item));
+                      navigate("/");
                     }}
                     key={item._id}
                     className="bg-gray-100 cursor-pointer text-gray-800 hover:bg-blue-100 hover:text-blue-900 transition duration-150"
@@ -472,11 +460,9 @@ useEffect(() => {
                     <td className="px-4 py-2">{item.typeOfServices}</td>
                     <td className="px-4 py-2">{formatMs(item.responseTime)}</td>
                   </tr>
-                ))
-                
-                }
+                ))}
               </tbody>
-              }
+              {/* } */}
             </table>
           </div>
         </div>

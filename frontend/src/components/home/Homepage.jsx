@@ -25,6 +25,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import { MdOutlineLightbulb } from "react-icons/md";
 
 export default function Homepage() {
   const IP = process.env.REACT_APP_IP;
@@ -362,7 +363,7 @@ export default function Homepage() {
               <div
                 className={`w-full py-4 px-2 flex flex-col items-center hover:bg-blue-800 transition duration-200`}
               >
-                <MdAutorenew size={30} />
+                <MdOutlineLightbulb size={30} />{" "}
                 <span
                   className="text-sm mt-1 text-center"
                   onClick={() => {
@@ -589,7 +590,7 @@ export default function Homepage() {
             setCurrentSimulation={setCurrentSimulation}
             bestStation={bestStation}
           />
-         ) : null} 
+        ) : null}
 
         {loading && <Loading text={text} />}
       </div>

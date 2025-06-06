@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   MapContainer,
   Marker,
@@ -7,6 +7,7 @@ import {
   TileLayer,
   ZoomControl,
   useMapEvents,
+  Circle,
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
@@ -206,6 +207,19 @@ const saveStation = async (station, setLoading) => {
     // setLoading(false);
   }
 };
+function typeOfAccidentToService(typeOfAccident) {
+  switch (typeOfAccident) {
+    case "prometna":
+    case "kriminal":
+      return "Policijska";
+    case "zdravstveni primer":
+      return "Bolnica";
+    case "naravna nesreča":
+      return "Gasilci";
+    default:
+      return "Neznano";
+  }
+}
 
 export default function MapSlovenia({
   setLoading,
@@ -235,6 +249,18 @@ export default function MapSlovenia({
   const [selectedTypeForGenerating, setSelectedTypeForGenerating] =
     useState("kriminal");
   const [stationsInRadius, setStationsInRadius] = useState([]);
+  const [expandedRightModal, setExpandedRightModal] = useState(false);
+  const [generatedAccidents, setGeneratedAccidents] = useState([]);
+  const [recomendedStations, setRecomendedStations] = useState([]);
+
+  useEffect(() => {
+    if (accidenceTypes.length > 4) setExpandedRightModal(true);
+    else {
+      setExpandedRightModal(false);
+      setGeneratedAccidents([]);
+    }
+  }, [accidenceTypes]);
+
   const saveAccident = async () => {
     try {
       const response = await axios.post(
@@ -255,19 +281,7 @@ export default function MapSlovenia({
       setShowCheck(false);
     }
   };
-  function typeOfAccidentToService(typeOfAccident) {
-    switch (typeOfAccident) {
-      case "prometna":
-      case "kriminal":
-        return "Policijska";
-      case "zdravstveni primer":
-        return "Bolnica";
-      case "naravna nesreča":
-        return "Gasilci";
-      default:
-        return "Neznano";
-    }
-  }
+
   async function handleSubmitGeneratStation() {
     if (!addedAccident) return;
 
@@ -296,9 +310,9 @@ export default function MapSlovenia({
         }
       );
       if (response.status == 200) {
-        
-        console.log(response.data.stations);
-        setStationsInRadius(response.status.stations);
+        // console.log(response.data.stations);
+        setStationsInRadius(response.data.stations);
+        const stationsVal = response.data.stations;
         try {
           const resForAccidents = await axios.post(
             `http://${IP}/api/accident/generateRandomInRadius`,
@@ -311,7 +325,113 @@ export default function MapSlovenia({
             }
           );
           if (resForAccidents.status == 200) {
-            console.log(resForAccidents.data);
+            setGeneratedAccidents(resForAccidents.data.accidents);
+            const generatedAccidentsVal = resForAccidents.data.accidents;
+
+            // console.log("Sending to getFurthest:", {
+            //   accidents: generatedAccidentsVal,
+            //   stations: stationsVal,
+            // });
+            try {
+              const resForFurthesStations = await axios.post(
+                `http://${IP}/api/station/getFurthest`,
+                {
+                  accidents: generatedAccidentsVal,
+                  stations: stationsVal,
+                }
+              );
+              if (resForFurthesStations.status === 200) {
+                const stationAndAccidentsArray =
+                  resForFurthesStations.data.results;
+                console.log(stationAndAccidentsArray);
+
+                await Promise.all(
+                  stationAndAccidentsArray.map(async (resultSet) => {
+                    try {
+                      const stationCoords =
+                        resultSet.furthestStation?.locationId?.geometry
+                          ?.coordinates;
+                      const accidentCoords =
+                        resultSet.accident?.locationId?.geometry?.coordinates;
+
+                      if (!stationCoords || !accidentCoords) return;
+
+                      const from = [stationCoords[1], stationCoords[0]];
+                      const to = [accidentCoords[1], accidentCoords[0]];
+
+                      const responseApi = await axios.post(
+                        "https://api.openrouteservice.org/v2/directions/driving-car/geojson",
+                        { coordinates: [from, to] },
+                        {
+                          headers: {
+                            Authorization:
+                              "5b3ce3597851110001cf624801f5f69a289c476da754157ff8ab9298",
+                            "Content-Type": "application/json",
+                          },
+                        }
+                      );
+
+                      const route = responseApi.data.features[0];
+                      const duration = route.properties.summary.duration;
+
+                      console.log("Duration (s):", duration);
+
+                      //ce je vec kot 30 min
+                      if (duration > 1800) {
+                        const path = route.geometry.coordinates.map(
+                          (coord) => ({
+                            lng: coord[0],
+                            lat: coord[1],
+                          })
+                        );
+                        const index = Math.floor(
+                          (path.length * 1800) / duration
+                        );
+
+                        const coordsForNewStation = path[index];
+                        console.log(coordsForNewStation);
+
+                        if (!coordsForNewStation) {
+                          console.log(
+                            "Invalid station coordinate index",
+                            index,
+                            path.length
+                          );
+                          return;
+                        }
+
+                        try {
+                          const resCreateStation = await axios.post(
+                            `http://${IP}/api/station/create`,
+                            {
+                              longitude: coordsForNewStation.lat,
+                              latitude: coordsForNewStation.lng,
+                              typeOfStation: typeOfAccidentToService(
+                                selectedTypeForGenerating
+                              ),
+                              isPermanent: true,
+                              region: "Podravska",
+                            }
+                          );
+                          if (resCreateStation.status === 201) {
+                            setRecomendedStations((prev) => [
+                              ...prev,
+                              resCreateStation.data.station,
+                            ]);
+                          }
+                        } catch (err) {
+                          console.log("ERROR createing station", err);
+                        }
+                      }
+                    } catch (err) {
+                      console.log("ERROR from api for distance and time", err);
+                    }
+                  })
+                );
+              }
+            } catch (err) {
+              console.log("ERROR getting furthers station", err);
+            }
           }
         } catch (err) {
           console.log("ERROR creating n times accidents", err);
@@ -319,10 +439,11 @@ export default function MapSlovenia({
       }
     } catch (err) {
       console.log("ERRROR geting station in radius: ", err);
-    } finally {
-      if (inputRefs.current[5]) inputRefs.current[5].value = "";
-      if (inputRefs.current[6]) inputRefs.current[6].value = "";
     }
+    // finally {
+    //   if (inputRefs.current[5]) inputRefs.current[5].value = "";
+    //    if (inputRefs.current[6]) inputRefs.current[6].value = "";
+    // }
   }
 
   return (
@@ -468,7 +589,7 @@ export default function MapSlovenia({
         ) : (
           <ClickToAddAccident
             setAddedAccident={setAddedAccident}
-            type={accidenceTypes.length >= 5 ? null : accidenceType}
+            type={expandedRightModal ? null : accidenceType}
             setCheck={setShowCheck}
             searchingExSimulation={searchingExSimulation}
           />
@@ -481,6 +602,81 @@ export default function MapSlovenia({
               icon={getAccidentIcon(addedAccident.type)}
             />
           )}
+        {/* KROG ZA RADIUS */}
+        {inputRefs.current[6]?.value &&
+        addedAccident &&
+        Number.isFinite(addedAccident.latitude) &&
+        Number.isFinite(addedAccident.longitude) ? (
+          <Circle
+            center={[addedAccident.latitude, addedAccident.longitude]}
+            radius={parseFloat(inputRefs.current[6].value)}
+            pathOptions={{
+              color: "blue",
+              fillColor: "rgba(30, 144, 255, 0.3)",
+              fillOpacity: 0.4,
+            }}
+          />
+        ) : null}
+
+        {/* GENERIRANE NESREČE */}
+        {generatedAccidents.length > 0
+          ? generatedAccidents.map((accident) => {
+              return (
+                <Marker
+                  key={accident._id}
+                  position={[
+                    accident.locationId.geometry.coordinates[0],
+                    accident.locationId.geometry.coordinates[1],
+                  ]}
+                  icon={getAccidentIcon(accident.typeOfAccident)}
+                />
+              );
+            })
+          : null}
+        {recomendedStations.length > 0
+          ? recomendedStations.map((station, index) => {
+              const coords = station.locationId?.geometry?.coordinates;
+              if (!coords) return null;
+              return (
+                <Marker
+                  key={station._id}
+                  position={[coords[0], coords[1]]}
+                  icon={
+                    station.typeOfStation === "Bolnica"
+                      ? hospitalIcon
+                      : station.typeOfStation === "Policijska"
+                      ? policeIcon
+                      : fireIcon
+                  }
+                  eventHandlers={{
+                    click: () => setSelectedStationId(station._id),
+                  }}
+                >
+                  {selectedStationId === station._id && (
+                    <Popup
+                      position={[coords[0], coords[1]]}
+                      onClose={() => setSelectedStationId(null)}
+                      closeButton={false}
+                      closeOnClick={false}
+                      autoPan={false}
+                    >
+                      <button
+                        onClick={() => {
+                          setRecomendedStations((prev) =>
+                            prev.filter((s) => s._id !== station._id)
+                          );
+                          setSelectedStationId(null);
+                        }}
+                        className="px-2 py-1 text-sm text-red-600 hover:text-red-800"
+                      >
+                        Delete ✖
+                      </button>
+                    </Popup>
+                  )}
+                </Marker>
+              );
+            })
+          : null}
 
         <ZoomControl position="bottomright" />
       </MapContainer>
@@ -549,7 +745,7 @@ export default function MapSlovenia({
                 );
               }
             })}
-            {accidenceTypes.length > 4 ? (
+            {expandedRightModal ? (
               <button
                 onClick={handleSubmitGeneratStation}
                 className="mt-2 w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded shadow transition duration-150"

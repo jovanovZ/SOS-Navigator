@@ -18,6 +18,8 @@ router.get(
 );
 
 router.post("/create", stationController.createStation);
+router.post("/getFurthest", stationController.getFurthestStationFromAccident);
+
 router.put("/update/:stationId", stationController.updateStation);
 
 router.delete("/delete/:stationId", stationController.deleteStation);

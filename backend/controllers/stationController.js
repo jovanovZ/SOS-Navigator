@@ -1,7 +1,6 @@
 const Station = require("../models/StationModel");
 const Location = require("../models/LocationModel");
 
-
 const haversineDistance = (coords1, coords2) => {
   const toRad = (deg) => (deg * Math.PI) / 180;
   const [lon1, lat1] = coords1;
@@ -40,15 +39,12 @@ exports.createStation = async (req, res) => {
     console.log(newStation);
 
     await newStation.save();
+    const populatedStation = await Station.findById(newStation._id).populate(
+      "locationId"
+    );
 
     return res.status(201).json({
-      station: {
-        id: newStation._id,
-        locationId: location._id,
-        typeOfStation,
-        isPermanent,
-        region,
-      },
+      station: populatedStation,
       message: "Station created successfully",
     });
   } catch (error) {
@@ -309,5 +305,69 @@ exports.findAllStationsInRadius = async (req, res) => {
     return res
       .status(500)
       .json({ message: "Failed to find locations in radius" });
+  }
+};
+
+//funkcija vrne array objektov v objektu je najbolj oddaljena postaja, nesreča in distanca med nesrečo in najbolj oddaljeno postajo
+exports.getFurthestStationFromAccident = async (req, res) => {
+  // v body-u sta array accidentov in array postaj
+  const { accidents, stations } = req.body;
+  if (
+    !accidents ||
+    !stations ||
+    !Array.isArray(accidents) ||
+    !Array.isArray(stations)
+  ) {
+    return res
+      .status(400)
+      .json({ message: "accidents and stations must be an array" });
+  }
+  try {
+    console.log(accidents);
+    console.log(stations);
+    const results = accidents.map((accident) => {
+      if (
+        !accident.locationId ||
+        !accident.locationId.geometry ||
+        !Array.isArray(accident.locationId.geometry.coordinates)
+      ) {
+        return {
+          accident: accident,
+          furthestStation: null,
+          distance: null,
+        };
+      }
+
+      const accidentCoords = accident.locationId.geometry.coordinates;
+      let maxDistance = -1;
+      let furthestStation = null;
+
+      stations.forEach((station) => {
+        if (
+          station.locationId &&
+          station.locationId.geometry &&
+          Array.isArray(station.locationId.geometry.coordinates)
+        ) {
+          const stationCoords = station.locationId.geometry.coordinates;
+          const distance = haversineDistance(accidentCoords, stationCoords);
+          if (distance > maxDistance) {
+            maxDistance = distance;
+            furthestStation = station;
+          }
+        }
+      });
+
+      return {
+        accident: accident,
+        furthestStation,
+        distance: maxDistance,
+      };
+    });
+
+    return res.status(200).json({ results });
+  } catch (err) {
+    return res
+      .status(500)
+      .json({ message: "Failed to find furhest station from accident" });
   }
 };
