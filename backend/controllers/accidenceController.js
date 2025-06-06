@@ -5,14 +5,16 @@ exports.createAccident = async (req, res) => {
   const { latitude, longitude, type } = req.body;
 
   if (typeof latitude !== "number" || typeof longitude !== "number" || !type) {
-    return res.status(400).json({ message: "Polja latitude, longitude in type so obvezna." });
+    return res
+      .status(400)
+      .json({ message: "Polja latitude, longitude in type so obvezna." });
   }
 
   try {
     const newLocation = new Location({
       geometry: {
         type: "Point",
-        coordinates: [longitude, latitude], 
+        coordinates: [longitude, latitude],
       },
     });
 
@@ -24,7 +26,7 @@ exports.createAccident = async (req, res) => {
     });
 
     await newAccident.save();
-    console.log(newAccident)
+    console.log(newAccident);
     return res.status(201).json({
       message: "Nesreča uspešno ustvarjena.",
       accident: {
@@ -38,7 +40,9 @@ exports.createAccident = async (req, res) => {
     });
   } catch (error) {
     console.error("Napaka pri ustvarjanju nesreče:", error);
-    return res.status(500).json({ message: "Napaka na strežniku pri ustvarjanju nesreče." });
+    return res
+      .status(500)
+      .json({ message: "Napaka na strežniku pri ustvarjanju nesreče." });
   }
 };
 
@@ -152,6 +156,62 @@ exports.getRadnomId = async (req, res) => {
     }
     return res.status(200).json({ id: accident._id });
   } catch (error) {
-    return res.status(500).json({ message: "Failed to get random accident ID" });
+    return res
+      .status(500)
+      .json({ message: "Failed to get random accident ID" });
+  }
+};
+
+exports.generateRandomAccidentsInRadius = async (req, res) => {
+  const { long, lat, radius, count, type } = req.body;
+  if (!long || !lat || !radius || !count || !type) {
+    return res.status(400).json({ message: "Missing parameters" });
+  }
+
+  function randomPointInRadius(centerLat, centerLong, radiusMeters) {
+    const radiusInDegrees = radiusMeters / 111320;
+    const u = Math.random();
+    const v = Math.random();
+    const w = radiusInDegrees * Math.sqrt(u);
+    const t = 2 * Math.PI * v;
+    const x = w * Math.cos(t);
+    const y = w * Math.sin(t);
+    return {
+      latitude: centerLat + y,
+      longitude: centerLong + x,
+    };
+  }
+
+  try {
+    const accidentIds = [];
+    for (let i = 0; i < count; i++) {
+      const { latitude, longitude } = randomPointInRadius(
+        Number(lat),
+        Number(long),
+        Number(radius)
+      );
+      const newLocation = new Location({
+        geometry: {
+          type: "Point",
+          coordinates: [longitude, latitude],
+        },
+      });
+      await newLocation.save();
+
+      const accident = new Accident({
+        typeOfAccident: type,
+        locationId: newLocation._id,
+      });
+      await accident.save();
+      accidentIds.push(accident._id);
+    }
+
+    const accidentsPopulated = await Accident.find({
+      _id: { $in: accidentIds },
+    }).populate("locationId");
+
+    res.status(200).json({ accidents: accidentsPopulated });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to generate accidents" });
   }
 };
