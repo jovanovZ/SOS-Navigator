@@ -40,6 +40,6 @@ jobs:
       - name: Trigger Webhook on Azure VM
         uses: distributhor/workflow-webhook@v3
         with:
-          url: ${{ secrets.WEBHOOK_URL }}
-          method: POST
-          headers: '{"x-webhook-secret": "${{ secrets.WEBHOOK_SECRET }}"}'
+            webhook_url: ${{ secrets.WEBHOOK_URL }}
+            webhook_secret: ${{ secrets.WEBHOOK_SECRET }}
+            webhook_type: 'json'
