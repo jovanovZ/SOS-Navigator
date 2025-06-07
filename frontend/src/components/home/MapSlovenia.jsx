@@ -44,6 +44,19 @@ const fireIcon = L.divIcon({
   className: "",
 });
 
+
+const deleteStation = async (stationId) => {
+  if(stationId === null) return;
+  try {
+    await axios.delete(`http://${process.env.REACT_APP_IP}/api/station/delete/${stationId}`, {
+      withCredentials: true,
+    });
+    toast.success("Postaja uspešno odstranjena");
+  } catch (error) {
+    toast.error("Napaka pri brisanju postaje");
+  }
+}
+
 const getAccidentIcon = (type) => {
   let iconComponent;
   switch (type) {
@@ -486,19 +499,33 @@ export default function MapSlovenia({
                 click: () => setSelectedStationId(station._id || index),
               }}
             >
-              {selectedStationId === (station._id || index) && (
-                <Popup
-                  position={[
-                    station.locationId?.geometry?.coordinates[1],
-                    station.locationId?.geometry?.coordinates[0],
-                  ]}
-                  onClose={() => setSelectedStationId(null)}
-                  closeButton={false}
-                  closeOnClick={false}
-                  autoPan={false}
-                >
+            {selectedStationId === (station._id || index) && (
+              <Popup
+                position={[
+                  station.locationId?.geometry?.coordinates[1],
+                  station.locationId?.geometry?.coordinates[0],
+                ]}
+                onClose={() => setSelectedStationId(null)}
+                closeButton={false}
+                closeOnClick={false}
+                autoPan={false}
+              >
+                <div className="flex flex-col gap-2 text-sm text-gray-800">
+                  <div>
+                    <span className="font-semibold text-yellow-600">Tip postaje:</span>{" "}
+                    {station.typeOfStation || "Neznano"}
+                  </div>
+                  <div>
+                    <span className="font-semibold text-green-600">Regija:</span>{" "}
+                    {station.region || "Ni določeno"}
+                  </div>
+                  <div>
+                    <span className="font-semibold text-blue-600">Stalna postaja:</span>{" "}
+                    {station.isPermanent ? "Da" : "Ne"}
+                  </div>
+
                   {station.region === "notSpecified" ? (
-                    <div className="flex flex-col items-start gap-2">
+                    <div className="flex gap-3 pt-2">
                       <button
                         onClick={async () => {
                           const saved = await saveStation(station, setLoading);
@@ -513,20 +540,19 @@ export default function MapSlovenia({
                             setSelectedStationId(null);
                           }
                         }}
-                        className="px-2 py-1 text-sm text-green-500 hover:text-green-600 rounded"
+                        className="px-2 py-1 text-green-600 hover:text-green-800 font-semibold"
                       >
                         Save ✔
                       </button>
                       <button
                         onClick={() => {
                           setStations((prev) =>
-                            prev.filter(
-                              (s) => (s._id || s) !== (station._id || station)
-                            )
+                            prev.filter((s) => (s._id || s) !== (station._id || station))
                           );
+
                           setSelectedStationId(null);
                         }}
-                        className="px-2 py-1 text-sm text-red-600 hover:text-red-800"
+                        className="px-2 py-1 text-red-600 hover:text-red-800 font-semibold"
                       >
                         Delete ✖
                       </button>
@@ -541,15 +567,18 @@ export default function MapSlovenia({
                               : s
                           )
                         );
+                        deleteStation(station._id);
                         setSelectedStationId(null);
                       }}
-                      className="px-2 py-1 text-sm text-red-600 hover:text-red-800"
+                      className="mt-2 px-2 py-1 text-red-600 hover:text-red-800 font-semibold"
                     >
                       Delete ✖
                     </button>
                   )}
-                </Popup>
-              )}
+                </div>
+              </Popup>
+            )}
+
             </Marker>
           ))}
 
