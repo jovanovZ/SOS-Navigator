@@ -8,6 +8,7 @@ import Profile from "./components/profile/Profile";
 import UpdateProfile from "./components/profile/UpdateProfile";
 import { ToastContainer } from "react-toastify";
 import ProtectedRoute from "./components/protection/ProtectedRoute";
+import Statistika from "./components/home/Statistika";
 
 function App() {
   return (
@@ -38,6 +39,15 @@ function App() {
             element={
               <ProtectedRoute>
                 <UpdateProfile />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/statistics"
+            element={
+              <ProtectedRoute>
+                <Statistika />
               </ProtectedRoute>
             }
           />
