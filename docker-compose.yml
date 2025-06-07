@@ -17,3 +17,4 @@ services:
     volumes:
       - ./backend:/app
       - /app/node_modules 
+      - /home/projektUser/deploy.sh:/deploy.sh:ro
