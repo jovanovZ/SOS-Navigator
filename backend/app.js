@@ -32,6 +32,17 @@ app.use("/api/path", pathRoutes);
 app.use("/api/location", locationRoutes);
 app.use("/api/station",stationRoutes);
 app.use("/api/simulation",simulationRoutes);
+app.post("/webhook", (req, res) => {
+  if (req.headers['x-webhook-secret'] !== process.env.WEBHOOK_SECRET) {
+    return res.status(403).send('Forbidden');
+  }
+
+  console.log("✅ Webhook received");
+  console.log("Headers:", req.headers);
+  console.log("Body:", req.body);
+  res.sendStatus(200);
+});
+
 
 mongoose
   .connect(process.env.MONGO_URI)
