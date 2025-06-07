@@ -41,7 +41,7 @@ app.post("/webhook", (req, res) => {
     return res.status(403).send('Forbidden');
   }*/
   
-  exec("/home/projektUser/deploy.sh", (err, stdout, stderr) => {
+  exec("bash /deploy.sh", (err, stdout, stderr) => {
     if (err) {
       console.error("Deployment failed:", stderr);
     } else {
