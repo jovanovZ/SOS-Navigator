@@ -5,9 +5,15 @@ services:
     restart: always
     ports:
       - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
 
   backend:
     image: zix3011/sos-navigator-backend:latest
     restart: always
     ports:
       - "3002:3002"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules 
