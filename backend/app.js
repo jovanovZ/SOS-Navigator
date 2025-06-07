@@ -33,15 +33,19 @@ app.use("/api/location", locationRoutes);
 app.use("/api/station",stationRoutes);
 app.use("/api/simulation",simulationRoutes);
 app.post("/webhook", (req, res) => {
-  if (req.headers['x-webhook-secret'] !== process.env.WEBHOOK_SECRET) {
+  /*const receivedSecret = req.headers['x-workflow-webhook-secret'];
+
+  if (receivedSecret !== process.env.WEBHOOK_SECRET) {
+    console.warn("🔒 Webhook rejected: Invalid secret");
     return res.status(403).send('Forbidden');
-  }
+  }*/
 
   console.log("✅ Webhook received");
   console.log("Headers:", req.headers);
   console.log("Body:", req.body);
   res.sendStatus(200);
 });
+
 
 
 mongoose
