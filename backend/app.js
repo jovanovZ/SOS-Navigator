@@ -8,6 +8,7 @@ const pathRoutes = require("./routes/pathRoutes");
 const locationRoutes = require("./routes/locationRoutes")
 const stationRoutes = require("./routes/stationRoutes")
 const simulationRoutes = require("./routes/simulationRoutes")
+const {exec} = require("child_process");
 
 const cookieParser = require("cookie-parser");
 
@@ -39,10 +40,16 @@ app.post("/webhook", (req, res) => {
     console.warn("🔒 Webhook rejected: Invalid secret");
     return res.status(403).send('Forbidden');
   }*/
+  
+  exec("/home/projektUser/deploy.sh", (err, stdout, stderr) => {
+    if (err) {
+      console.error("Deployment failed:", stderr);
+    } else {
+      console.log("Deployment log:\n", stdout);
+    }
+  });
 
-  console.log("✅ Webhook received");
-  console.log("Headers:", req.headers);
-  console.log("Body:", req.body);
+  console.log("Webhook received, deployment initiated.");
   res.sendStatus(200);
 });
 
