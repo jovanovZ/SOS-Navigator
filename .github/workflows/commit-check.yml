@@ -1,0 +1,19 @@
+name: Check Commit Message Format
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+
+jobs:
+  check-commit-message:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check commit message starts with SCRUM-
+        uses: gsactions/commit-message-checker@v2
+        with:
+          pattern: '^SCRUM-[0-9]+ .+'
+          error: 'Commit message must be in format: SCRUM-<number> <message>'
+          excludeDescription: 'true'
+          checkAllCommitMessages: 'true'

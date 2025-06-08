@@ -37,12 +37,16 @@ app.use("/api/simulation",simulationRoutes);
 const http = require("http");
 
 app.post("/webhook", (req, res) => {
+  const secret = req.headers["x-workflow-webhook-secret"];
   const req2 = http.request(
     {
       hostname: "host.docker.internal", 
       port: 4000,
       path: "/webhook",
       method: "POST",
+      headers: {
+        "x-workflow-webhook-secret" : secret,
+      },
     },
     (res2) => {
       console.log(`Triggered host deploy, status: ${res2.statusCode}`);
