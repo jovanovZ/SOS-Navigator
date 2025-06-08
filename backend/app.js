@@ -33,23 +33,27 @@ app.use("/api/path", pathRoutes);
 app.use("/api/location", locationRoutes);
 app.use("/api/station",stationRoutes);
 app.use("/api/simulation",simulationRoutes);
+
+const http = require("http");
+
 app.post("/webhook", (req, res) => {
-  /*const receivedSecret = req.headers['x-workflow-webhook-secret'];
-
-  if (receivedSecret !== process.env.WEBHOOK_SECRET) {
-    console.warn("🔒 Webhook rejected: Invalid secret");
-    return res.status(403).send('Forbidden');
-  }*/
-  
-  exec("bash /deploy.sh", (err, stdout, stderr) => {
-    if (err) {
-      console.error("Deployment failed:", stderr);
-    } else {
-      console.log("Deployment log:\n", stdout);
+  const req2 = http.request(
+    {
+      hostname: "host.docker.internal", 
+      port: 4000,
+      path: "/webhook",
+      method: "POST",
+    },
+    (res2) => {
+      console.log(`Triggered host deploy, status: ${res2.statusCode}`);
     }
-  });
+  );
 
-  console.log("Webhook received, deployment initiated.");
+  req2.on("error", (err) => {
+    console.error("Error sending webhook to host:", err);
+  });
+  req2.end();
+
   res.sendStatus(200);
 });
 
