@@ -8,6 +8,7 @@ const pathRoutes = require("./routes/pathRoutes");
 const locationRoutes = require("./routes/locationRoutes")
 const stationRoutes = require("./routes/stationRoutes")
 const simulationRoutes = require("./routes/simulationRoutes")
+const {exec} = require("child_process");
 
 const cookieParser = require("cookie-parser");
 
@@ -32,6 +33,35 @@ app.use("/api/path", pathRoutes);
 app.use("/api/location", locationRoutes);
 app.use("/api/station",stationRoutes);
 app.use("/api/simulation",simulationRoutes);
+
+const http = require("http");
+
+app.post("/webhook", (req, res) => {
+  const secret = req.headers["x-workflow-webhook-secret"];
+  const req2 = http.request(
+    {
+      hostname: "host.docker.internal", 
+      port: 4000,
+      path: "/webhook",
+      method: "POST",
+      headers: {
+        "x-workflow-webhook-secret" : secret,
+      },
+    },
+    (res2) => {
+      console.log(`Triggered host deploy, status: ${res2.statusCode}`);
+    }
+  );
+
+  req2.on("error", (err) => {
+    console.error("Error sending webhook to host:", err);
+  });
+  req2.end();
+
+  res.sendStatus(200);
+});
+
+
 
 mongoose
   .connect(process.env.MONGO_URI)

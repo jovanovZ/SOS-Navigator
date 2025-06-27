@@ -76,10 +76,10 @@ fun AddLocation() {
                         colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF1E88E5)),
                         shape = RoundedCornerShape(30),
                         onClick = {
-                            if(longitude.value.isEmpty() || latitude.value.isEmpty()) {
+                            if (longitude.value.isEmpty() || latitude.value.isEmpty()) {
                                 return@Button
                             }
-                            try{
+                            try {
                                 val url = "${BACKEND_URL}/api/location/create"
                                 val client = OkHttpClient()
                                 val json = JSONObject()
@@ -91,16 +91,17 @@ fun AddLocation() {
                                     .url(url)
                                     .post(body)
                                     .build()
-                                val response = client.newCall(request).execute()
-                                if (response.isSuccessful) {
-                                    val responseBody = response.body?.string() ?: ""
-                                    println("Location created: $responseBody")
-                                    longitude.value = ""
-                                    latitude.value = ""
-                                } else {
-                                    println("Failed to create location: ${response.message}")
+                                client.newCall(request).execute().use { response ->
+                                    if (response.isSuccessful) {
+                                        val responseBody = response.body?.string() ?: ""
+                                        println("Location created: $responseBody")
+                                        longitude.value = ""
+                                        latitude.value = ""
+                                    } else {
+                                        println("Failed to create location: ${response.message}")
+                                    }
                                 }
-                            }catch (e : Exception){
+                            } catch (e: Exception) {
                                 println("Error creating location: ${e.message}")
                             }
                         }) {

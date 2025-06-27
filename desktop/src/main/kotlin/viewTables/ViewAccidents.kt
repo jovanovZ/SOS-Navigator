@@ -172,22 +172,23 @@ fun ViewAccidents() {
 
                 val client = OkHttpClient()
                 val request = Request.Builder().url(url).build()
-                val response = client.newCall(request).execute()
-                val responseBody = response.body?.string()
+                client.newCall(request).execute().use { response ->
+                    val responseBody = response.body?.string()
 
-                if (responseBody != null) {
-                    val jsonArray = JSONArray(responseBody)
-                    (0 until jsonArray.length()).map { i ->
-                        val obj = jsonArray.getJSONObject(i)
-                        val locationIdObj = obj.getJSONObject("locationId")
-                        Accident(
-                            _id = ObjectId(obj.getString("_id")),
-                            locationId = ObjectId(locationIdObj.getString("_id")),
-                            typeOfAccident = obj.getString("typeOfAccident")
-                        )
+                    if (responseBody != null) {
+                        val jsonArray = JSONArray(responseBody)
+                        (0 until jsonArray.length()).map { i ->
+                            val obj = jsonArray.getJSONObject(i)
+                            val locationIdObj = obj.getJSONObject("locationId")
+                            Accident(
+                                _id = ObjectId(obj.getString("_id")),
+                                locationId = ObjectId(locationIdObj.getString("_id")),
+                                typeOfAccident = obj.getString("typeOfAccident")
+                            )
+                        }
+                    } else {
+                        emptyList()
                     }
-                } else {
-                    emptyList()
                 }
             } catch (e: Exception) {
                 println("Error while fetching accidents: ${e.message}")
@@ -229,12 +230,15 @@ fun ViewAccidents() {
                                     .delete()
                                     .build()
 
-                                if(client.newCall(request).execute().use { res -> res.isSuccessful }){
-                                    println("Accident with ID ${deletedAccident._id} deleted successfully.")
-                                    accidentsState.value = accidentsState.value.filter { it._id != deletedAccident._id }
-                                } else {
-                                    println("No accident found with ID ${deletedAccident._id}.")
+                                client.newCall(request).execute().use { response ->
+                                    if (response.isSuccessful) {
+                                        println("Accident with ID ${deletedAccident._id} deleted successfully.")
+                                        accidentsState.value =
+                                            accidentsState.value.filter { it._id != deletedAccident._id }
+                                    } else {
+                                        println("No accident found with ID ${deletedAccident._id}.")
 
+                                    }
                                 }
 
                             } catch (e: Exception) {
@@ -256,15 +260,16 @@ fun ViewAccidents() {
                                     .url(url)
                                     .put(body)
                                     .build()
-                                val response = client.newCall(request).execute()
-                                if(response.isSuccessful) {
-                                    println("Accident with ID ${editedAccident._id} updated successfully.")
-                                    accidentsState.value = accidentsState.value.map {
-                                        if (it._id == editedAccident._id) editedAccident else it
-                                    }
-                                } else {
-                                    println("No accident found with ID ${editedAccident._id}.")
+                                client.newCall(request).execute().use { response ->
+                                    if (response.isSuccessful) {
+                                        println("Accident with ID ${editedAccident._id} updated successfully.")
+                                        accidentsState.value = accidentsState.value.map {
+                                            if (it._id == editedAccident._id) editedAccident else it
+                                        }
+                                    } else {
+                                        println("No accident found with ID ${editedAccident._id}.")
 
+                                    }
                                 }
                             } catch (e: Exception) {
                                 println("Error while updating accident: ${e.message}")

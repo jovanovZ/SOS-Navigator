@@ -211,33 +211,34 @@ fun ViewPaths() {
                 val url = "${BACKEND_URL}/api/path/all"
                 val client = OkHttpClient()
                 val request = Request.Builder().url(url).build()
-                val response = client.newCall(request).execute()
-                val responseBody = response.body?.string()
+                client.newCall(request).execute().use { response ->
+                    val responseBody = response.body?.string()
 
-                if (responseBody != null) {
-                    val jsonObj = JSONObject(responseBody)
-                    val jsonArr = jsonObj.getJSONArray("paths")
+                    if (responseBody != null) {
+                        val jsonObj = JSONObject(responseBody)
+                        val jsonArr = jsonObj.getJSONArray("paths")
 
-                    (0 until jsonArr.length()).map{ i ->
-                        val obj = jsonArr.getJSONObject(i)
-                        val accidentIdObj = obj.getJSONObject("accidentId")
-                        PathData(
-                            _id = ObjectId(obj.getString("_id")),
-                            accidentId = ObjectId(accidentIdObj.getString("_id")),
-                            locationPoints = obj.getJSONArray("locationPoints").let { points ->
-                                (0 until points.length()).map { j ->
-                                    val point = points.getJSONObject(j)
-                                    LocationPoint(
-                                        lat = point.getDouble("lat"),
-                                        lng = point.getDouble("lng")
-                                    )
+                        (0 until jsonArr.length()).map { i ->
+                            val obj = jsonArr.getJSONObject(i)
+                            val accidentIdObj = obj.getJSONObject("accidentId")
+                            PathData(
+                                _id = ObjectId(obj.getString("_id")),
+                                accidentId = ObjectId(accidentIdObj.getString("_id")),
+                                locationPoints = obj.getJSONArray("locationPoints").let { points ->
+                                    (0 until points.length()).map { j ->
+                                        val point = points.getJSONObject(j)
+                                        LocationPoint(
+                                            lat = point.getDouble("lat"),
+                                            lng = point.getDouble("lng")
+                                        )
+                                    }
                                 }
-                            }
-                        )
+                            )
 
+                        }
+                    } else {
+                        emptyList()
                     }
-                }else {
-                    emptyList()
                 }
 
             } catch (e: Exception) {
@@ -281,12 +282,13 @@ fun ViewPaths() {
                                     .delete()
                                     .build()
 
-                                if(client.newCall(request).execute().use { res -> res.isSuccessful }){
-                                    println("Location with ID ${deletedPath._id} deleted successfully.")
-                                    pathState.value = pathState.value.filter { it._id != deletedPath._id }
-                                } else {
-                                    println("No accident found with ID ${deletedPath._id}.")
-
+                                client.newCall(request).execute().use { response ->
+                                    if (response.isSuccessful) {
+                                        println("Location with ID ${deletedPath._id} deleted successfully.")
+                                        pathState.value = pathState.value.filter { it._id != deletedPath._id }
+                                    } else {
+                                        println("No accident found with ID ${deletedPath._id}.")
+                                    }
                                 }
                             } catch (e: Exception) {
                                 println("Error while deleting path: ${e.message}")
@@ -316,14 +318,15 @@ fun ViewPaths() {
                                     .put(requestBody)
                                     .build()
 
-                                val response = client.newCall(request).execute()
-                                if (response.isSuccessful) {
-                                    println("Path with ID ${editedPath._id} updated successfully.")
-                                    pathState.value = pathState.value.map {
-                                        if (it._id == editedPath._id) editedPath else it
+                                client.newCall(request).execute().use { response ->
+                                    if (response.isSuccessful) {
+                                        println("Path with ID ${editedPath._id} updated successfully.")
+                                        pathState.value = pathState.value.map {
+                                            if (it._id == editedPath._id) editedPath else it
+                                        }
+                                    } else {
+                                        println("Failed to update path with ID ${editedPath._id}.")
                                     }
-                                } else {
-                                    println("Failed to update path with ID ${editedPath._id}.")
                                 }
                             } catch (e: Exception) {
                                 println("Error while updating path: ${e.message}")

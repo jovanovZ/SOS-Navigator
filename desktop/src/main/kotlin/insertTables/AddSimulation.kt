@@ -147,7 +147,7 @@ fun AddSimulation() {
                                 println("ID must be a valid ObjectId")
                                 return@Button
                             }
-                            try{
+                            try {
                                 val url = "${BACKEND_URL}/api/simulation/create"
                                 val client = OkHttpClient()
                                 val json = JSONObject().put("userId", userId.value)
@@ -157,27 +157,28 @@ fun AddSimulation() {
                                     .put("bestStationId", bestStationId.value)
                                     .put("bestPathId", bestPathId.value)
                                     .put("responseTime", responseTime.value)
-                                    .put("locationFrom",bestStationId.value)
+                                    .put("locationFrom", bestStationId.value)
                                     .put("locationTo", accidentId.value)
                                     .toString()
                                 val body = json.toRequestBody("application/json".toMediaTypeOrNull())
                                 val request = Request.Builder().url(url).post(body).build()
 
-                                val response = client.newCall(request).execute()
-                                if(response.isSuccessful){
-                                    val responseBody = response.body?.string() ?: ""
-                                    println("Simulation created: $responseBody")
-                                    userId.value = ""
-                                    accidentId.value = ""
-                                    typeOfServices.value = ""
-                                    simulationName.value = ""
-                                    bestStationId.value = ""
-                                    bestPathId.value = ""
-                                    responseTime.value = ""
-                                }else{
-                                    println("Failed to create simulation: ${response.message}")
+                                client.newCall(request).execute().use { response ->
+                                    if (response.isSuccessful) {
+                                        val responseBody = response.body?.string() ?: ""
+                                        println("Simulation created: $responseBody")
+                                        userId.value = ""
+                                        accidentId.value = ""
+                                        typeOfServices.value = ""
+                                        simulationName.value = ""
+                                        bestStationId.value = ""
+                                        bestPathId.value = ""
+                                        responseTime.value = ""
+                                    } else {
+                                        println("Failed to create simulation: ${response.message}")
+                                    }
                                 }
-                            }catch (e:Exception){
+                            } catch (e: Exception) {
                                 println("Error creating simulation: ${e.message}")
                             }
 

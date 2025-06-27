@@ -1,0 +1,45 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - develop  # Zacasna sprememba za testiranje 
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build Docker image BACKEND
+        run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/sos-navigator-backend:latest ./backend
+
+      - name: Build Docker image FRONTEND
+        run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/sos-navigator-frontend:latest ./frontend
+
+      - name: Push Docker image BACKEND
+        run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/sos-navigator-backend:latest
+
+      - name: Push Docker image FRONTEND
+        run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/sos-navigator-frontend:latest
+
+  notify-server:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: success()
+
+    steps:
+      - name: Trigger Webhook on Azure VM
+        uses: distributhor/workflow-webhook@v3
+        with:
+            webhook_url: ${{ secrets.WEBHOOK_URL }}
+            webhook_secret: ${{ secrets.WEBHOOK_SECRET }}
+            webhook_type: 'json'

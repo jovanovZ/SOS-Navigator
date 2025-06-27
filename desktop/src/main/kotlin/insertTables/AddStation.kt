@@ -202,18 +202,18 @@ fun AddStation() {
 
                                 val body = json.toRequestBody("application/json".toMediaTypeOrNull())
                                 val request = Request.Builder().url(url).post(body).build()
-                                val response = client.newCall(request).execute()
-
-                                if (response.isSuccessful) {
-                                    val responseBody = response.body?.string() ?: ""
-                                    println("Station created: $responseBody")
-                                    longitude.value = ""
-                                    latitude.value = ""
-                                    selectedType.value = ""
-                                    isPermanent.value = false
-                                    selectedRegion.value = ""
-                                } else {
-                                    println("Failed to create station: ${response.message}")
+                                client.newCall(request).execute().use { response ->
+                                    if (response.isSuccessful) {
+                                        val responseBody = response.body?.string() ?: ""
+                                        println("Station created: $responseBody")
+                                        longitude.value = ""
+                                        latitude.value = ""
+                                        selectedType.value = ""
+                                        isPermanent.value = false
+                                        selectedRegion.value = ""
+                                    } else {
+                                        println("Failed to create station: ${response.message}")
+                                    }
                                 }
                             } catch (e: Exception) {
                                 println("Error inserting station: ${e.message}")

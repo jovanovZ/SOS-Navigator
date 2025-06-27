@@ -112,14 +112,15 @@ fun GenerateUser() {
                                             .toString()
                                         val body = json.toRequestBody("application/json".toMediaTypeOrNull())
                                         val request = Request.Builder().url(url).post(body).build()
-                                        val response = client.newCall(request).execute()
-                                        if (response.isSuccessful) {
-                                            val responseString = response.body?.string() ?: ""
-                                            val responseJson = JSONObject(responseString)
-                                            val user = responseJson.getJSONObject("user")
-                                            println("User generated successfully: $user")
-                                        } else {
-                                            println("Failed to generate user : ${response.message}")
+                                        client.newCall(request).execute().use { response ->
+                                            if (response.isSuccessful) {
+                                                val responseString = response.body?.string() ?: ""
+                                                val responseJson = JSONObject(responseString)
+                                                val user = responseJson.getJSONObject("user")
+                                                println("User generated successfully: $user")
+                                            } else {
+                                                println("Failed to generate user : ${response.message}")
+                                            }
                                         }
                                     } catch (e: Exception) {
                                         errorMessage.value = "Error generating user: ${e.message}"

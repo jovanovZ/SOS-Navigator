@@ -59,7 +59,7 @@ exports.createSimulation = async (req, res) => {
     //accident je to
     //station je from
     const responseFrom = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?lat=${station.locationId.geometry.coordinates[1]}&lon=${station.locationId.geometry.coordinates[0]}&format=json`
+      `https://nominatim.openstreetmap.org/reverse?lat=${station.locationId.geometry.coordinates[0]}&lon=${station.locationId.geometry.coordinates[1]}&format=json`
     );
     const data = await responseFrom.json();
     const addr = data.address;

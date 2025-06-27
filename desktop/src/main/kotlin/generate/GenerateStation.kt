@@ -30,11 +30,10 @@ import kotlin.random.Random
 @Preview
 fun GenerateStation() {
     val instanceCount = remember { mutableStateOf("") }
-    val faker = Faker()
     val allRegions = listOf(
         "Pomurska",
         "Podravska",
-        "KoroĹˇka",
+        "Koroška",
         "Savinjska",
         "Zasavska",
         "Posavska",
@@ -210,14 +209,15 @@ fun GenerateStation() {
                                             .toString()
                                         val body = json.toRequestBody("application/json".toMediaTypeOrNull())
                                         val request = Request.Builder().url(url).post(body).build()
-                                        val response = client.newCall(request).execute()
-                                        if (response.isSuccessful) {
-                                            val responseString = response.body?.string() ?: ""
-                                            val responseJson = JSONObject(responseString)
-                                            val station = responseJson.getJSONObject("station")
-                                            println("Station created successfully: $station")
-                                        } else {
-                                            println("Failed to create station: ${response.message}")
+                                        client.newCall(request).execute().use { response ->
+                                            if (response.isSuccessful) {
+                                                val responseString = response.body?.string() ?: ""
+                                                val responseJson = JSONObject(responseString)
+                                                val station = responseJson.getJSONObject("station")
+                                                println("Station created successfully: $station")
+                                            } else {
+                                                println("Failed to create station: ${response.message}")
+                                            }
                                         }
 
                                     } catch (e: Exception) {
