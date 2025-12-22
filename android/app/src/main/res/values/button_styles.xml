@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="btn_primary" parent="Widget.Material3.Button">
+        <item name="android:layout_width">120dp</item>
+        <item name="android:layout_height">48dp</item>
+        <item name="android:backgroundTint">@color/md_theme_primary</item>
+        <item name="android:textColor">@color/md_theme_onPrimary</item>
+    </style>
+    <style name="btn_secondary" parent="Widget.Material3.Button">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">48dp</item>
+        <item name="android:backgroundTint">@color/md_theme_secondary</item>
+        <item name="android:textColor">@color/md_theme_onSecondary</item>
+    </style>
+    <style name="btn_tertiary" parent="Widget.Material3.Button">
+    <item name="android:layout_width">wrap_content</item>
+    <item name="android:layout_height">48dp</item>
+    <item name="android:backgroundTint">@color/md_theme_tertiary</item>
+    <item name="android:textColor">@color/md_theme_onTertiary</item>
+</style>
+
+    <style name="btn_error_bottom" parent="Widget.Material3.Button">
+        <item name="android:layout_width">120dp</item>
+        <item name="android:layout_height">48dp</item>
+        <item name="android:layout_marginBottom">16dp</item>
+        <item name="android:backgroundTint">@color/md_theme_error</item>
+        <item name="android:textColor">@color/md_theme_onError</item>
+    </style>
+</resources>

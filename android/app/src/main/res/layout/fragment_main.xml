@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainFragment">
+
+
+    <ImageView
+        android:id="@+id/imageView2"
+        android:layout_width="@dimen/image_width_large"
+        android:layout_height="@dimen/image_height_large"
+        android:layout_marginTop="48dp"
+        android:src="@drawable/logo_no_bg"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/generateBtn"
+        style="@style/btn_primary"
+        android:layout_marginBottom="16dp"
+        android:text="@string/main_frag_generate_btn"
+        app:layout_constraintBottom_toTopOf="@+id/sensorBtn"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <Button
+        android:id="@+id/sensorBtn"
+        style="@style/btn_primary"
+        android:layout_marginBottom="16dp"
+        android:text="@string/main_frag_sensor_btn"
+        app:layout_constraintBottom_toTopOf="@+id/listBtn"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <Button
+        android:id="@+id/listBtn"
+        style="@style/btn_primary"
+        android:layout_marginBottom="16dp"
+        android:text="@string/main_frag_list_btn"
+        app:layout_constraintBottom_toTopOf="@+id/exitBtn"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.501"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <Button
+        android:id="@+id/exitBtn"
+        style="@style/btn_error_bottom"
+        android:layout_marginBottom="32dp"
+        android:text="@string/main_frag_exit_btn"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
