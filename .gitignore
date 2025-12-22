@@ -11,6 +11,11 @@
 /frontend/package-lock.json
 
 
+#android
+/android/.idea/
+/android/app/build/
+/android/build/
+
 # testing
 /frontend/coverage
 
