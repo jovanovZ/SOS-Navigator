@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">androidApp</string>
+    <string name="main_frag_generate_btn">Generate</string>
+    <string name="main_frag_list_btn">List</string>
+    <string name="main_frag_sensor_btn">Sensor</string>
+    <string name="main_frag_exit_btn">Exit</string>
 </resources>
