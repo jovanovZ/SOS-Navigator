@@ -8,5 +8,26 @@
         android:id="@+id/mainFragment"
         android:name="com.example.androidapp.MainFragment"
         android:label="fragment_main"
-        tools:layout="@layout/fragment_main" />
+        tools:layout="@layout/fragment_main">
+        <action
+            android:id="@+id/action_mainFragment_to_sensorFragment"
+            app:destination="@id/sensorFragment"
+            app:enterAnim="@android:anim/slide_in_left"
+            app:exitAnim="@android:anim/slide_out_right"
+            app:popEnterAnim="@android:anim/slide_in_left"
+            app:popExitAnim="@android:anim/slide_out_right" />
+    </fragment>
+    <fragment
+        android:id="@+id/sensorFragment"
+        android:name="com.example.androidapp.SensorFragment"
+        android:label="fragment_sensor"
+        tools:layout="@layout/fragment_sensor">
+        <action
+            android:id="@+id/action_sensorFragment_to_mainFragment"
+            app:destination="@id/mainFragment"
+            app:enterAnim="@android:anim/slide_in_left"
+            app:exitAnim="@android:anim/slide_out_right"
+            app:popEnterAnim="@android:anim/slide_in_left"
+            app:popExitAnim="@android:anim/slide_out_right" />
+    </fragment>
 </navigation>

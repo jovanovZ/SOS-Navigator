@@ -6,6 +6,7 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.navigation.fragment.findNavController
 import com.example.androidapp.databinding.FragmentMainBinding
 
 // TODO: Rename parameter arguments, choose names that match
@@ -54,7 +55,7 @@ class MainFragment : Fragment(), View.OnClickListener {
         if (v != null) {
             when (v.id) {
                 R.id.generateBtn -> Log.d("TEST","generate")
-                R.id.sensorBtn -> Log.d("TEST","sensor")
+                R.id.sensorBtn -> findNavController().navigate(R.id.action_mainFragment_to_sensorFragment)
                 R.id.listBtn -> Log.d("TEST","list")
                 R.id.exitBtn -> requireActivity().finish()
             }
