@@ -1,22 +1,46 @@
 #include <iostream>
-
-#include "Block.h"
+#include "BlockChain.h"
 
 int main() {
-    std::time_t now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+    BlockChain bc;
 
-    Block genesisBlock(0, "Genesis Block", "0", 2);
+    std::cout << "=== Genesis block ===\n";
+    std::cout << bc.toString() << std::endl;
 
-    std::cout << "=== Genesis Block ! ===\n";
-    std::cout << genesisBlock.toString() << "\n";
+    const int NUM_BLOCKS = 5;
 
-    bool valid = genesisBlock.isBlockValid(genesisBlock, now);
-    std::cout << "Is genesis block valid? " << (valid ? "Yes" : "No") << "\n";
+    for (int i = 1; i <= NUM_BLOCKS; ++i) {
+        int difficulty = bc.getDifficulty();
 
-    std::cout << "Mining genesis block..." << std::endl;
-    genesisBlock.mineBlock();
+        const Block& prevBlock = bc.getChain().back();
 
-    std::cout << "Genesis Block after mining:\n";
-    std::cout << genesisBlock.toString() << "\n";
+        Block newBlock(
+            i,
+            "Data for block " + std::to_string(i),
+            prevBlock.hash,
+            difficulty
+        );
+
+        std::cout << "Mining block " << i
+                  << " (difficulty " << difficulty << ")...\n";
+
+        newBlock.mineBlock();
+
+        if (bc.addBlock(newBlock)) {
+            std::cout << "Block " << i << " added successfully\n\n";
+        } else {
+            std::cout << "Block " << i << " rejected\n\n";
+        }
+    }
+
+    std::cout << "=== Final blockchain ===\n";
+    std::cout << bc.toString() << std::endl;
+
+    std::cout << "Chain valid: "
+              << (bc.isChainValid() ? "YES" : "NO") << std::endl;
+
+    std::cout << "Cumulative difficulty: "
+              << bc.getCumulativeDifficulty() << std::endl;
+
     return 0;
 }

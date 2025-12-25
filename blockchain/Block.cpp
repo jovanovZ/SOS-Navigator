@@ -16,6 +16,7 @@ Block::Block(int index, std::string data, std::string prevHash, int diff) {
 	this->timestamp = std::chrono::system_clock::now();
 	this->difficulty = diff;
 	this->hash = calculateHash();
+	this->nonce = 0;
 
 }
 

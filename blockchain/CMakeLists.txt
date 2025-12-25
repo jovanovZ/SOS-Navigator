@@ -9,6 +9,8 @@ add_executable(blockchain
         main.cpp
         Block.cpp
         Block.h
+        BlockChain.cpp
+        BlockChain.h
 )
 
 target_link_libraries(blockchain OpenSSL::SSL OpenSSL::Crypto)

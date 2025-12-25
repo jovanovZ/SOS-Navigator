@@ -9,15 +9,15 @@
 
 
 class Block {
+public:
     int index;
     std::string data;
     std::chrono::system_clock::time_point timestamp;
     std::string hash;
     std::string prevHash;
+    long nonce;
     int difficulty;
-    long nonce = 0;
 
-public:
     Block(int index, std::string data, std::string prevHash, int diff);
 
     void mineBlock();
