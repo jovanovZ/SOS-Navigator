@@ -48,6 +48,7 @@ class MainFragment : Fragment(), View.OnClickListener {
         binding.sensorBtn.setOnClickListener(this)
         binding.listBtn.setOnClickListener(this)
         binding.exitBtn.setOnClickListener(this)
+        binding.cameraBtn.setOnClickListener(this)
 
     }
 
@@ -57,6 +58,7 @@ class MainFragment : Fragment(), View.OnClickListener {
                 R.id.generateBtn -> Log.d("TEST","generate")
                 R.id.sensorBtn -> findNavController().navigate(R.id.action_mainFragment_to_sensorFragment)
                 R.id.listBtn -> Log.d("TEST","list")
+                R.id.cameraBtn -> findNavController().navigate(R.id.action_mainFragment_to_cameraFragment)
                 R.id.exitBtn -> requireActivity().finish()
             }
         }

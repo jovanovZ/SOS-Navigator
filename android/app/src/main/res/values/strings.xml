@@ -15,4 +15,10 @@
 
     <string name="btn_back">Back</string>
     <string name="btn_save">Save</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="btn_analyze">Analyze</string>
+    <string name="btn_capture">Capture</string>
+    <string name="btn_back_camera">Back</string>
+    <string name="main_frag_camera_btn">Camera</string>
 </resources>
