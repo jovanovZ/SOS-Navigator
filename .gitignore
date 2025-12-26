@@ -11,6 +11,15 @@
 /frontend/package-lock.json
 
 
+#android
+/android/.idea/
+/android/app/build/
+/android/build/
+
+# blockchain
+/blockchain/build/
+.idea/
+
 # testing
 /frontend/coverage
 
