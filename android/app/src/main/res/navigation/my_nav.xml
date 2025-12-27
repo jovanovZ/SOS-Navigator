@@ -24,6 +24,14 @@
             app:exitAnim="@android:anim/slide_out_right"
             app:popEnterAnim="@android:anim/slide_in_left"
             app:popExitAnim="@android:anim/slide_out_right" />
+
+        <action
+            android:id="@+id/action_mainFragment_to_sensorListFragment"
+            app:destination="@id/sensorListFragment"
+            app:enterAnim="@android:anim/slide_in_left"
+            app:exitAnim="@android:anim/slide_out_right"
+            app:popEnterAnim="@android:anim/slide_in_left"
+            app:popExitAnim="@android:anim/slide_out_right" />
     </fragment>
     <fragment
         android:id="@+id/sensorFragment"
@@ -46,6 +54,20 @@
         tools:layout="@layout/fragment_camera">
         <action
             android:id="@+id/action_cameraFragment_to_mainFragment"
+            app:destination="@id/mainFragment"
+            app:enterAnim="@android:anim/slide_in_left"
+            app:exitAnim="@android:anim/slide_out_right"
+            app:popEnterAnim="@android:anim/slide_in_left"
+            app:popExitAnim="@android:anim/slide_out_right" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/sensorListFragment"
+        android:name="com.example.androidapp.SensorListFragment"
+        android:label="fragment_sensor_list"
+        tools:layout="@layout/fragment_sensor_list">
+        <action
+            android:id="@+id/action_sensorListFragment_to_mainFragment"
             app:destination="@id/mainFragment"
             app:enterAnim="@android:anim/slide_in_left"
             app:exitAnim="@android:anim/slide_out_right"

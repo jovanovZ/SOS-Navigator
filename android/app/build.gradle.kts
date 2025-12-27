@@ -42,6 +42,7 @@ android {
 
 dependencies {
 
+    implementation(libs.androidx.recyclerview)
     val camerax_version = "1.5.2"
 
     implementation("androidx.camera:camera-core:$camerax_version")

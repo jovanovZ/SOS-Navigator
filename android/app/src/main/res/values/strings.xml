@@ -21,4 +21,6 @@
     <string name="btn_capture">Capture</string>
     <string name="btn_back_camera">Back</string>
     <string name="main_frag_camera_btn">Camera</string>
+    <string name="tv_sos_vehicles">SOS-VEHICLES</string>
+    <string name="tv_acccidents">ACCCIDENTS</string>
 </resources>
