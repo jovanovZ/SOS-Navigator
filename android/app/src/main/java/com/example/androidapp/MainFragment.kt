@@ -57,7 +57,7 @@ class MainFragment : Fragment(), View.OnClickListener {
             when (v.id) {
                 R.id.generateBtn -> Log.d("TEST","generate")
                 R.id.sensorBtn -> findNavController().navigate(R.id.action_mainFragment_to_sensorFragment)
-                R.id.listBtn -> Log.d("TEST","list")
+                R.id.listBtn -> findNavController().navigate((R.id.action_mainFragment_to_sensorListFragment))
                 R.id.cameraBtn -> findNavController().navigate(R.id.action_mainFragment_to_cameraFragment)
                 R.id.exitBtn -> requireActivity().finish()
             }
