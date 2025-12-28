@@ -12,6 +12,8 @@ var accidentSchema = new Schema({
       "kriminal",
     ],
   },
+  locationFreq: { type: Number, default: 1 },
+  timeStamp: { type: Date, default: Date.now },
 });
 
 module.exports = mongoose.model("accident", accidentSchema);

@@ -206,3 +206,22 @@ exports.findSomeStationsInRadius = async (req, res) => {
       .json({ message: "Failed to find locations in radius" });
   }
 };
+
+exports.getRadnomId = async (req, res) => {
+  try {
+    const count = await Location.countDocuments();
+    if (count === 0) {
+      return res.status(404).json({ message: "No locations found" });
+    }
+    const random = Math.floor(Math.random() * count);
+    const location = await Location.findOne().skip(random).select("_id");
+    if (!location) {
+      return res.status(404).json({ message: "No location found" });
+    }
+    return res.status(200).json({ id: location._id });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: "Failed to get random location ID" });
+  }
+};

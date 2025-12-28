@@ -8,6 +8,7 @@ const pathRoutes = require("./routes/pathRoutes");
 const locationRoutes = require("./routes/locationRoutes")
 const stationRoutes = require("./routes/stationRoutes")
 const simulationRoutes = require("./routes/simulationRoutes")
+const vehicleRoutes = require("./routes/vehicleRoutes")
 const {exec} = require("child_process");
 
 const cookieParser = require("cookie-parser");
@@ -33,6 +34,7 @@ app.use("/api/path", pathRoutes);
 app.use("/api/location", locationRoutes);
 app.use("/api/station",stationRoutes);
 app.use("/api/simulation",simulationRoutes);
+app.use("/api/vehicle",vehicleRoutes)
 
 const http = require("http");
 

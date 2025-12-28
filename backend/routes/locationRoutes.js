@@ -32,6 +32,9 @@ router.get(
 );
 //localhost:3002/api/location/getAllAccidentsInRadius?long=40.5058&lat=46.0569&radius=5000
 
+router.get("/randomId", locationController.getRadnomId);
+
+
 router.post("/create", locationController.createLocation);
 
 router.put("/update/:locationId", locationController.updateLocation);
