@@ -9,12 +9,10 @@ const locationRoutes = require("./routes/locationRoutes")
 const stationRoutes = require("./routes/stationRoutes")
 const simulationRoutes = require("./routes/simulationRoutes")
 const vehicleRoutes = require("./routes/vehicleRoutes")
-const {exec} = require("child_process");
+
 
 const cookieParser = require("cookie-parser");
 
-// Uvoz route-ov
-//const userRoutes = require('./routes/userRoutes');
 
 const app = express();
 

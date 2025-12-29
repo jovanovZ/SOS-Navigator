@@ -12,7 +12,7 @@ var accidentSchema = new Schema({
       "kriminal",
     ],
   },
-  locationFreq: { type: Number, default: 1 },
+  locationFreq: { type: Number, default: 1440 }, // shranjeno je v minutah 1dan = 1440min
   timeStamp: { type: Date, default: Date.now },
 });
 

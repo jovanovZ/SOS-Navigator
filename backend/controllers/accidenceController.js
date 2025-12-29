@@ -2,7 +2,7 @@ const Accident = require("../models/AccidenceModel");
 const Location = require("../models/LocationModel");
 
 exports.createAccident = async (req, res) => {
-  const { latitude, longitude, type } = req.body;
+  const { latitude, longitude, type, locationFreq } = req.body;
 
   if (typeof latitude !== "number" || typeof longitude !== "number" || !type) {
     return res
@@ -23,10 +23,11 @@ exports.createAccident = async (req, res) => {
     const newAccident = new Accident({
       locationId: newLocation._id,
       typeOfAccident: type,
+      locationFreq: locationFreq || 1440,
     });
 
     await newAccident.save();
-    console.log(newAccident);
+    console.log(newAccident,newLocation.geometry.coordinates);
     return res.status(201).json({
       message: "Nesreča uspešno ustvarjena.",
       accident: {
@@ -36,6 +37,7 @@ exports.createAccident = async (req, res) => {
           id: newLocation._id,
           coordinates: newLocation.geometry.coordinates,
         },
+        locationFreq: newAccident.locationFreq
       },
     });
   } catch (error) {
