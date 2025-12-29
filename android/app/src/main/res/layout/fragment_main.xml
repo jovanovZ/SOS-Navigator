@@ -17,14 +17,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <Button
-        android:id="@+id/generateBtn"
-        style="@style/btn_primary"
-        android:layout_marginBottom="16dp"
-        android:text="@string/main_frag_generate_btn"
-        app:layout_constraintBottom_toTopOf="@+id/sensorBtn"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
 
     <Button
         android:id="@+id/sensorBtn"
@@ -48,7 +40,7 @@
     <Button
         android:id="@+id/cameraBtn"
         style="@style/btn_primary"
-        android:layout_marginBottom="16dp"
+        android:layout_marginBottom="32dp"
         android:text="@string/main_frag_camera_btn"
         app:layout_constraintBottom_toTopOf="@+id/exitBtn"
         app:layout_constraintEnd_toEndOf="parent"

@@ -1,33 +1,55 @@
 const Vehicle = require("../models/VehicleModel")
+const Location = require("../models/LocationModel.js")
 
 exports.createVehicle = async (req, res) => {
   try {
     const {
-      locationStartId,
-      locationEndId,
+      latStart,
+      latEnd,
+      longStart,
+      longEnd,
       type,
       acceleration,
       locationFreq,
       accelerationFreq,
     } = req.body;
 
-    if (!locationStartId || !locationEndId || !type) {
+    if (!latStart || !latEnd || !longStart || !longEnd ) {
       return res
         .status(400)
-        .json({ message: "locationStartId, locationEndId and type are required" });
+        .json({ message: "latStart, latEnd, longStart, longEnd, type are required" });
     }
 
+    const newStartLocation = new Location({
+        geometry:{
+        type:"Point",
+        coordinates: [longStart, latStart]
+      }
+    })
+
+    await newStartLocation.save();
+  
+    
+    const newEndLocation = new Location({
+        geometry:{
+        type:"Point",
+        coordinates: [longEnd, latEnd]
+      }
+    })
+
+    await newEndLocation.save();
+
     const newVehicle = new Vehicle({
-      locationStartId,
-      locationEndId,
-      type,
-      acceleration: acceleration || 0.0,
-      locationFreq: locationFreq || 1,
-      accelerationFreq: accelerationFreq || 1,
+      locationStartId: newStartLocation._id,
+      locationEndId: newEndLocation._id,
+      type: type || "Police",
+      acceleration: acceleration || 1.0,
+      locationFreq: locationFreq || 1440,
+      accelerationFreq: accelerationFreq || 1440,
     });
 
     await newVehicle.save();
-
+    console.log(newVehicle, newStartLocation.geometry.coordinates, newEndLocation.geometry.coordinates)
     return res.status(201).json({
       message: "Vehicle created successfully",
       vehicle: newVehicle,

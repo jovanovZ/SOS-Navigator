@@ -3,14 +3,14 @@ const router = express.Router();
 const vehicleController = require('../controllers/vehicleController');
 
 
-router.get("/vehicles/:vehicleId", vehicleController.getVehicleById);
-router.get("/vehicles", vehicleController.getAllVehicles);
+router.get("/:vehicleId", vehicleController.getVehicleById);
+router.get("/all", vehicleController.getAllVehicles);
 
-router.post("/vehicles", vehicleController.createVehicle);
+router.post("/create", vehicleController.createVehicle);
 
-router.put("/vehicles/:vehicleId", vehicleController.updateVehicle);
+router.put("/update/:vehicleId", vehicleController.updateVehicle);
 
-router.delete("/vehicles/:vehicleId", vehicleController.deleteVehicle);
+router.delete("/delte/:vehicleId", vehicleController.deleteVehicle);
 
 
 module.exports = router;
