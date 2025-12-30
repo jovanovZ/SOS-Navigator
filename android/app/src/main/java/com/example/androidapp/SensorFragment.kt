@@ -9,20 +9,23 @@ import android.view.ViewGroup
 import android.widget.NumberPicker
 import android.widget.PopupMenu
 import android.widget.Toast
+import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.example.androidapp.databinding.FragmentSensorBinding
+import com.example.androidapp.dao.AccidentResponse
+import com.example.androidapp.model.RunTimeSensor
+import com.example.androidapp.model.SensorType
+import com.example.androidapp.dao.VehicleResponse
 import com.example.androidapp.utils.Util
+import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import okhttp3.Dispatcher
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okio.IOException
-import com.google.gson.JsonParser
-import okhttp3.FormBody
+import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import kotlin.random.Random
 
@@ -42,6 +45,10 @@ class SensorFragment : Fragment(), View.OnClickListener {
     private val binding get() = _binding!!
     private val client = OkHttpClient()
     private val SERVER_URL = BuildConfig.SERVER_URL
+    private val gson = Gson()
+
+
+    private val runTimeViewModel: SensorRunTimeViewModel by activityViewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -148,7 +155,7 @@ class SensorFragment : Fragment(), View.OnClickListener {
     }
 
 
-    private fun validateInputsAndReturnNumberOfGenerations() :Int{
+    private fun validateInputsAndReturnNumberOfGenerations(): Int {
         val wheelDay = binding.wheelDay.value
         val wheelDay2 = binding.wheelDay2.value
 
@@ -210,8 +217,23 @@ class SensorFragment : Fragment(), View.OnClickListener {
                     client.newCall(req).execute().use { response ->
                         if (!response.isSuccessful) throw IOException("Response error $response")
                         val responseData = response.body?.string()
-                        Log.d("SERVER", "Accident created: $responseData")
-                        Toast.makeText(requireContext(), "$n accident sensors generated", Toast.LENGTH_SHORT).show()
+                        val responseObj = gson.fromJson(responseData, AccidentResponse::class.java)
+                        val accident = responseObj.accident
+                        Log.d("SERVER", "Accident created: $accident")
+                        runTimeViewModel.addSensor(
+                            RunTimeSensor(
+                                accident.id,
+                                SensorType.ACCIDENT_LOCATION,
+                                accident.locationFreq
+                            )
+                        )
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(
+                                requireContext(),
+                                "$n accident sensors generated",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
                     }
                 }
             } catch (e: Exception) {
@@ -259,8 +281,31 @@ class SensorFragment : Fragment(), View.OnClickListener {
                     client.newCall(req).execute().use { response ->
                         if (!response.isSuccessful) throw IOException("Response error $response")
                         val responseData = response.body?.string()
-                        Log.d("SERVER", "Police car created: $responseData")
-                        Toast.makeText(requireContext(), "$n car sensors generated", Toast.LENGTH_SHORT).show()
+                        val responseObj = gson.fromJson(responseData, VehicleResponse::class.java)
+                        val vehicle = responseObj.vehicle
+
+                        Log.d("SERVER", "Police car created: $vehicle")
+                        runTimeViewModel.addSensor(
+                            RunTimeSensor(
+                                vehicle.id,
+                                SensorType.VEHICLE_LOCATION,
+                                vehicle.locationFreq
+                            )
+                        )
+                        runTimeViewModel.addSensor(
+                            RunTimeSensor(
+                                vehicle.id,
+                                SensorType.VEHICLE_ACCELERATION,
+                                vehicle.accelerationFreq
+                            )
+                        )
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(
+                                requireContext(),
+                                "$n car sensors generated",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
                     }
                 }
             } catch (e: Exception) {
