@@ -52,7 +52,21 @@ exports.createVehicle = async (req, res) => {
     console.log(newVehicle, newStartLocation.geometry.coordinates, newEndLocation.geometry.coordinates)
     return res.status(201).json({
       message: "Vehicle created successfully",
-      vehicle: newVehicle,
+      vehicle: {
+        id: newVehicle._id,
+        locationFreq: newVehicle.locationFreq,
+        accelerationFreq: newVehicle.accelerationFreq,
+        acceleration: newVehicle.acceleration,
+        type: newVehicle.type,
+        locationStart: {
+          id: newStartLocation._id,
+          coordinates: newStartLocation.geometry.coordinates,
+        },
+         locationEnd: {
+          id: newEndLocation._id,
+          coordinates: newEndLocation.geometry.coordinates,
+        },
+      },
     });
   } catch (error) {
     console.error("Failed to create vehicle:", error);
