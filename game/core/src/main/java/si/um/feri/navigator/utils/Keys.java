@@ -7,4 +7,5 @@ public class Keys {
     private static Dotenv dotenv = Dotenv.load();
 
     public static String GEOAPIFY = dotenv.get("GEOAPIFY_KEY");
+    public static String SERVER_URL= dotenv.get("SERVER_URL");
 }
