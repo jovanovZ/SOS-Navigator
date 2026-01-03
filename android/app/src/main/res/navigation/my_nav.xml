@@ -81,9 +81,24 @@
             app:exitAnim="@android:anim/slide_out_right"
             app:popEnterAnim="@android:anim/slide_in_left"
             app:popExitAnim="@android:anim/slide_out_right" />
+
+        <action
+            android:id="@+id/action_sensorListFragment_to_accidentFormFragment"
+            app:destination="@id/accidentFormFragment"
+            app:enterAnim="@android:anim/slide_in_left"
+            app:exitAnim="@android:anim/slide_out_right"
+            app:popEnterAnim="@android:anim/slide_in_left"
+            app:popExitAnim="@android:anim/slide_out_right" />
+
     </fragment>
 
     <fragment
+        android:id="@+id/accidentFormFragment"
+        android:name="com.example.androidapp.AccidentFormFragment"
+        android:label="fragment_accident_form"
+        tools:layout="@layout/fragment_accident_form" />
+
+
         android:id="@+id/messageFragment"
         android:name="com.example.androidapp.MessageFragment"
         android:label="fragment_message"
