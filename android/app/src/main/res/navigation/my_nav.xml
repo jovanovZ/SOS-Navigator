@@ -32,6 +32,14 @@
             app:exitAnim="@android:anim/slide_out_right"
             app:popEnterAnim="@android:anim/slide_in_left"
             app:popExitAnim="@android:anim/slide_out_right" />
+
+        <action
+            android:id="@+id/action_mainFragment_to_messageFragment"
+            app:destination="@id/messageFragment"
+            app:enterAnim="@android:anim/slide_in_left"
+            app:exitAnim="@android:anim/slide_out_right"
+            app:popEnterAnim="@android:anim/slide_in_left"
+            app:popExitAnim="@android:anim/slide_out_right" />
     </fragment>
     <fragment
         android:id="@+id/sensorFragment"
@@ -91,4 +99,17 @@
         tools:layout="@layout/fragment_accident_form" />
 
 
+        android:id="@+id/messageFragment"
+        android:name="com.example.androidapp.MessageFragment"
+        android:label="fragment_message"
+        tools:layout="@layout/fragment_message">
+
+        <action
+            android:id="@+id/action_mainFragment_to_messageFragment"
+            app:destination="@id/messageFragment"
+            app:enterAnim="@android:anim/slide_in_left"
+            app:exitAnim="@android:anim/slide_out_right"
+            app:popEnterAnim="@android:anim/slide_in_left"
+            app:popExitAnim="@android:anim/slide_out_right" />
+    </fragment>
 </navigation>

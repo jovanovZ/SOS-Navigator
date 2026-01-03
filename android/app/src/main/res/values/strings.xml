@@ -24,4 +24,6 @@
     <string name="main_frag_camera_btn">Camera</string>
     <string name="tv_sos_vehicles">SOS-VEHICLES</string>
     <string name="tv_acccidents">ACCCIDENTS</string>
+    <string name="message_hint">Message</string>
+    <string name="btn_send">Send</string>
 </resources>
