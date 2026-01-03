@@ -40,7 +40,7 @@ class MainFragment : Fragment(), View.OnClickListener {
         binding.listBtn.setOnClickListener(this)
         binding.exitBtn.setOnClickListener(this)
         binding.cameraBtn.setOnClickListener(this)
-
+        binding.messageBtn.setOnClickListener(this)
     }
 
     override fun onClick(v: View?) {
@@ -49,6 +49,7 @@ class MainFragment : Fragment(), View.OnClickListener {
                 R.id.sensorBtn -> findNavController().navigate(R.id.action_mainFragment_to_sensorFragment)
                 R.id.listBtn -> findNavController().navigate((R.id.action_mainFragment_to_sensorListFragment))
                 R.id.cameraBtn -> findNavController().navigate(R.id.action_mainFragment_to_cameraFragment)
+                R.id.messageBtn -> findNavController().navigate(R.id.action_mainFragment_to_messageFragment)
                 R.id.exitBtn -> requireActivity().finish()
             }
         }

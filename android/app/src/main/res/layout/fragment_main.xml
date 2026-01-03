@@ -42,6 +42,16 @@
         style="@style/btn_primary"
         android:layout_marginBottom="32dp"
         android:text="@string/main_frag_camera_btn"
+        app:layout_constraintBottom_toTopOf="@+id/messageBtn"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.498"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <Button
+        android:id="@+id/messageBtn"
+        style="@style/btn_primary"
+        android:layout_marginBottom="32dp"
+        android:text="Message"
         app:layout_constraintBottom_toTopOf="@+id/exitBtn"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.498"
