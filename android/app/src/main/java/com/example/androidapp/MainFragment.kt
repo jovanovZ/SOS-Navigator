@@ -1,5 +1,6 @@
 package com.example.androidapp
 
+import android.content.Context
 import android.os.Bundle
 import android.util.Log
 import androidx.fragment.app.Fragment
@@ -8,6 +9,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.navigation.fragment.findNavController
 import com.example.androidapp.databinding.FragmentMainBinding
+import org.osmdroid.config.Configuration
 
 private const val ARG_PARAM1 = "param1"
 private const val ARG_PARAM2 = "param2"
@@ -36,6 +38,16 @@ class MainFragment : Fragment(), View.OnClickListener {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        Configuration.getInstance().load(
+            requireContext(),
+            requireContext().getSharedPreferences(
+                "osmdroid",
+                Context.MODE_PRIVATE
+            )
+        )
+
+        binding.generateBtn.setOnClickListener(this)
         binding.sensorBtn.setOnClickListener(this)
         binding.listBtn.setOnClickListener(this)
         binding.exitBtn.setOnClickListener(this)

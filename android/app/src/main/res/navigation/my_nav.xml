@@ -83,12 +83,38 @@
             app:popExitAnim="@android:anim/slide_out_right" />
 
         <action
+            android:id="@+id/action_sensorListFragment_to_policeFormFragment"
+            app:destination="@id/policeFormFragment"
+            app:enterAnim="@android:anim/slide_in_left"
+            app:exitAnim="@android:anim/slide_out_right"
+            app:popEnterAnim="@android:anim/slide_in_left"
+            app:popExitAnim="@android:anim/slide_out_right" />
+    </fragment>
+
+
+    <fragment
+        android:id="@+id/policeFormFragment"
+        android:name="com.example.androidapp.PoliceFormFragment"
+        android:label="fragment_police_form"
+        tools:layout="@layout/fragment_police_form">
+
+        <action
+            android:id="@+id/action_policeFormFragment_to_sensorListFragment"
+            app:destination="@id/sensorListFragment"
+            app:enterAnim="@android:anim/slide_in_left"
+            app:exitAnim="@android:anim/slide_out_right"
+            app:popEnterAnim="@android:anim/slide_in_left"
+            app:popExitAnim="@android:anim/slide_out_right" />
+      
+      <action
             android:id="@+id/action_sensorListFragment_to_accidentFormFragment"
             app:destination="@id/accidentFormFragment"
             app:enterAnim="@android:anim/slide_in_left"
             app:exitAnim="@android:anim/slide_out_right"
             app:popEnterAnim="@android:anim/slide_in_left"
             app:popExitAnim="@android:anim/slide_out_right" />
+      
+            
 
     </fragment>
 
