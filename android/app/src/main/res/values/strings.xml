@@ -2,20 +2,21 @@
     <string name="app_name">androidApp</string>
     <string name="main_frag_generate_btn">Generate</string>
     <string name="main_frag_list_btn">List</string>
-    <string name="main_frag_sensor_btn">Sensor</string>
+    <string name="main_frag_sensor_btn">Generate Sensors</string>
     <string name="main_frag_exit_btn">Exit</string>
 
     <string name="sensor_frag_title">Accident sensor</string>
     <string name="sensor_frag_location">Location</string>
     <string name="sensor_frag_update">Update frequency format(DD:HH:MM)</string>
     <string name="sensor_frag_acceleration">Acceleration</string>
+    <string name="sensor_number_input">Number of sensors</string>
+    <string name="sensor_number_hint">5</string>
 
     <string name="menu_accident">Accident</string>
     <string name="menu_police_car">Police car</string>
 
     <string name="btn_back">Back</string>
     <string name="btn_save">Save</string>
-    <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="btn_analyze">Analyze</string>
     <string name="btn_capture">Capture</string>
@@ -23,4 +24,6 @@
     <string name="main_frag_camera_btn">Camera</string>
     <string name="tv_sos_vehicles">SOS-VEHICLES</string>
     <string name="tv_acccidents">ACCCIDENTS</string>
+    <string name="message_hint">Message</string>
+    <string name="btn_send">Send</string>
 </resources>

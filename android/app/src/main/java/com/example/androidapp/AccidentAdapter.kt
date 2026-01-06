@@ -42,5 +42,9 @@ class AccidentAdapter(
 
     override fun getItemCount() = accidents.size
 
+    fun addAccident(accident: Accident) {
+        accidents.add(0, accident)
+        notifyItemInserted(0)
+    }
 
 }

@@ -1,6 +1,16 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    id("kotlin-parcelize")
+}
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.inputStream().use {
+        localProperties.load(it)
+    }
 }
 
 android {
@@ -17,9 +27,15 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField(
+            "String",
+            "SERVER_URL",
+            "\"${localProperties["SERVER_URL"]}\""
+        )
     }
     buildFeatures {
         viewBinding = true
+        buildConfig = true
     }
 
     buildTypes {
@@ -61,4 +77,8 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
 
     implementation("org.osmdroid:osmdroid-android:6.1.20")
+    implementation("com.squareup.okhttp3:okhttp:4.10.0")
+    implementation("com.google.code.gson:gson:2.10.1")
+    implementation("com.google.android.gms:play-services-location:21.3.0")
+
 }

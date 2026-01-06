@@ -34,6 +34,9 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
+import si.um.feri.navigator.OOP.Marker;
+import si.um.feri.navigator.OOP.MarkerType;
+import si.um.feri.navigator.utils.BackendService;
 import si.um.feri.navigator.utils.Constants;
 import si.um.feri.navigator.utils.Geolocation;
 import si.um.feri.navigator.utils.MapRasterTiles;
@@ -41,27 +44,9 @@ import si.um.feri.navigator.utils.ZoomXY;
 
 public class Navigator extends ApplicationAdapter implements GestureDetector.GestureListener {
 
-    public enum MarkerType {
-        POSTAJA,
-        NESRECA
-    }
-
-    public static class Marker {
-        public MarkerType type;
-        public Geolocation lokacija;
-
-        public Marker(MarkerType type, double lat, double lng) {
-            this.type = type;
-            this.lokacija = new Geolocation(lat, lng);
-        }
-    }
-
     private static final float MIN_ZOOM = 0.02f;
     private static final float MAX_ZOOM = 5.0f;
     private static final float WHEEL_ZOOM_FACTOR = 1.15f;
-
-    private static final float MARKER_RADIUS = 250f;
-    private static final float MARKER_BORDER = 60f;
     private static final float CAR_TRAVEL_SECONDS = 10f;
     private static final float CAR_MIN_SPEED = 200f;
     private static final float CAR_MAX_SPEED = 8000f;
@@ -105,40 +90,9 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
 
     private final List<Texture> carFrameTextures = new ArrayList<>();
 
-    private final Marker[] MARKERS = {
-        new Marker(MarkerType.POSTAJA, 46.0569, 14.5058),
-        new Marker(MarkerType.POSTAJA, 46.5547, 15.6466),
-        new Marker(MarkerType.POSTAJA, 46.2361, 15.2677),
-        new Marker(MarkerType.POSTAJA, 46.2389, 14.3556),
-        new Marker(MarkerType.POSTAJA, 45.5469, 13.7294),
-        new Marker(MarkerType.POSTAJA, 45.8014, 15.1689),
-        new Marker(MarkerType.POSTAJA, 46.4200, 15.8700),
-        new Marker(MarkerType.POSTAJA, 46.6625, 16.1664),
-        new Marker(MarkerType.POSTAJA, 45.9558, 13.6483),
-        new Marker(MarkerType.POSTAJA, 46.3597, 15.1114),
-        new Marker(MarkerType.POSTAJA, 45.7744, 14.2147),
-        new Marker(MarkerType.POSTAJA, 46.4367, 14.0525),
-        new Marker(MarkerType.POSTAJA, 46.1522, 15.0531),
-        new Marker(MarkerType.POSTAJA, 46.5100, 15.0800),
-        new Marker(MarkerType.POSTAJA, 46.5439, 14.9519),
-        new Marker(MarkerType.POSTAJA, 45.5386, 13.6603),
-        new Marker(MarkerType.POSTAJA, 45.5283, 13.5681),
-        new Marker(MarkerType.POSTAJA, 46.2500, 14.3500),
-        new Marker(MarkerType.POSTAJA, 46.1725, 14.3089),
-        new Marker(MarkerType.POSTAJA, 45.9631, 14.2794),
-        new Marker(MarkerType.POSTAJA, 46.0833, 14.1833),
-        new Marker(MarkerType.POSTAJA, 45.8667, 13.8500),
-        new Marker(MarkerType.POSTAJA, 45.6561, 13.7658),
-        new Marker(MarkerType.POSTAJA, 45.7000, 14.1167),
-        new Marker(MarkerType.POSTAJA, 45.7833, 14.8667),
-        new Marker(MarkerType.POSTAJA, 45.8619, 15.1767),
-        new Marker(MarkerType.POSTAJA, 45.9167, 15.4833),
-        new Marker(MarkerType.POSTAJA, 46.0833, 15.6333),
-        new Marker(MarkerType.POSTAJA, 46.2333, 15.0333),
-        new Marker(MarkerType.POSTAJA, 46.3833, 15.8833),
+    private final ArrayList<Marker> MARKERS = new ArrayList<>();
 
-        new Marker(MarkerType.NESRECA, 46.3000, 14.9500),
-    };
+    private BackendService backendService;
 
     @Override
     public void create() {
@@ -199,6 +153,21 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
         tileZone = MapRasterTiles.getTileZoneCoords(centerTile, Constants.NUM_TILES_X, Constants.NUM_TILES_Y);
 
         loadCarAnimation();
+
+
+        // BACKEND KLIC
+        backendService = new BackendService();
+        backendService.fetchMarkers(new BackendService.MarkerCallback() {
+            @Override
+            public void onSuccess(ArrayList<Marker> markers) {
+                MARKERS.addAll(markers);
+
+            }
+            @Override
+            public void onError(Throwable t) {
+                Gdx.app.error("Backend", "Failed to load markers", t);
+            }
+        });
     }
 
     private void loadCarAnimation() {
@@ -406,11 +375,10 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
     }
 
     private void drawMarkers() {
-        shapeRenderer.setProjectionMatrix(camera.combined);
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        spriteBatch.setProjectionMatrix(camera.combined);
+        spriteBatch.begin();
 
-        float radius = MARKER_RADIUS * camera.zoom;
-        float border = MARKER_BORDER * camera.zoom;
+        float iconSize = 800f * camera.zoom;
 
         for (Marker marker : MARKERS) {
             Vector2 pos = MapRasterTiles.getPixelPosition(
@@ -423,18 +391,18 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
                 Constants.MAP_HEIGHT
             );
 
-            if (pos.x >= 0 && pos.x <= Constants.MAP_WIDTH && pos.y >= 0 && pos.y <= Constants.MAP_HEIGHT) {
-                shapeRenderer.setColor(Color.WHITE);
-                shapeRenderer.circle(pos.x, pos.y, radius + border);
-
-                if (marker.type == MarkerType.POSTAJA) shapeRenderer.setColor(Color.RED);
-                else shapeRenderer.setColor(Color.BLUE);
-
-                shapeRenderer.circle(pos.x, pos.y, radius);
+            if (marker.icon != null) {
+                spriteBatch.draw(
+                    marker.icon,
+                    pos.x - iconSize / 2f,
+                    pos.y - iconSize / 2f,
+                    iconSize,
+                    iconSize
+                );
             }
         }
 
-        shapeRenderer.end();
+        spriteBatch.end();
     }
     private void startCarAlongPath() {
         if (pathPoints.size() < 2) return;
@@ -556,28 +524,46 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
                 break;
             }
         }
+
         if (nesreca == null) {
+            Gdx.app.log("Navigator", "Ni markerja NESRECA");
             return;
         }
 
-        Marker[] postaje = Arrays.stream(MARKERS)
-            .filter(m -> m.type == MarkerType.POSTAJA)
-            .toArray(Marker[]::new);
+        ArrayList<Marker> postaje = new ArrayList<>();
+        for (Marker m : MARKERS) {
+            if (m.type == MarkerType.BOLNICA || m.type  == MarkerType.GASILSKA || m.type == MarkerType.POLICIJSKA) {
+                postaje.add(m);
+            }
+        }
 
-        double[] razdalje = new double[postaje.length];
-        for (int i = 0; i < postaje.length; i++) {
+        if (postaje.isEmpty()) {
+            Gdx.app.log("Navigator", "Ni POSTAJA markerjev");
+            return;
+        }
+
+        double[] razdalje = new double[postaje.size()];
+        for (int i = 0; i < postaje.size(); i++) {
+            Marker p = postaje.get(i);
             razdalje[i] = haversineKm(
                 nesreca.lokacija.lat, nesreca.lokacija.lng,
-                postaje[i].lokacija.lat, postaje[i].lokacija.lng
+                p.lokacija.lat, p.lokacija.lng
             );
         }
 
-        Integer[] indeksi = new Integer[postaje.length];
-        for (int i = 0; i < indeksi.length; i++) indeksi[i] = i;
-        Arrays.sort(indeksi, Comparator.comparingDouble(i -> razdalje[i]));
+        Integer[] indeksi = new Integer[postaje.size()];
+        for (int i = 0; i < indeksi.length; i++) {
+            indeksi[i] = i;
+        }
 
+        Arrays.sort(indeksi, new Comparator<Integer>() {
+            @Override
+            public int compare(Integer a, Integer b) {
+                return Double.compare(razdalje[a], razdalje[b]);
+            }
+        });
 
-        Marker najblizja = postaje[indeksi[0]];
+        Marker najblizja = postaje.get(indeksi[0]);
 
         generatePath(najblizja, nesreca);
         showPath = true;
@@ -591,7 +577,6 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
         }
 
         startCarAlongPath();
-
     }
 
     private void generatePath(Marker from, Marker to) {
@@ -683,6 +668,11 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
 
         for (Texture t : carFrameTextures) {
             t.dispose();
+        }
+        for(Marker m: MARKERS){
+            if(m.icon != null){
+                m.icon.dispose();
+            }
         }
         carFrameTextures.clear();
     }

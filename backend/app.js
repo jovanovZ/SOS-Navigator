@@ -8,12 +8,11 @@ const pathRoutes = require("./routes/pathRoutes");
 const locationRoutes = require("./routes/locationRoutes")
 const stationRoutes = require("./routes/stationRoutes")
 const simulationRoutes = require("./routes/simulationRoutes")
-const {exec} = require("child_process");
+const vehicleRoutes = require("./routes/vehicleRoutes")
+
 
 const cookieParser = require("cookie-parser");
 
-// Uvoz route-ov
-//const userRoutes = require('./routes/userRoutes');
 
 const app = express();
 
@@ -33,6 +32,7 @@ app.use("/api/path", pathRoutes);
 app.use("/api/location", locationRoutes);
 app.use("/api/station",stationRoutes);
 app.use("/api/simulation",simulationRoutes);
+app.use("/api/vehicle",vehicleRoutes)
 
 const http = require("http");
 

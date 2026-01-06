@@ -13,4 +13,6 @@
     <dimen name="text_size_title">32sp</dimen>
     <dimen name="text_size_body">20sp</dimen>
     <dimen name="text_size_small">12sp</dimen>
+
+    <dimen name="number_input_width">60dp</dimen>
 </resources>
