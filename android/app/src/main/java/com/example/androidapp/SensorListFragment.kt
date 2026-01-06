@@ -66,6 +66,11 @@ class SensorListFragment : Fragment() {
             adapter = vehicleAdapter
         }
 
+        binding.fabAddVehicle.setOnClickListener {
+            findNavController()
+                .navigate(R.id.action_sensorListFragment_to_policeFormFragment)
+        }
+
         val accidentAdapter = AccidentAdapter(testAccidents) { accident ->
             println("Clicked accident: ${accident.id}")
         }
@@ -74,6 +79,7 @@ class SensorListFragment : Fragment() {
             layoutManager = androidx.recyclerview.widget.LinearLayoutManager(requireContext())
             adapter = accidentAdapter
         }
+
     }
 
 

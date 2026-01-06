@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    tools:context=".PoliceFormFragment">
+
+    <TextView
+        android:id="@+id/tvPoliceFormTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Create police vehicle"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:textColor="@color/md_theme_primary"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"/>
+
+    <EditText
+        android:id="@+id/etPoliceFormName"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:hint="Police vehicle name"
+        android:inputType="text"
+        android:textColorHint="@color/md_theme_primary"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tvPoliceFormTitle" />
+
+    <EditText
+        android:id="@+id/etPoliceFormStartLocation"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:hint="Starting location"
+        android:textColorHint="?attr/colorOnSurfaceInverse"
+        android:inputType="text"
+        app:layout_constraintTop_toBottomOf="@id/etPoliceFormName"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="16dp"/>
+
+
+    <EditText
+        android:id="@+id/etPoliceFormStartLatitude"
+        android:layout_width="0dp"
+        android:layout_height="45dp"
+        android:layout_marginStart="44dp"
+        android:layout_marginTop="16dp"
+        android:clickable="true"
+        android:focusable="false"
+        android:hint="Starting latitude"
+        android:inputType="text"
+        android:textColorHint="?attr/colorOnSurfaceInverse"
+        app:layout_constraintHorizontal_weight="1"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/etPoliceFormStartLocation" />
+
+    <EditText
+        android:id="@+id/etPoliceFormStartLongitude"
+        android:layout_width="wrap_content"
+        android:layout_height="0dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="44dp"
+        android:clickable="true"
+        android:focusable="false"
+        android:hint="Starting longitude"
+        android:inputType="text"
+        android:textColorHint="?attr/colorOnSurfaceInverse"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_weight="1"
+        app:layout_constraintTop_toBottomOf="@+id/etPoliceFormStartLocation" />
+
+
+
+    <EditText
+        android:id="@+id/etPoliceFormEndLocation"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:hint="Ending location"
+        android:textColorHint="?attr/colorOnSurfaceInverse"
+        android:inputType="text"
+        app:layout_constraintTop_toBottomOf="@id/etPoliceFormStartLatitude"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="16dp"/>
+
+
+    <EditText
+        android:id="@+id/etPoliceFormEndLatitude"
+        android:layout_width="0dp"
+        android:layout_height="45dp"
+        android:layout_marginStart="44dp"
+        android:layout_marginTop="16dp"
+        android:clickable="true"
+        android:focusable="false"
+        android:hint="Ending latitude"
+        android:inputType="text"
+        android:textColorHint="?attr/colorOnSurfaceInverse"
+        app:layout_constraintHorizontal_weight="1"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/etPoliceFormEndLocation" />
+
+    <EditText
+        android:id="@+id/etPoliceFormEndLongitude"
+        android:layout_width="wrap_content"
+        android:layout_height="0dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="44dp"
+        android:clickable="true"
+        android:focusable="false"
+        android:hint="Ending longitude"
+        android:inputType="text"
+        android:textColorHint="?attr/colorOnSurfaceInverse"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_weight="1"
+        app:layout_constraintTop_toBottomOf="@+id/etPoliceFormEndLocation" />
+
+
+
+    <TextView
+        android:id="@+id/tvPoliceAcceleration"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+
+        android:text="Acceleration"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="@color/md_theme_primary"
+        app:layout_constraintTop_toBottomOf="@id/etPoliceFormEndLatitude"
+        app:layout_constraintStart_toStartOf="parent"/>
+
+
+    <EditText
+        android:id="@+id/etPoliceFormRangeStartAcceleration"
+        android:layout_width="wrap_content"
+        android:layout_height="0dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginStart="44dp"
+
+        android:clickable="true"
+        android:focusable="false"
+        android:hint="Acceleration Start"
+        android:inputType="text"
+        android:textColorHint="?attr/colorOnSurfaceInverse"
+        app:layout_constraintHorizontal_weight="1"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/tvPoliceAcceleration" />
+
+    <EditText
+        android:id="@+id/etPoliceFormRangeEndAcceleration"
+        android:layout_width="wrap_content"
+        android:layout_height="0dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="44dp"
+        android:clickable="true"
+        android:focusable="false"
+        android:hint="Acceleration End"
+        android:inputType="text"
+        android:textColorHint="?attr/colorOnSurfaceInverse"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_weight="1"
+        app:layout_constraintTop_toBottomOf="@+id/tvPoliceAcceleration" />
+
+
+    <org.osmdroid.views.MapView
+        android:id="@+id/mapPickerPolice"
+        android:layout_width="411dp"
+        android:layout_height="321dp"
+        android:layout_marginBottom="20dp"
+        app:layout_constraintBottom_toTopOf="@+id/btnSavePoliceVehicle"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/etPoliceFormRangeStartAcceleration"
+        app:layout_constraintVertical_bias="0.791" />
+
+    <Button
+        android:id="@+id/btnSavePoliceVehicle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="Save police vehicle"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>
