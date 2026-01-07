@@ -14,6 +14,7 @@ public class Marker {
     public MarkerType type;
     public Geolocation lokacija;
     public Texture icon;
+    public Station station;
 
     public Marker(MarkerType type, double lat, double lng, Texture icon) {
         this.type = type;

@@ -18,6 +18,7 @@ import com.badlogic.gdx.input.GestureDetector;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
@@ -36,6 +37,7 @@ import java.util.List;
 
 import si.um.feri.navigator.OOP.Marker;
 import si.um.feri.navigator.OOP.MarkerType;
+import si.um.feri.navigator.OOP.Station;
 import si.um.feri.navigator.utils.BackendService;
 import si.um.feri.navigator.utils.Constants;
 import si.um.feri.navigator.utils.Geolocation;
@@ -94,6 +96,10 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
 
     private BackendService backendService;
 
+    private Table infoTable;
+    private boolean infoVisible = false;
+
+
     @Override
     public void create() {
         shapeRenderer = new ShapeRenderer();
@@ -111,11 +117,18 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
         uiStage = new Stage(new ScreenViewport());
         skin = createBasicSkin();
 
+        infoTable = new Table(skin);
+        infoTable.setVisible(false);
+        infoTable.setBackground(skin.newDrawable("button-up", Color.DARK_GRAY));
+        uiStage.addActor(infoTable);
+
+
         TextButton button = new TextButton("Najdi 5 najbližjih", skin);
         button.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
                 findNearestStations();
+                Gdx.app.log("TUKAJ", "TUKAJ");
             }
         });
 
@@ -161,8 +174,8 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
             @Override
             public void onSuccess(ArrayList<Marker> markers) {
                 MARKERS.addAll(markers);
-
             }
+
             @Override
             public void onError(Throwable t) {
                 Gdx.app.error("Backend", "Failed to load markers", t);
@@ -217,6 +230,11 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
         buttonStyle.font = skin.getFont("default-font");
         buttonStyle.fontColor = Color.WHITE;
 
+        Label.LabelStyle labelStyle = new Label.LabelStyle();
+        labelStyle.font = skin.getFont("default-font");
+        labelStyle.fontColor = Color.WHITE;
+        skin.add("default", labelStyle);
+
         skin.add("default", buttonStyle);
         return skin;
     }
@@ -243,7 +261,14 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
 
         uiStage.act();
         uiStage.draw();
+        Marker hoverMarker = getMarkerAtScreen(Gdx.input.getX(), Gdx.input.getY());
+        if (hoverMarker != null && hoverMarker.type == MarkerType.POSTAJA) {
+            showMarkerInfo(hoverMarker);
+        } else {
+            infoTable.setVisible(false);
+        }
     }
+
     private void zoomTowardsMouse(float amountY) {
         tmp.set(Gdx.input.getX(), Gdx.input.getY(), 0);
         camera.unproject(tmp, viewport.getScreenX(), viewport.getScreenY(),
@@ -404,6 +429,7 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
 
         spriteBatch.end();
     }
+
     private void startCarAlongPath() {
         if (pathPoints.size() < 2) return;
 
@@ -494,10 +520,14 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
     private void handleKeyboard() {
         float speed = 800 * camera.zoom;
 
-        if (Gdx.input.isKeyPressed(Input.Keys.LEFT) || Gdx.input.isKeyPressed(Input.Keys.A)) camera.translate(-speed, 0, 0);
-        if (Gdx.input.isKeyPressed(Input.Keys.RIGHT) || Gdx.input.isKeyPressed(Input.Keys.D)) camera.translate(speed, 0, 0);
-        if (Gdx.input.isKeyPressed(Input.Keys.DOWN) || Gdx.input.isKeyPressed(Input.Keys.S)) camera.translate(0, -speed, 0);
-        if (Gdx.input.isKeyPressed(Input.Keys.UP) || Gdx.input.isKeyPressed(Input.Keys.W)) camera.translate(0, speed, 0);
+        if (Gdx.input.isKeyPressed(Input.Keys.LEFT) || Gdx.input.isKeyPressed(Input.Keys.A))
+            camera.translate(-speed, 0, 0);
+        if (Gdx.input.isKeyPressed(Input.Keys.RIGHT) || Gdx.input.isKeyPressed(Input.Keys.D))
+            camera.translate(speed, 0, 0);
+        if (Gdx.input.isKeyPressed(Input.Keys.DOWN) || Gdx.input.isKeyPressed(Input.Keys.S))
+            camera.translate(0, -speed, 0);
+        if (Gdx.input.isKeyPressed(Input.Keys.UP) || Gdx.input.isKeyPressed(Input.Keys.W))
+            camera.translate(0, speed, 0);
 
         if (Gdx.input.isKeyPressed(Input.Keys.Q)) camera.zoom *= 1.02f;
         if (Gdx.input.isKeyPressed(Input.Keys.E)) camera.zoom /= 1.02f;
@@ -518,52 +548,48 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
 
     private void findNearestStations() {
         Marker nesreca = null;
+
         for (Marker m : MARKERS) {
             if (m.type == MarkerType.NESRECA) {
                 nesreca = m;
                 break;
             }
         }
-
         if (nesreca == null) {
-            Gdx.app.log("Navigator", "Ni markerja NESRECA");
             return;
         }
+        Gdx.app.log("NESRECA", nesreca.toString());
 
         ArrayList<Marker> postaje = new ArrayList<>();
         for (Marker m : MARKERS) {
-            if (m.type == MarkerType.BOLNICA || m.type  == MarkerType.GASILSKA || m.type == MarkerType.POLICIJSKA) {
+            if (m.type == MarkerType.POSTAJA) {
                 postaje.add(m);
             }
         }
 
         if (postaje.isEmpty()) {
-            Gdx.app.log("Navigator", "Ni POSTAJA markerjev");
             return;
         }
 
-        double[] razdalje = new double[postaje.size()];
-        for (int i = 0; i < postaje.size(); i++) {
-            Marker p = postaje.get(i);
-            razdalje[i] = haversineKm(
+        ArrayList<Double> razdalje = new ArrayList<>();
+        for (Marker p : postaje) {
+            double d = haversineKm(
                 nesreca.lokacija.lat, nesreca.lokacija.lng,
                 p.lokacija.lat, p.lokacija.lng
             );
+            razdalje.add(d);
         }
 
-        Integer[] indeksi = new Integer[postaje.size()];
-        for (int i = 0; i < indeksi.length; i++) {
-            indeksi[i] = i;
-        }
-
-        Arrays.sort(indeksi, new Comparator<Integer>() {
-            @Override
-            public int compare(Integer a, Integer b) {
-                return Double.compare(razdalje[a], razdalje[b]);
+        int najblizjiIndeks = 0;
+        double minRazdalja = razdalje.get(0);
+        for (int i = 1; i < razdalje.size(); i++) {
+            if (razdalje.get(i) < minRazdalja) {
+                minRazdalja = razdalje.get(i);
+                najblizjiIndeks = i;
             }
-        });
+        }
 
-        Marker najblizja = postaje.get(indeksi[0]);
+        Marker najblizja = postaje.get(najblizjiIndeks);
 
         generatePath(najblizja, nesreca);
         showPath = true;
@@ -652,6 +678,29 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
         return R * c;
     }
 
+    private Marker getMarkerAtScreen(float screenX, float screenY) {
+        tmp.set(screenX, screenY, 0);
+        camera.unproject(tmp, viewport.getScreenX(), viewport.getScreenY(),
+            viewport.getScreenWidth(), viewport.getScreenHeight());
+        Vector2 clickPos = new Vector2(tmp.x, tmp.y);
+
+        float clickRadius = 800f * camera.zoom;
+
+        for (Marker m : MARKERS) {
+            Vector2 markerPos = MapRasterTiles.getPixelPosition(
+                m.lokacija.lat, m.lokacija.lng,
+                MapRasterTiles.TILE_SIZE, Constants.ZOOM,
+                beginTile.x, beginTile.y, Constants.MAP_HEIGHT
+            );
+
+            if (clickPos.dst(markerPos) <= clickRadius) {
+                return m;
+            }
+        }
+        return null;
+    }
+
+
     @Override
     public void resize(int width, int height) {
         viewport.update(width, height, false);
@@ -669,12 +718,47 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
         for (Texture t : carFrameTextures) {
             t.dispose();
         }
-        for(Marker m: MARKERS){
-            if(m.icon != null){
+        for (Marker m : MARKERS) {
+            if (m.icon != null) {
                 m.icon.dispose();
             }
         }
         carFrameTextures.clear();
+    }
+
+    private void showMarkerInfo(Marker marker) {
+        if (marker == null || marker.station == null) {
+            infoTable.setVisible(false);
+            infoVisible = false;
+            return;
+        }
+
+        infoTable.clear();
+        infoTable.defaults().pad(5);
+
+
+        Station s = marker.station;
+
+        infoTable.add("ID: " + s.id).row();
+        infoTable.add("Type: " + s.type).row();
+        infoTable.add("Permanent: " + s.isPermanent).row();
+        infoTable.add("Long: " + s.geolocation.lng).row();
+        infoTable.add("Lat: " + s.geolocation.lat).row();
+
+
+        Vector2 markerPos = MapRasterTiles.getPixelPosition(
+            marker.lokacija.lat, marker.lokacija.lng,
+            MapRasterTiles.TILE_SIZE, Constants.ZOOM,
+            beginTile.x, beginTile.y, Constants.MAP_HEIGHT
+        );
+        tmp.set(markerPos.x, markerPos.y, 0);
+        camera.project(tmp, viewport.getScreenX(), viewport.getScreenY(),
+            viewport.getScreenWidth(), viewport.getScreenHeight());
+
+        infoTable.pack();
+        infoTable.setPosition(tmp.x - infoTable.getWidth() / 2f, tmp.y + 50);
+        infoTable.setVisible(true);
+        infoVisible = true;
     }
 
     @Override public boolean touchDown(float x, float y, int pointer, int button) { return false; }
