@@ -37,6 +37,7 @@ import java.util.List;
 
 import si.um.feri.navigator.OOP.Marker;
 import si.um.feri.navigator.OOP.MarkerType;
+import si.um.feri.navigator.OOP.Path;
 import si.um.feri.navigator.OOP.Station;
 import si.um.feri.navigator.utils.BackendService;
 import si.um.feri.navigator.utils.Constants;
@@ -69,6 +70,7 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
 
     private final List<Vector2> pathPoints = new ArrayList<>();
     private boolean showPath = false;
+    private boolean showPaths = false;
 
     private final Geolocation CENTER_GEOLOCATION = new Geolocation(46.12, 14.99);
 
@@ -98,6 +100,9 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
 
     private Table infoTable;
     private boolean infoVisible = false;
+
+    private final ArrayList<ArrayList<Vector2>> backendPaths = new ArrayList<>();
+
 
 
     @Override
@@ -181,6 +186,44 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
                 Gdx.app.error("Backend", "Failed to load markers", t);
             }
         });
+        backendService.fetchPaths(new BackendService.PathCallback() {
+            @Override
+            public void onSuccess(ArrayList<Path> paths) {
+                backendPaths.clear();
+
+                for (Path p : paths) {
+                    ArrayList<Vector2> polyline = new ArrayList<>();
+
+                    for (Geolocation g : p.points) {
+                        Vector2 px = MapRasterTiles.getPixelPosition(
+                            g.lat,
+                            g.lng,
+                            MapRasterTiles.TILE_SIZE,
+                            Constants.ZOOM,
+                            beginTile.x,
+                            beginTile.y,
+                            Constants.MAP_HEIGHT
+                        );
+                        polyline.add(px);
+                    }
+
+                    backendPaths.add(polyline);
+                }
+
+                if (!backendPaths.isEmpty()) {
+                    pathPoints.clear();
+                    pathPoints.addAll(backendPaths.get(0));
+                    showPaths = false;
+                    //
+                }
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                Gdx.app.error("Backend", "Failed to fetch paths", t);
+            }
+        });
+
     }
 
     private void loadCarAnimation() {
@@ -254,7 +297,8 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
         viewport.apply();
 
         drawTiles();
-        drawPath();
+        //drawPath();
+        drawPaths();
         drawCar();
         drawMarkers();
         drawLoadingOverlay();
@@ -374,6 +418,47 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
         }
         shapeRenderer.end();
     }
+
+
+    private void drawPaths() {
+        if (!showPaths || backendPaths.isEmpty()) return;
+
+        shapeRenderer.setProjectionMatrix(camera.combined);
+
+        float lineWidth = 150f * camera.zoom;
+        float borderWidth = 200f * camera.zoom;
+
+        for (ArrayList<Vector2> path : backendPaths) {
+            if (path.size() < 2) continue;
+
+            // BEL ROB
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+            shapeRenderer.setColor(Color.WHITE);
+            for (int i = 0; i < path.size() - 1; i++) {
+                Vector2 p1 = path.get(i);
+                Vector2 p2 = path.get(i + 1);
+                shapeRenderer.rectLine(p1.x, p1.y, p2.x, p2.y, borderWidth);
+            }
+            for (Vector2 p : path) {
+                shapeRenderer.circle(p.x, p.y, borderWidth / 2f);
+            }
+            shapeRenderer.end();
+
+            // BARVNA POT
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+            shapeRenderer.setColor(Color.GREEN);
+            for (int i = 0; i < path.size() - 1; i++) {
+                Vector2 p1 = path.get(i);
+                Vector2 p2 = path.get(i + 1);
+                shapeRenderer.rectLine(p1.x, p1.y, p2.x, p2.y, lineWidth);
+            }
+            for (Vector2 p : path) {
+                shapeRenderer.circle(p.x, p.y, lineWidth / 2f);
+            }
+            shapeRenderer.end();
+        }
+    }
+
 
     private void drawLoadingOverlay() {
         int total = Constants.NUM_TILES_X * Constants.NUM_TILES_Y;
@@ -539,7 +624,7 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
             camera.position.set(Constants.MAP_WIDTH / 2f, Constants.MAP_HEIGHT / 2f, 0);
 
             pathPoints.clear();
-            showPath = false;
+            showPaths = false;
 
             carMoving = false;
             carVisible = false;

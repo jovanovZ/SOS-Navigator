@@ -14,6 +14,7 @@ import java.util.ArrayList;
 
 import si.um.feri.navigator.OOP.Marker;
 import si.um.feri.navigator.OOP.MarkerType;
+import si.um.feri.navigator.OOP.Path;
 import si.um.feri.navigator.OOP.Station;
 import si.um.feri.navigator.OOP.StationType;
 
@@ -23,6 +24,12 @@ public class BackendService {
         void onSuccess(ArrayList<Marker> markers);
         void onError(Throwable t);
     }
+
+    public interface PathCallback {
+        void onSuccess(ArrayList<Path> paths);
+        void onError(Throwable t);
+    }
+
 
     private final Texture hospitalIcon;
     private final Texture fireIcon;
@@ -98,4 +105,48 @@ public class BackendService {
             }
         }).start();
     }
+
+    public void fetchPaths(PathCallback callback) {
+        new Thread(() -> {
+            try {
+                String uri = Keys.SERVER_URL + "/api/path/all";
+                HttpRequest req = HttpRequest.newBuilder()
+                    .GET()
+                    .uri(URI.create(uri))
+                    .build();
+
+                HttpResponse<String> res =
+                    HttpClient.newHttpClient().send(req, HttpResponse.BodyHandlers.ofString());
+
+                JsonObject root = JsonParser.parseString(res.body()).getAsJsonObject();
+                JsonArray pathsJson = root.getAsJsonArray("paths");
+
+                ArrayList<Path> paths = new ArrayList<>();
+
+                for (int i = 0; i < pathsJson.size(); i++) {
+                    JsonObject obj = pathsJson.get(i).getAsJsonObject();
+
+                    Path path = new Path();
+                    path.id = obj.get("_id").getAsString();
+
+                    JsonArray pts = obj.getAsJsonArray("locationPoints");
+                    for (int j = 0; j < pts.size(); j++) {
+                        JsonObject p = pts.get(j).getAsJsonObject();
+                        path.points.add(new Geolocation(
+                            p.get("lat").getAsDouble(),
+                            p.get("lng").getAsDouble()
+                        ));
+                    }
+
+                    paths.add(path);
+                }
+
+                Gdx.app.postRunnable(() -> callback.onSuccess(paths));
+
+            } catch (Exception e) {
+                Gdx.app.postRunnable(() -> callback.onError(e));
+            }
+        }).start();
+    }
+
 }
