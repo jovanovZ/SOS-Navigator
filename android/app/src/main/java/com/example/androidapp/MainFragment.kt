@@ -47,7 +47,6 @@ class MainFragment : Fragment(), View.OnClickListener {
             )
         )
 
-        binding.generateBtn.setOnClickListener(this)
         binding.sensorBtn.setOnClickListener(this)
         binding.listBtn.setOnClickListener(this)
         binding.exitBtn.setOnClickListener(this)

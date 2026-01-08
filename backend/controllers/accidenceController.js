@@ -27,7 +27,7 @@ exports.createAccident = async (req, res) => {
     });
 
     await newAccident.save();
-    console.log(newAccident,newLocation.geometry.coordinates);
+    console.log(newAccident, newLocation.geometry.coordinates);
     return res.status(201).json({
       message: "Nesreča uspešno ustvarjena.",
       accident: {
@@ -37,7 +37,7 @@ exports.createAccident = async (req, res) => {
           id: newLocation._id,
           coordinates: newLocation.geometry.coordinates,
         },
-        locationFreq: newAccident.locationFreq
+        locationFreq: newAccident.locationFreq,
       },
     });
   } catch (error) {
@@ -66,31 +66,64 @@ exports.deleteAccident = async (req, res) => {
 
 exports.updateAccident = async (req, res) => {
   const { accidentId } = req.params;
-  const { locationId, typeOfAccident } = req.body;
-  if (!accidentId || !locationId || !typeOfAccident) {
+  const { latitude, longitude, type, locationFreq } = req.body;
+
+  if (
+    typeof latitude !== "number" ||
+    typeof longitude !== "number" ||
+    !type
+  ) {
     return res.status(400).json({ message: "All fields are required" });
   }
+
   try {
+    const newLocation = new Location({
+      geometry: {
+        type: "Point",
+        coordinates: [longitude, latitude]
+      }
+    });
+    await newLocation.save();
+
     const accident = await Accident.findByIdAndUpdate(
       accidentId,
-      { locationId, typeOfAccident },
+      {
+        locationId: newLocation._id,
+        type,
+        locationFreq
+      },
       { new: true }
     );
+
     if (!accident) {
       return res.status(404).json({ message: "Accident not found" });
     }
-    return res
-      .status(200)
-      .json({ accident, message: "Accident updated successfully" });
+
+    return res.status(200).json({
+      message: "Accident updated successfully",
+      id: accident._id
+    });
+
   } catch (error) {
     return res.status(500).json({ message: "Failed to update accident" });
   }
 };
 
+
 exports.getAll = async (req, res) => {
   try {
     const accidents = await Accident.find().populate("locationId");
-    return res.status(200).json(accidents);
+    const mapped = accidents.map((a) => ({
+      id: a._id,
+      typeOfAccident: a.typeOfAccident,
+      locationFreq: a.locationFreq,
+      location: {
+        id: a.locationId._id,
+        coordinates: a.locationId.geometry.coordinates,
+      },
+    }));
+
+    res.status(200).json(mapped);
   } catch (error) {
     return res.status(500).json({ message: "Failed to get all accidents" });
   }
@@ -161,6 +194,35 @@ exports.getRadnomId = async (req, res) => {
     return res
       .status(500)
       .json({ message: "Failed to get random accident ID" });
+  }
+};
+
+exports.getAccidentById = async (req, res) => {
+  const { accidentId } = req.params;
+
+  if (!accidentId) {
+    return res.status(400).json({ message: "Accident ID is required" });
+  }
+
+  try {
+    const accident = await Accident.findById(accidentId).populate("locationId");
+
+    if (!accident) {
+      return res.status(404).json({ message: "Accident not found" });
+    }
+
+    return res.status(200).json({
+      id: accident._id,
+      typeOfAccident: accident.typeOfAccident,
+      locationFreq: accident.locationFreq,
+      location: {
+        id: accident.locationId._id,
+        coordinates: accident.locationId.geometry.coordinates,
+      },
+    });
+  } catch (error) {
+    console.error("Failed to fetch accident:", error);
+    return res.status(500).json({ message: "Failed to fetch accident" });
   }
 };
 
