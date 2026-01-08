@@ -2,21 +2,19 @@ package com.example.androidapp
 
 import android.Manifest
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.setFragmentResult
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.example.androidapp.dao.AccidentDao
 import com.example.androidapp.dao.LocationDao
 import com.example.androidapp.databinding.FragmentAccidentFormBinding
-import com.example.androidapp.model.Accident
 import com.google.android.gms.location.LocationServices
 import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
@@ -26,6 +24,9 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
+import java.net.HttpURLConnection
+import java.net.URL
 
 class AccidentFormFragment : Fragment() {
 
@@ -34,7 +35,10 @@ class AccidentFormFragment : Fragment() {
 
     private val client = OkHttpClient()
     private val gson = Gson()
-    private val SERVER_URL = BuildConfig.SERVER_URL
+    //private val SERVER_URL = BuildConfig.SERVER_URL
+    private val SERVER_URL = "http://10.0.2.2:3002"
+    private var editingAccidentId: String? = null
+
 
     private var latitude: Double? = null
     private var longitude: Double? = null
@@ -69,6 +73,13 @@ class AccidentFormFragment : Fragment() {
             android.R.layout.simple_spinner_dropdown_item,
             types
         )
+
+        editingAccidentId = arguments?.getString("accident_id")
+
+        editingAccidentId?.let{ accidentId ->
+            loadAccidentForEdit(accidentId)
+        }
+
 
         requestLocationPermission.launch(Manifest.permission.ACCESS_FINE_LOCATION)
 
@@ -118,7 +129,13 @@ class AccidentFormFragment : Fragment() {
                 locationFreq = freq
             )
 
-            saveAccident(accidentDao)
+            if (editingAccidentId == null) {
+                saveAccident(accidentDao)
+            }else{
+                editAccident(accidentDao)
+            }
+
+            findNavController().navigate(R.id.action_accidentFormFragment_to_sensorListFragment)
         }
     }
 
@@ -130,70 +147,219 @@ class AccidentFormFragment : Fragment() {
                     binding.tvLocation.text = "Location: unavailable"
                     return@addOnSuccessListener
                 }
-
                 latitude = loc.latitude
                 longitude = loc.longitude
-                binding.tvLocation.text = "Location: ${loc.latitude}, ${loc.longitude}"
-                reverseGeocodeOSM(loc.latitude, loc.longitude)
+
+                binding.tvLocation.text = "Location: ${latitude}, ${longitude}"
+
+                reverseGeocodeOSM(latitude!!, longitude!!) { address ->
+                    locationString = address
+                    isGeocodingDone = true
+                    binding.tvLocation.text = "Location: $address"
+                }
+
+
+
             }
         } catch (e: SecurityException) {
             binding.tvLocation.text = "Location: permission missing"
         }
     }
 
-    private fun reverseGeocodeOSM(lat: Double, lon: Double) {
-        lifecycleScope.launch(Dispatchers.IO) {
+    private fun reverseGeocodeOSM(
+        lat: Double,
+        lon: Double,
+        onResult: (String) -> Unit
+    ) {
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
             try {
                 val url =
-                    "https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=$lat&lon=$lon&zoom=18&addressdetails=1"
+                    "https://nominatim.openstreetmap.org/reverse" +
+                            "?format=json&lat=$lat&lon=$lon"
 
-                val req = Request.Builder()
+                val request = Request.Builder()
                     .url(url)
-                    .header("User-Agent", "SOS-Navigator/1.0 (android)")
+                    .header("User-Agent", "SOS-Navigator/1.0 (Android)")
                     .build()
 
-                client.newCall(req).execute().use { resp ->
-                    if (!resp.isSuccessful) throw Exception("Geocode HTTP ${resp.code}")
+                client.newCall(request).execute().use { response ->
+                    if (!response.isSuccessful) {
+                        throw Exception("HTTP ${response.code}")
+                    }
 
-                    val body = resp.body?.string().orEmpty()
-                    val json = gson.fromJson(body, Map::class.java)
-
-                    val displayName = json["display_name"]?.toString()
-                    val finalName = displayName?.takeIf { it.isNotBlank() } ?: "$lat, $lon"
+                    val json = JSONObject(response.body!!.string())
+                    val address = json.optString("display_name", "$lat, $lon")
 
                     withContext(Dispatchers.Main) {
-                        locationString = finalName
-                        isGeocodingDone = true
-                        binding.tvLocation.text = "Location: $finalName"
+                        onResult(address)
                     }
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    locationString = "$lat, $lon"
-                    isGeocodingDone = true
-                    binding.tvLocation.text = "Location: $locationString"
+                    onResult("$lat, $lon")
                 }
             }
         }
     }
 
+
     private fun saveAccident(accident: AccidentDao) {
 
-        val newAccident = Accident(
-            id = "A-${System.currentTimeMillis()}",
-            location = locationString,
-            latitude = latitude ?: 0.0,
-            longitude = longitude ?: 0.0,
-            type = accident.typeOfAccident
-        )
+        val json = JSONObject().apply {
+            put("type", accident.typeOfAccident)
+            put("latitude", latitude)
+            put("longitude", longitude)
+            put("locationFreq", accident.locationFreq)
+        }
 
-        setFragmentResult(
-            "accident_result",
-            bundleOf("new_accident" to newAccident)
-        )
 
-        findNavController().popBackStack()
+        val body = json.toString()
+            .toRequestBody("application/json".toMediaType())
+
+        val request = Request.Builder()
+            .url("$SERVER_URL/api/accident/create")
+            .post(body)
+            .build()
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val response = client.newCall(request).execute()
+
+                if (!response.isSuccessful) {
+                    throw Exception("HTTP ${response.code}")
+                }
+
+                val responseBody = response.body?.string()
+                println("ACCIDENT CREATED: $responseBody")
+
+
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(
+                        requireContext(),
+                        "Failed to save accident",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+                e.printStackTrace()
+            }
+        }
     }
+
+
+    fun editAccident(
+        accident : AccidentDao
+    ) {
+
+        val json = JSONObject().apply {
+            put("type", accident.typeOfAccident)
+            put("latitude", latitude)
+            put("longitude", longitude)
+            put("locationFreq", accident.locationFreq)
+        }
+
+
+        val body = json.toString()
+            .toRequestBody("application/json".toMediaType())
+
+        val request = Request.Builder()
+            .url("$SERVER_URL/api/accident/update/$editingAccidentId")
+            .put(body)
+            .build()
+
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val response = client.newCall(request).execute()
+
+                if (!response.isSuccessful) {
+                    throw Exception("HTTP ${response.code}")
+                }
+
+                val responseBody = response.body?.string()
+                Log.d("ACCIDENT", "UPDATED: $responseBody")
+
+            } catch (e: Exception) {
+                Log.e("ACCIDENT", "Update failed", e)
+            }
+        }
+    }
+
+    private fun loadAccidentForEdit(accidentId: String) {
+
+        getAccidentById(accidentId) { accident ->
+
+            val coords = accident.location.coordinates
+            latitude = coords[1]
+            longitude = coords[0]
+
+            reverseGeocodeOSM(latitude!!, longitude!!) { address ->
+
+                locationString = address
+                isGeocodingDone = true
+
+                binding.tvLocation.text = "Location: $address"
+                binding.etLocationFreq.setText(accident.locationFreq.toString())
+
+                val pos = (binding.spinnerType.adapter as ArrayAdapter<String>)
+                    .getPosition(accident.typeOfAccident)
+                binding.spinnerType.setSelection(pos)
+            }
+        }
+    }
+
+
+
+
+    fun getAccidentById(
+        accidentId: String,
+        onResult: (AccidentDao) -> Unit
+    ) {
+
+        val request = Request.Builder()
+            .url("$SERVER_URL/api/accident/$accidentId")
+            .get()
+            .build()
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val response = client.newCall(request).execute()
+
+                if (!response.isSuccessful) {
+                    throw Exception("HTTP ${response.code}")
+                }
+
+                val json = JSONObject(response.body!!.string())
+
+                val loc = json.getJSONObject("location")
+                val coords = loc.getJSONArray("coordinates")
+
+                val accident = AccidentDao(
+                    id = json.getString("id"),
+                    typeOfAccident = json.getString("typeOfAccident"),
+                    locationFreq = json.getInt("locationFreq"),
+                    location = LocationDao(
+                        id = loc.getString("id"),
+                        coordinates = listOf(
+                            coords.getDouble(0),
+                            coords.getDouble(1)
+                        )
+                    )
+                )
+
+                withContext(Dispatchers.Main) {
+                    onResult(accident)
+                }
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+
+
+
+
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null

@@ -17,18 +17,6 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"/>
 
-    <EditText
-        android:id="@+id/etPoliceFormName"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:hint="Police vehicle name"
-        android:inputType="text"
-        android:textColorHint="@color/md_theme_primary"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tvPoliceFormTitle" />
 
     <EditText
         android:id="@+id/etPoliceFormStartLocation"
@@ -37,7 +25,7 @@
         android:hint="Starting location"
         android:textColorHint="?attr/colorOnSurfaceInverse"
         android:inputType="text"
-        app:layout_constraintTop_toBottomOf="@id/etPoliceFormName"
+        app:layout_constraintTop_toBottomOf="@id/tvPoliceFormTitle"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         android:layout_marginTop="16dp"/>
@@ -142,7 +130,7 @@
         android:layout_marginStart="44dp"
 
         android:clickable="true"
-        android:focusable="false"
+        android:focusable="true"
         android:hint="Acceleration Start"
         android:inputType="text"
         android:textColorHint="?attr/colorOnSurfaceInverse"
@@ -157,7 +145,7 @@
         android:layout_marginTop="16dp"
         android:layout_marginEnd="44dp"
         android:clickable="true"
-        android:focusable="false"
+        android:focusable="true"
         android:hint="Acceleration End"
         android:inputType="text"
         android:textColorHint="?attr/colorOnSurfaceInverse"

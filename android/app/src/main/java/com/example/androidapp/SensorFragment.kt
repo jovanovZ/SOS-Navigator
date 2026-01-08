@@ -44,7 +44,9 @@ class SensorFragment : Fragment(), View.OnClickListener {
 
     private val binding get() = _binding!!
     private val client = OkHttpClient()
-    private val SERVER_URL = BuildConfig.SERVER_URL
+    //private val SERVER_URL = BuildConfig.SERVER_URL
+    private val SERVER_URL = "http://10.0.2.2:3002"
+
     private val gson = Gson()
 
 
