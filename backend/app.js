@@ -1,4 +1,5 @@
 require("dotenv").config();
+require("./mqtt/mqttClient");
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
