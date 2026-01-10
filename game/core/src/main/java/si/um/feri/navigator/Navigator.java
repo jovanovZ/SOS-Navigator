@@ -5,9 +5,9 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.InputMultiplexer;
+import com.badlogic.gdx.assets.AssetManager;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
-import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
@@ -31,14 +31,13 @@ import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 
 import si.um.feri.navigator.OOP.Marker;
 import si.um.feri.navigator.OOP.MarkerType;
 import si.um.feri.navigator.OOP.Path;
 import si.um.feri.navigator.OOP.Station;
+import si.um.feri.navigator.assets.AssetsDescriptors;
 import si.um.feri.navigator.utils.BackendService;
 import si.um.feri.navigator.utils.Constants;
 import si.um.feri.navigator.utils.Geolocation;
@@ -103,28 +102,35 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
 
     private final ArrayList<ArrayList<Vector2>> backendPaths = new ArrayList<>();
 
+    private AssetManager assetManager;
+
 
 
     @Override
     public void create() {
         shapeRenderer = new ShapeRenderer();
         spriteBatch = new SpriteBatch();
-        font = new BitmapFont();
 
         camera = new OrthographicCamera();
         viewport = new FitViewport(Constants.MAP_WIDTH, Constants.MAP_HEIGHT, camera);
         viewport.apply();
+        assetManager = new AssetManager();
+        assetManager.load(AssetsDescriptors.UI_SKIN);
+        assetManager.load(AssetsDescriptors.UI_FONT);
+        assetManager.finishLoading();
+
+        skin = assetManager.get(AssetsDescriptors.UI_SKIN);
+        font = assetManager.get(AssetsDescriptors.UI_FONT);
 
         camera.zoom = 1.0f;
         camera.position.set(Constants.MAP_WIDTH / 2f, Constants.MAP_HEIGHT / 2f, 0);
         camera.update();
 
         uiStage = new Stage(new ScreenViewport());
-        skin = createBasicSkin();
 
         infoTable = new Table(skin);
         infoTable.setVisible(false);
-        infoTable.setBackground(skin.newDrawable("button-up", Color.DARK_GRAY));
+        infoTable.setBackground(skin.newDrawable("tooltip", Color.DARK_GRAY));
         uiStage.addActor(infoTable);
 
 
@@ -243,44 +249,6 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
         carAnim.setPlayMode(Animation.PlayMode.LOOP);
     }
 
-    private Skin createBasicSkin() {
-        Skin skin = new Skin();
-
-        BitmapFont buttonFont = new BitmapFont();
-        buttonFont.getData().setScale(1.5f);
-        skin.add("default-font", buttonFont);
-
-        Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
-
-        pixmap.setColor(0.3f, 0.3f, 0.3f, 1f);
-        pixmap.fill();
-        skin.add("button-up", new Texture(pixmap));
-
-        pixmap.setColor(0.4f, 0.4f, 0.4f, 1f);
-        pixmap.fill();
-        skin.add("button-over", new Texture(pixmap));
-
-        pixmap.setColor(0.2f, 0.2f, 0.2f, 1f);
-        pixmap.fill();
-        skin.add("button-down", new Texture(pixmap));
-
-        pixmap.dispose();
-
-        TextButton.TextButtonStyle buttonStyle = new TextButton.TextButtonStyle();
-        buttonStyle.up = skin.newDrawable("button-up");
-        buttonStyle.over = skin.newDrawable("button-over");
-        buttonStyle.down = skin.newDrawable("button-down");
-        buttonStyle.font = skin.getFont("default-font");
-        buttonStyle.fontColor = Color.WHITE;
-
-        Label.LabelStyle labelStyle = new Label.LabelStyle();
-        labelStyle.font = skin.getFont("default-font");
-        labelStyle.fontColor = Color.WHITE;
-        skin.add("default", labelStyle);
-
-        skin.add("default", buttonStyle);
-        return skin;
-    }
 
     @Override
     public void render() {
@@ -814,37 +782,50 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
     private void showMarkerInfo(Marker marker) {
         if (marker == null || marker.station == null) {
             infoTable.setVisible(false);
-            infoVisible = false;
             return;
         }
 
         infoTable.clear();
-        infoTable.defaults().pad(5);
-
+        infoTable.defaults().pad(4).left();
 
         Station s = marker.station;
 
-        infoTable.add("ID: " + s.id).row();
-        infoTable.add("Type: " + s.type).row();
-        infoTable.add("Permanent: " + s.isPermanent).row();
-        infoTable.add("Long: " + s.geolocation.lng).row();
-        infoTable.add("Lat: " + s.geolocation.lat).row();
+        Label.LabelStyle labelStyle = new Label.LabelStyle(font, Color.WHITE);
+        labelStyle.font.getData().setScale(0.5f);
 
+        //infoTable.add(new Label("ID: " + s.id, labelStyle)).row();
+        infoTable.add(new Label("Type: " + s.type, labelStyle)).row();
+        infoTable.add(new Label("Permanent: " + s.isPermanent, labelStyle)).row();
+        infoTable.add(new Label("Lon: " + s.geolocation.lng, labelStyle)).row();
+        infoTable.add(new Label("Lat: " + s.geolocation.lat, labelStyle)).row();
 
         Vector2 markerPos = MapRasterTiles.getPixelPosition(
-            marker.lokacija.lat, marker.lokacija.lng,
-            MapRasterTiles.TILE_SIZE, Constants.ZOOM,
-            beginTile.x, beginTile.y, Constants.MAP_HEIGHT
+            marker.lokacija.lat,
+            marker.lokacija.lng,
+            MapRasterTiles.TILE_SIZE,
+            Constants.ZOOM,
+            beginTile.x,
+            beginTile.y,
+            Constants.MAP_HEIGHT
         );
+
         tmp.set(markerPos.x, markerPos.y, 0);
-        camera.project(tmp, viewport.getScreenX(), viewport.getScreenY(),
-            viewport.getScreenWidth(), viewport.getScreenHeight());
+        camera.project(tmp,
+            viewport.getScreenX(),
+            viewport.getScreenY(),
+            viewport.getScreenWidth(),
+            viewport.getScreenHeight()
+        );
 
         infoTable.pack();
-        infoTable.setPosition(tmp.x - infoTable.getWidth() / 2f, tmp.y + 50);
+        infoTable.setPosition(
+            tmp.x - infoTable.getWidth() / 2f,
+            tmp.y + 60
+        );
+
         infoTable.setVisible(true);
-        infoVisible = true;
     }
+
 
     @Override public boolean touchDown(float x, float y, int pointer, int button) { return false; }
     @Override public boolean tap(float x, float y, int count, int button) { return false; }

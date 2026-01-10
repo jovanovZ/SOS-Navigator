@@ -4,8 +4,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const JWT_SECRET = process.env.JWT_SECRET || "my_secret";
 
-const { upload } = require("../config/cloudinary");
-const cloudinary = require("cloudinary").v2;
+
 
 const createToken = (userId) => {
   return jwt.sign({ id: userId }, JWT_SECRET, { expiresIn: "1d" });
@@ -104,7 +103,7 @@ exports.updateProfilePhoto = async (req, res) => {
       return res.status(400).json({ message: "Missing image or userId" });
     }
 
-    const result = await cloudinary.uploader.upload(req.file.path);
+    //const result = await cloudinary.uploader.upload(req.file.path);
 
     const user = await User.findByIdAndUpdate(
       userId,
