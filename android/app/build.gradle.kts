@@ -32,6 +32,11 @@ android {
             "SERVER_URL",
             "\"${localProperties["SERVER_URL"]}\""
         )
+        buildConfigField(
+            "String",
+            "MQTT_URL",
+            "\"${localProperties["MQTT_URL"]}\""
+        )
     }
     buildFeatures {
         viewBinding = true
@@ -75,7 +80,7 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
-
+    implementation("com.github.hannesa2:paho.mqtt.android:3.6.2")
     implementation("org.osmdroid:osmdroid-android:6.1.20")
     implementation("com.squareup.okhttp3:okhttp:4.10.0")
     implementation("com.google.code.gson:gson:2.10.1")
