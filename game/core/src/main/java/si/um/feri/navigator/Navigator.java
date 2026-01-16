@@ -6,7 +6,6 @@ import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.assets.AssetManager;
-import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
@@ -18,17 +17,10 @@ import com.badlogic.gdx.input.GestureDetector;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
-import com.badlogic.gdx.scenes.scene2d.ui.Label;
+import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
-import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
-import com.badlogic.gdx.scenes.scene2d.Stage;
-import com.badlogic.gdx.scenes.scene2d.ui.Skin;
-import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
-import com.badlogic.gdx.scenes.scene2d.ui.Table;
-import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
-import com.badlogic.gdx.scenes.scene2d.InputEvent;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,8 +28,10 @@ import java.util.List;
 import si.um.feri.navigator.OOP.Marker;
 import si.um.feri.navigator.OOP.MarkerType;
 import si.um.feri.navigator.OOP.Path;
-import si.um.feri.navigator.OOP.Station;
 import si.um.feri.navigator.assets.AssetsDescriptors;
+import si.um.feri.navigator.logic.NavigationLogic;
+import si.um.feri.navigator.render.MapRenderer;
+import si.um.feri.navigator.ui.NavigatorUI;
 import si.um.feri.navigator.utils.BackendService;
 import si.um.feri.navigator.utils.Constants;
 import si.um.feri.navigator.utils.Geolocation;
@@ -57,12 +51,9 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
     private SpriteBatch spriteBatch;
     private BitmapFont font;
 
-    private Stage uiStage;
-    private Skin skin;
-
     private OrthographicCamera camera;
     private Viewport viewport;
-    private Vector3 tmp = new Vector3();
+    private final Vector3 tmp = new Vector3();
 
     private ZoomXY beginTile;
     private ZoomXY[] tileZone;
@@ -92,19 +83,16 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
     private boolean carConstantScreenSize = true;
 
     private final List<Texture> carFrameTextures = new ArrayList<>();
-
     private final ArrayList<Marker> MARKERS = new ArrayList<>();
 
     private BackendService backendService;
-
-    private Table infoTable;
-    private boolean infoVisible = false;
-
     private final ArrayList<ArrayList<Vector2>> backendPaths = new ArrayList<>();
 
     private AssetManager assetManager;
 
-
+    private final NavigationLogic logic = new NavigationLogic();
+    private final NavigatorUI ui = new NavigatorUI();
+    private final MapRenderer renderer = new MapRenderer();
 
     @Override
     public void create() {
@@ -114,45 +102,23 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
         camera = new OrthographicCamera();
         viewport = new FitViewport(Constants.MAP_WIDTH, Constants.MAP_HEIGHT, camera);
         viewport.apply();
+
         assetManager = new AssetManager();
         assetManager.load(AssetsDescriptors.UI_SKIN);
         assetManager.load(AssetsDescriptors.UI_FONT);
         assetManager.finishLoading();
 
-        skin = assetManager.get(AssetsDescriptors.UI_SKIN);
+        Skin skin = assetManager.get(AssetsDescriptors.UI_SKIN);
         font = assetManager.get(AssetsDescriptors.UI_FONT);
 
         camera.zoom = 1.0f;
         camera.position.set(Constants.MAP_WIDTH / 2f, Constants.MAP_HEIGHT / 2f, 0);
         camera.update();
 
-        uiStage = new Stage(new ScreenViewport());
-
-        infoTable = new Table(skin);
-        infoTable.setVisible(false);
-        infoTable.setBackground(skin.newDrawable("tooltip", Color.DARK_GRAY));
-        uiStage.addActor(infoTable);
-
-
-        TextButton button = new TextButton("Najdi 5 najbližjih", skin);
-        button.addListener(new ClickListener() {
-            @Override
-            public void clicked(InputEvent event, float x, float y) {
-                findNearestStations();
-                Gdx.app.log("TUKAJ", "TUKAJ");
-            }
-        });
-
-        Table table = new Table();
-        table.setFillParent(true);
-        table.bottom().right();
-        table.pad(20);
-        table.add(button).width(200).height(50);
-        uiStage.addActor(table);
+        ui.init(skin, font, this::findNearestStations);
 
         InputMultiplexer multiplexer = new InputMultiplexer();
-        multiplexer.addProcessor(uiStage);
-
+        multiplexer.addProcessor(ui.getStage());
         multiplexer.addProcessor(new InputAdapter() {
             @Override
             public boolean scrolled(float amountX, float amountY) {
@@ -160,7 +126,6 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
                 return true;
             }
         });
-
         multiplexer.addProcessor(new GestureDetector(this));
         Gdx.input.setInputProcessor(multiplexer);
 
@@ -178,20 +143,13 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
 
         loadCarAnimation();
 
-
-        // BACKEND KLIC
         backendService = new BackendService();
-        backendService.fetchMarkers(new BackendService.MarkerCallback() {
-            @Override
-            public void onSuccess(ArrayList<Marker> markers) {
-                MARKERS.addAll(markers);
-            }
 
-            @Override
-            public void onError(Throwable t) {
-                Gdx.app.error("Backend", "Failed to load markers", t);
-            }
+        backendService.fetchMarkers(new BackendService.MarkerCallback() {
+            @Override public void onSuccess(ArrayList<Marker> markers) { MARKERS.addAll(markers); }
+            @Override public void onError(Throwable t) { Gdx.app.error("Backend", "Failed to load markers", t); }
         });
+
         backendService.fetchPaths(new BackendService.PathCallback() {
             @Override
             public void onSuccess(ArrayList<Path> paths) {
@@ -199,20 +157,10 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
 
                 for (Path p : paths) {
                     ArrayList<Vector2> polyline = new ArrayList<>();
-
                     for (Geolocation g : p.points) {
-                        Vector2 px = MapRasterTiles.getPixelPosition(
-                            g.lat,
-                            g.lng,
-                            MapRasterTiles.TILE_SIZE,
-                            Constants.ZOOM,
-                            beginTile.x,
-                            beginTile.y,
-                            Constants.MAP_HEIGHT
-                        );
+                        Vector2 px = MapRasterTiles.getPixelPosition(g.lat, g.lng, MapRasterTiles.TILE_SIZE, Constants.ZOOM, beginTile.x, beginTile.y, Constants.MAP_HEIGHT);
                         polyline.add(px);
                     }
-
                     backendPaths.add(polyline);
                 }
 
@@ -220,16 +168,11 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
                     pathPoints.clear();
                     pathPoints.addAll(backendPaths.get(0));
                     showPaths = false;
-                    //
                 }
             }
 
-            @Override
-            public void onError(Throwable t) {
-                Gdx.app.error("Backend", "Failed to fetch paths", t);
-            }
+            @Override public void onError(Throwable t) { Gdx.app.error("Backend", "Failed to fetch paths", t); }
         });
-
     }
 
     private void loadCarAnimation() {
@@ -249,7 +192,6 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
         carAnim.setPlayMode(Animation.PlayMode.LOOP);
     }
 
-
     @Override
     public void render() {
         ScreenUtils.clear(0.1f, 0.1f, 0.15f, 1);
@@ -265,21 +207,21 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
         viewport.apply();
 
         drawTiles();
-        //drawPath();
         drawPaths();
         drawCar();
-        drawMarkers();
+        drawStations();
         drawLoadingOverlay();
 
-        uiStage.act();
-        uiStage.draw();
+        ui.actAndDraw();
+
         Marker hoverMarker = getMarkerAtScreen(Gdx.input.getX(), Gdx.input.getY());
         if (hoverMarker != null && hoverMarker.type == MarkerType.POSTAJA) {
             showMarkerInfo(hoverMarker);
         } else {
-            infoTable.setVisible(false);
+            ui.hideInfo();
         }
     }
+
 
     private void zoomTowardsMouse(float amountY) {
         tmp.set(Gdx.input.getX(), Gdx.input.getY(), 0);
@@ -303,184 +245,23 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
     }
 
     private void drawTiles() {
-        spriteBatch.setProjectionMatrix(camera.combined);
-        spriteBatch.begin();
-
-        int idx = 0;
-        for (int row = 0; row < Constants.NUM_TILES_Y; row++) {
-            for (int col = 0; col < Constants.NUM_TILES_X; col++) {
-                ZoomXY txy = tileZone[idx++];
-                Texture t = MapRasterTiles.getRasterTileCachedAsync(txy.zoom, txy.x, txy.y);
-                if (t != null) {
-                    float x = col * MapRasterTiles.TILE_SIZE;
-                    float y = (Constants.NUM_TILES_Y - 1 - row) * MapRasterTiles.TILE_SIZE;
-                    spriteBatch.draw(t, x, y, MapRasterTiles.TILE_SIZE, MapRasterTiles.TILE_SIZE);
-                }
-            }
-        }
-        spriteBatch.end();
+        renderer.drawTiles(spriteBatch, camera, tileZone);
     }
 
     private void drawCar() {
-        if (carAnim == null) return;
-        if (!carVisible) return;
-
-        spriteBatch.setProjectionMatrix(camera.combined);
-        spriteBatch.begin();
-
-
-        TextureRegion frame = carAnim.getKeyFrame(carStateTime, true);
-
-        float w = carSpriteW;
-        float h = carSpriteH;
-
-        if (carConstantScreenSize) {
-            w *= camera.zoom;
-            h *= camera.zoom;
-        }
-
-        float x = carPos.x - w / 2f;
-        float y = carPos.y - h / 2f;
-
-        spriteBatch.draw(
-            frame,
-            x, y,
-            w / 2f, h / 2f,
-            w, h,
-            1f, 1f,
-            carRotationDeg
-        );
-
-        spriteBatch.end();
+        renderer.drawCar(spriteBatch, camera, carAnim, carVisible, carStateTime, carSpriteW, carSpriteH, carConstantScreenSize, carPos, carRotationDeg);
     }
-
-    private void drawPath() {
-        if (!showPath || pathPoints.size() < 2) return;
-
-        shapeRenderer.setProjectionMatrix(camera.combined);
-
-        float lineWidth = 150f * camera.zoom;
-        float borderWidth = 200f * camera.zoom;
-
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-        shapeRenderer.setColor(Color.WHITE);
-        for (int i = 0; i < pathPoints.size() - 1; i++) {
-            Vector2 p1 = pathPoints.get(i);
-            Vector2 p2 = pathPoints.get(i + 1);
-            shapeRenderer.rectLine(p1.x, p1.y, p2.x, p2.y, borderWidth);
-        }
-        for (Vector2 p : pathPoints) {
-            shapeRenderer.circle(p.x, p.y, borderWidth / 2f);
-        }
-        shapeRenderer.end();
-
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-        shapeRenderer.setColor(Color.GREEN);
-        for (int i = 0; i < pathPoints.size() - 1; i++) {
-            Vector2 p1 = pathPoints.get(i);
-            Vector2 p2 = pathPoints.get(i + 1);
-            shapeRenderer.rectLine(p1.x, p1.y, p2.x, p2.y, lineWidth);
-        }
-        for (Vector2 p : pathPoints) {
-            shapeRenderer.circle(p.x, p.y, lineWidth / 2f);
-        }
-        shapeRenderer.end();
-    }
-
 
     private void drawPaths() {
-        if (!showPaths || backendPaths.isEmpty()) return;
-
-        shapeRenderer.setProjectionMatrix(camera.combined);
-
-        float lineWidth = 150f * camera.zoom;
-        float borderWidth = 200f * camera.zoom;
-
-        for (ArrayList<Vector2> path : backendPaths) {
-            if (path.size() < 2) continue;
-
-            // BEL ROB
-            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-            shapeRenderer.setColor(Color.WHITE);
-            for (int i = 0; i < path.size() - 1; i++) {
-                Vector2 p1 = path.get(i);
-                Vector2 p2 = path.get(i + 1);
-                shapeRenderer.rectLine(p1.x, p1.y, p2.x, p2.y, borderWidth);
-            }
-            for (Vector2 p : path) {
-                shapeRenderer.circle(p.x, p.y, borderWidth / 2f);
-            }
-            shapeRenderer.end();
-
-            // BARVNA POT
-            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-            shapeRenderer.setColor(Color.GREEN);
-            for (int i = 0; i < path.size() - 1; i++) {
-                Vector2 p1 = path.get(i);
-                Vector2 p2 = path.get(i + 1);
-                shapeRenderer.rectLine(p1.x, p1.y, p2.x, p2.y, lineWidth);
-            }
-            for (Vector2 p : path) {
-                shapeRenderer.circle(p.x, p.y, lineWidth / 2f);
-            }
-            shapeRenderer.end();
-        }
+        renderer.drawPaths(shapeRenderer, camera, showPaths, backendPaths);
     }
 
+    private void drawStations() {
+        renderer.drawStations(spriteBatch, camera, MARKERS, beginTile, ui.isPolicijaEnabled(), ui.isGasilciEnabled(), ui.isBolnicaEnabled());
+    }
 
     private void drawLoadingOverlay() {
-        int total = Constants.NUM_TILES_X * Constants.NUM_TILES_Y;
-
-        int loaded = 0;
-        for (ZoomXY txy : tileZone) {
-            Texture t = MapRasterTiles.getRasterTileCachedAsync(txy.zoom, txy.x, txy.y);
-            if (t != null) loaded++;
-        }
-        if (loaded >= total) return;
-
-        spriteBatch.setProjectionMatrix(camera.combined);
-        spriteBatch.begin();
-        font.setColor(Color.WHITE);
-
-        float scale = camera.zoom * 40f;
-        font.getData().setScale(scale);
-
-        float left = camera.position.x - (viewport.getWorldWidth() * camera.zoom) / 2f + 500 * camera.zoom;
-        float top = camera.position.y + (viewport.getWorldHeight() * camera.zoom) / 2f - 500 * camera.zoom;
-
-        font.draw(spriteBatch, "Loading: " + loaded + "/" + total, left, top);
-        spriteBatch.end();
-    }
-
-    private void drawMarkers() {
-        spriteBatch.setProjectionMatrix(camera.combined);
-        spriteBatch.begin();
-
-        float iconSize = 800f * camera.zoom;
-
-        for (Marker marker : MARKERS) {
-            Vector2 pos = MapRasterTiles.getPixelPosition(
-                marker.lokacija.lat,
-                marker.lokacija.lng,
-                MapRasterTiles.TILE_SIZE,
-                Constants.ZOOM,
-                beginTile.x,
-                beginTile.y,
-                Constants.MAP_HEIGHT
-            );
-
-            if (marker.icon != null) {
-                spriteBatch.draw(
-                    marker.icon,
-                    pos.x - iconSize / 2f,
-                    pos.y - iconSize / 2f,
-                    iconSize,
-                    iconSize
-                );
-            }
-        }
-
-        spriteBatch.end();
+        renderer.drawLoadingOverlay(spriteBatch, camera, font, tileZone, viewport.getWorldWidth(), viewport.getWorldHeight());
     }
 
     private void startCarAlongPath() {
@@ -501,12 +282,7 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
     }
 
     private float computePathLengthPx() {
-        if (pathPoints.size() < 2) return 0f;
-        float sum = 0f;
-        for (int i = 0; i < pathPoints.size() - 1; i++) {
-            sum += pathPoints.get(i).dst(pathPoints.get(i + 1));
-        }
-        return sum;
+        return logic.computePathLengthPx(pathPoints);
     }
 
     private void updateCar(float dt) {
@@ -608,21 +384,14 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
                 break;
             }
         }
-        if (nesreca == null) {
-            return;
-        }
-        Gdx.app.log("NESRECA", nesreca.toString());
+        if (nesreca == null) return;
 
         ArrayList<Marker> postaje = new ArrayList<>();
         for (Marker m : MARKERS) {
-            if (m.type == MarkerType.POSTAJA) {
-                postaje.add(m);
-            }
+            if (m.type == MarkerType.POSTAJA) postaje.add(m);
         }
 
-        if (postaje.isEmpty()) {
-            return;
-        }
+        if (postaje.isEmpty()) return;
 
         ArrayList<Double> razdalje = new ArrayList<>();
         for (Marker p : postaje) {
@@ -659,8 +428,6 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
     }
 
     private void generatePath(Marker from, Marker to) {
-        pathPoints.clear();
-
         Vector2 startPos = MapRasterTiles.getPixelPosition(
             from.lokacija.lat, from.lokacija.lng,
             MapRasterTiles.TILE_SIZE, Constants.ZOOM,
@@ -673,62 +440,11 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
             beginTile.x, beginTile.y, Constants.MAP_HEIGHT
         );
 
-        int numPoints = 120;
-
-        float dx = endPos.x - startPos.x;
-        float dy = endPos.y - startPos.y;
-        float length = (float) Math.sqrt(dx * dx + dy * dy);
-
-        if (length < 0.0001f) {
-            pathPoints.add(new Vector2(startPos));
-            pathPoints.add(new Vector2(endPos));
-            return;
-        }
-
-        float perpX = -dy / length;
-        float perpY = dx / length;
-
-        float waveAmplitude = length * 0.08f;
-
-        float seed1 = MathUtils.random(0f, 1000f);
-        float seed2 = MathUtils.random(0f, 1000f);
-
-        for (int i = 0; i <= numPoints; i++) {
-            float t = (float) i / numPoints;
-
-            float baseX = startPos.x + dx * t;
-            float baseY = startPos.y + dy * t;
-
-            float envelope = (float) Math.sin(t * Math.PI);
-
-            float wave1 = (float) Math.sin(t * Math.PI * 4 + seed1) * waveAmplitude * 0.6f;
-            float wave2 = (float) Math.sin(t * Math.PI * 7 + seed2) * waveAmplitude * 0.3f;
-            float wave3 = (float) Math.sin(t * Math.PI * 13 + seed1 * 0.5f) * waveAmplitude * 0.15f;
-
-            float totalOffset = (wave1 + wave2 + wave3) * envelope;
-            float noise = MathUtils.random(-waveAmplitude * 0.05f, waveAmplitude * 0.05f) * envelope;
-            totalOffset += noise;
-
-            float finalX = baseX + perpX * totalOffset;
-            float finalY = baseY + perpY * totalOffset;
-
-            pathPoints.add(new Vector2(finalX, finalY));
-        }
+        logic.generatePath(pathPoints, startPos, endPos);
     }
 
     private double haversineKm(double lat1, double lon1, double lat2, double lon2) {
-        final double R = 6371.0;
-
-        double dLat = Math.toRadians(lat2 - lat1);
-        double dLon = Math.toRadians(lon2 - lon1);
-
-        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
-            + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
-            * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-
-        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-        return R * c;
+        return logic.haversineKm(lat1, lon1, lat2, lon2);
     }
 
     private Marker getMarkerAtScreen(float screenX, float screenY) {
@@ -746,58 +462,16 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
                 beginTile.x, beginTile.y, Constants.MAP_HEIGHT
             );
 
-            if (clickPos.dst(markerPos) <= clickRadius) {
-                return m;
-            }
+            if (clickPos.dst(markerPos) <= clickRadius) return m;
         }
         return null;
     }
 
-
-    @Override
-    public void resize(int width, int height) {
-        viewport.update(width, height, false);
-        uiStage.getViewport().update(width, height, true);
-    }
-
-    @Override
-    public void dispose() {
-        shapeRenderer.dispose();
-        spriteBatch.dispose();
-        font.dispose();
-        uiStage.dispose();
-        skin.dispose();
-
-        for (Texture t : carFrameTextures) {
-            t.dispose();
-        }
-        for (Marker m : MARKERS) {
-            if (m.icon != null) {
-                m.icon.dispose();
-            }
-        }
-        carFrameTextures.clear();
-    }
-
     private void showMarkerInfo(Marker marker) {
         if (marker == null || marker.station == null) {
-            infoTable.setVisible(false);
+            ui.hideInfo();
             return;
         }
-
-        infoTable.clear();
-        infoTable.defaults().pad(4).left();
-
-        Station s = marker.station;
-
-        Label.LabelStyle labelStyle = new Label.LabelStyle(font, Color.WHITE);
-        labelStyle.font.getData().setScale(0.5f);
-
-        //infoTable.add(new Label("ID: " + s.id, labelStyle)).row();
-        infoTable.add(new Label("Type: " + s.type, labelStyle)).row();
-        infoTable.add(new Label("Permanent: " + s.isPermanent, labelStyle)).row();
-        infoTable.add(new Label("Lon: " + s.geolocation.lng, labelStyle)).row();
-        infoTable.add(new Label("Lat: " + s.geolocation.lat, labelStyle)).row();
 
         Vector2 markerPos = MapRasterTiles.getPixelPosition(
             marker.lokacija.lat,
@@ -809,24 +483,29 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
             Constants.MAP_HEIGHT
         );
 
-        tmp.set(markerPos.x, markerPos.y, 0);
-        camera.project(tmp,
-            viewport.getScreenX(),
-            viewport.getScreenY(),
-            viewport.getScreenWidth(),
-            viewport.getScreenHeight()
-        );
-
-        infoTable.pack();
-        infoTable.setPosition(
-            tmp.x - infoTable.getWidth() / 2f,
-            tmp.y + 60
-        );
-
-        infoTable.setVisible(true);
+        ui.showMarkerInfo(marker, camera, viewport, markerPos);
     }
 
+    @Override
+    public void resize(int width, int height) {
+        viewport.update(width, height, false);
+        ui.resize(width, height);
+    }
 
+    @Override
+    public void dispose() {
+        shapeRenderer.dispose();
+        spriteBatch.dispose();
+        font.dispose();
+
+        for (Texture t : carFrameTextures) t.dispose();
+        carFrameTextures.clear();
+
+        ui.dispose();
+        if (assetManager != null) assetManager.dispose();
+    }
+
+    // GestureDetector methods
     @Override public boolean touchDown(float x, float y, int pointer, int button) { return false; }
     @Override public boolean tap(float x, float y, int count, int button) { return false; }
     @Override public boolean longPress(float x, float y) { return false; }
