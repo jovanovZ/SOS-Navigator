@@ -100,6 +100,7 @@ exports.updateStation = async (req, res) => {
 exports.getAll = async (req, res) => {
   try {
     const stations = await Station.find().populate("locationId");
+    console.log(stations)
     return res.status(200).json(stations);
   } catch (error) {
     return res.status(500).json({ message: "Failed to get all stations" });
