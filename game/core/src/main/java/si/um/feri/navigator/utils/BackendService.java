@@ -51,6 +51,19 @@ public class BackendService {
         void onError(Throwable t);
     }
 
+    public interface StationUpdateCallback {
+        void onSuccess();
+        void onError(Throwable t);
+    }
+
+    public Texture getIconForType(String type) {
+        switch(type.toLowerCase()) {
+            case "gasilci": return fireIcon;
+            case "policijska": return policeIcon;
+            case "bolnica":
+            default: return hospitalIcon;
+        }
+    }
 
 
 
@@ -88,6 +101,11 @@ public class BackendService {
                     String id = obj.get("_id").getAsString();
                     boolean isPermanent = obj.get("isPermanent").getAsBoolean();
 
+                    String locationId = obj.getAsJsonObject("locationId").get("_id").getAsString();
+                    String region = obj.has("region") && !obj.get("region").isJsonNull()
+                        ? obj.get("region").getAsString()
+                        : "Podravska";
+
                     JsonArray coords = obj.getAsJsonObject("locationId")
                         .getAsJsonObject("geometry")
                         .getAsJsonArray("coordinates");
@@ -113,6 +131,8 @@ public class BackendService {
                             break;
                     }
                     Station station = new Station(type,lat,lng,id, isPermanent);
+                    station.locationId = locationId;
+                    station.region = region;
                     stations.add(station);
 
                     Marker marker = new Marker(MarkerType.POSTAJA, lat, lng, icon);
@@ -221,7 +241,6 @@ public class BackendService {
         }).start();
     }
 
-
     public void fetchTrafficPointById(String id, SingleTrafficCallback callback) {
         new Thread(() -> {
             try {
@@ -266,8 +285,6 @@ public class BackendService {
             }
         }).start();
     }
-
-
 
     public void fetchVehicles(VehicleCallback callback) {
         new Thread(() -> {
@@ -317,17 +334,12 @@ public class BackendService {
             }
         }).start();
     }
-
-
     public interface VehiclePathCallback {
         void onSuccess(ArrayList<Vector2> pathPoints);
         void onError(Throwable t);
     }
 
-    public void fetchGeoapifyRoute(double startLat, double startLng,
-                                   double endLat, double endLng,
-                                   ZoomXY beginTile,
-                                   VehiclePathCallback callback) {
+    public void fetchGeoapifyRoute(double startLat, double startLng, double endLat, double endLng, ZoomXY beginTile, VehiclePathCallback callback) {
         new Thread(() -> {
             try {
                 // Geoapify Routing API endpoint
@@ -384,7 +396,6 @@ public class BackendService {
                         }
                     }
                 } else if (geometryType.equals("LineString")) {
-                    // LineString: coordinates je array [[lng,lat], [lng,lat], ...]
                     for (int i = 0; i < coordinates.size(); i++) {
                         JsonArray coord = coordinates.get(i).getAsJsonArray();
                         double lng = coord.get(0).getAsDouble();
@@ -415,7 +426,79 @@ public class BackendService {
     }
 
 
+    public void updateStation(String stationId, String locationId, String typeOfStation, boolean isPermanent, String region, double newLat, double newLng, StationUpdateCallback callback) {
+        new Thread(() -> {
+            try {
+                String stationUri = Keys.SERVER_URL + "/api/station/update/" + stationId;
 
+                String stationJson = String.format(
+                    "{\"locationId\":\"%s\",\"typeOfStation\":\"%s\",\"isPermanent\":%b,\"region\":\"%s\"}",
+                    locationId, typeOfStation, isPermanent, region
+                );
 
+                HttpRequest stationReq = HttpRequest.newBuilder()
+                    .uri(URI.create(stationUri))
+                    .header("Content-Type", "application/json")
+                    .PUT(HttpRequest.BodyPublishers.ofString(stationJson))
+                    .build();
 
+                HttpResponse<String> stationRes = HttpClient.newHttpClient()
+                    .send(stationReq, HttpResponse.BodyHandlers.ofString());
+
+                if (stationRes.statusCode() != 200) {
+                    throw new Exception("Station update failed: HTTP " + stationRes.statusCode());
+                }
+
+                String locationUri = Keys.SERVER_URL + "/api/location/update" + locationId;
+
+                String locationJson = String.format(
+                    "{\"geometry\":{\"type\":\"Point\",\"coordinates\":[%f,%f]}}",
+                    newLng, newLat
+                );
+
+                HttpRequest locationReq = HttpRequest.newBuilder()
+                    .uri(URI.create(locationUri))
+                    .header("Content-Type", "application/json")
+                    .PUT(HttpRequest.BodyPublishers.ofString(locationJson))
+                    .build();
+
+                HttpResponse<String> locationRes = HttpClient.newHttpClient()
+                    .send(locationReq, HttpResponse.BodyHandlers.ofString());
+
+                if (locationRes.statusCode() != 200) {
+                    Gdx.app.log("Backend", "Location update warning: HTTP " + locationRes.statusCode());
+                }
+
+                Gdx.app.postRunnable(callback::onSuccess);
+
+            } catch (Exception e) {
+                Gdx.app.postRunnable(() -> callback.onError(e));
+            }
+        }).start();
+    }
+
+    public void deleteStation(String stationId, StationUpdateCallback callback) {
+        new Thread(() -> {
+            try {
+                String uri = Keys.SERVER_URL + "/api/station/delete/" + stationId;
+
+                HttpRequest req = HttpRequest.newBuilder()
+                    .uri(URI.create(uri))
+                    .DELETE()
+                    .build();
+
+                HttpResponse<String> res = HttpClient.newHttpClient()
+                    .send(req, HttpResponse.BodyHandlers.ofString());
+
+                if (res.statusCode() != 200) {
+                    throw new Exception("Delete failed: HTTP " + res.statusCode());
+                }
+
+                Gdx.app.postRunnable(callback::onSuccess);
+
+            } catch (Exception e) {
+                Gdx.app.postRunnable(() -> callback.onError(e));
+            }
+        }).start();
+    }
 }

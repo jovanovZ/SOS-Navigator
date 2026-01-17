@@ -106,13 +106,13 @@ public class MapRenderer {
             // POSTAJE – filtriranje po tipu
             if (marker.type == MarkerType.POSTAJA && marker.station != null) {
                 switch (marker.station.type) {
-                    case POLICIJSKA:
+                    case "policijska":
                         if (!showPolicija) continue;
                         break;
-                    case GASILSKA:
+                    case "gasilci":
                         if (!showGasilci) continue;
                         break;
-                    case BOLNICA:
+                    case "bolnica":
                         if (!showBolnice) continue;
                         break;
                 }
