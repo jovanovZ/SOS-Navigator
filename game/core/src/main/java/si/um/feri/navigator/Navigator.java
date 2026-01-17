@@ -28,6 +28,7 @@ import java.util.List;
 import si.um.feri.navigator.OOP.Marker;
 import si.um.feri.navigator.OOP.MarkerType;
 import si.um.feri.navigator.OOP.Path;
+import si.um.feri.navigator.OOP.TrafficPoint;
 import si.um.feri.navigator.assets.AssetsDescriptors;
 import si.um.feri.navigator.logic.NavigationLogic;
 import si.um.feri.navigator.render.MapRenderer;
@@ -84,6 +85,10 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
 
     private final List<Texture> carFrameTextures = new ArrayList<>();
     private final ArrayList<Marker> MARKERS = new ArrayList<>();
+
+    private final ArrayList<TrafficPoint> TRAFFIC_POINTS = new ArrayList<>();
+    private TrafficPoint lastHoveredTrafficPoint = null; // Cache za zadnji hoverani TrafficPoint
+
 
     private BackendService backendService;
     private final ArrayList<ArrayList<Vector2>> backendPaths = new ArrayList<>();
@@ -150,6 +155,18 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
             @Override public void onError(Throwable t) { Gdx.app.error("Backend", "Failed to load markers", t); }
         });
 
+        backendService.fetchTrafficPoints(new BackendService.TrafficCallback() {
+            @Override
+            public void onSuccess(ArrayList<TrafficPoint> trafficPoints) {
+                TRAFFIC_POINTS.addAll(trafficPoints);
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                Gdx.app.error("Backend", "Failed to load TRAFFIC", t);
+            }
+        });
+
         backendService.fetchPaths(new BackendService.PathCallback() {
             @Override
             public void onSuccess(ArrayList<Path> paths) {
@@ -210,16 +227,48 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
         drawPaths();
         drawCar();
         drawStations();
+        drawTraffic();
         drawLoadingOverlay();
 
         ui.actAndDraw();
 
-        Marker hoverMarker = getMarkerAtScreen(Gdx.input.getX(), Gdx.input.getY());
-        if (hoverMarker != null && hoverMarker.type == MarkerType.POSTAJA) {
-            showMarkerInfo(hoverMarker);
+        TrafficPoint hoverTrafficPoint = getTrafficPointAtScreen(Gdx.input.getX(), Gdx.input.getY());
+        if (hoverTrafficPoint != null) {
+            if (hoverTrafficPoint != lastHoveredTrafficPoint) {
+                lastHoveredTrafficPoint = hoverTrafficPoint;
+
+                if (hoverTrafficPoint.image == null && hoverTrafficPoint.imageBase64 != null) {
+                    hoverTrafficPoint.loadImageFromBase64();
+                } else if (hoverTrafficPoint.image == null && hoverTrafficPoint.imageBase64 == null) {
+                    backendService.fetchTrafficPointById(hoverTrafficPoint.id, new BackendService.SingleTrafficCallback() {
+                        @Override
+                        public void onSuccess(TrafficPoint loadedPoint) {
+                            hoverTrafficPoint.image = loadedPoint.image;
+                            hoverTrafficPoint.imageBase64 = loadedPoint.imageBase64;
+                            showTrafficPointInfo(hoverTrafficPoint);
+                        }
+
+                        @Override
+                        public void onError(Throwable t) {
+                            Gdx.app.error("Backend", "Failed to load traffic point details", t);
+                            showTrafficPointInfo(hoverTrafficPoint);
+                        }
+                    });
+                }
+            }
+
+            showTrafficPointInfo(hoverTrafficPoint);
         } else {
-            ui.hideInfo();
+            lastHoveredTrafficPoint = null;
+
+            Marker hoverMarker = getMarkerAtScreen(Gdx.input.getX(), Gdx.input.getY());
+            if (hoverMarker != null && hoverMarker.type == MarkerType.POSTAJA) {
+                showMarkerInfo(hoverMarker);
+            } else {
+                ui.hideInfo();
+            }
         }
+
     }
 
 
@@ -246,6 +295,10 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
 
     private void drawTiles() {
         renderer.drawTiles(spriteBatch, camera, tileZone);
+    }
+
+    private void drawTraffic(){
+        renderer.drawTrafficPoints(spriteBatch, camera, TRAFFIC_POINTS, beginTile, true);
     }
 
     private void drawCar() {
@@ -465,6 +518,45 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
             if (clickPos.dst(markerPos) <= clickRadius) return m;
         }
         return null;
+    }
+
+    private TrafficPoint getTrafficPointAtScreen(float screenX, float screenY) {
+        tmp.set(screenX, screenY, 0);
+        camera.unproject(tmp, viewport.getScreenX(), viewport.getScreenY(),
+            viewport.getScreenWidth(), viewport.getScreenHeight());
+        Vector2 clickPos = new Vector2(tmp.x, tmp.y);
+
+        float clickRadius = 800f * camera.zoom;
+
+        for (TrafficPoint tp : TRAFFIC_POINTS) {
+            Vector2 trafficPos = MapRasterTiles.getPixelPosition(
+                tp.geolocation.lat, tp.geolocation.lng,
+                MapRasterTiles.TILE_SIZE, Constants.ZOOM,
+                beginTile.x, beginTile.y, Constants.MAP_HEIGHT
+            );
+
+            if (clickPos.dst(trafficPos) <= clickRadius) return tp;
+        }
+        return null;
+    }
+
+    private void showTrafficPointInfo(TrafficPoint trafficPoint) {
+        if (trafficPoint == null) {
+            ui.hideInfo();
+            return;
+        }
+
+        Vector2 trafficPos = MapRasterTiles.getPixelPosition(
+            trafficPoint.geolocation.lat,
+            trafficPoint.geolocation.lng,
+            MapRasterTiles.TILE_SIZE,
+            Constants.ZOOM,
+            beginTile.x,
+            beginTile.y,
+            Constants.MAP_HEIGHT
+        );
+
+        ui.showTrafficPointInfo(trafficPoint, camera, viewport, trafficPos);
     }
 
     private void showMarkerInfo(Marker marker) {
