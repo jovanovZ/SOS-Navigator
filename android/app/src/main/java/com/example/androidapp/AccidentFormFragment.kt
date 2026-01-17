@@ -84,7 +84,7 @@ class AccidentFormFragment : Fragment() {
         requestLocationPermission.launch(Manifest.permission.ACCESS_FINE_LOCATION)
 
         binding.btnCancelAccident.setOnClickListener {
-            findNavController().popBackStack()
+            findNavController().navigate(R.id.action_accidentFormFragment_to_sensorListFragment)
         }
 
         binding.btnSaveAccident.setOnClickListener {

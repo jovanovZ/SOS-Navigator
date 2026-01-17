@@ -31,4 +31,11 @@
     <string name="traffic_status_text">Traffic status: %1$s</string>
     <string name="num_of_cars_text">Number of cars: %1$d</string>
 
+    <string name="message_text">Write a message</string>
+    <string name="start_long">Starting longitude</string>
+    <string name="start_lat">Starting latitude</string>
+    <string name="end_lat">Ending latitude</string>
+    <string name="end_long">Ending longitude</string>
+    <string name="end_loc">Ending location</string>
+    <string name="start_loc">Start location</string>
 </resources>

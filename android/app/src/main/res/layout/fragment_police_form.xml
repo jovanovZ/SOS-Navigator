@@ -10,25 +10,28 @@
         android:id="@+id/tvPoliceFormTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
         android:text="Create police vehicle"
+        android:textColor="@color/md_theme_primary"
         android:textSize="24sp"
         android:textStyle="bold"
-        android:textColor="@color/md_theme_primary"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"/>
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
 
     <EditText
         android:id="@+id/etPoliceFormStartLocation"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:hint="Starting location"
-        android:textColorHint="?attr/colorOnSurfaceInverse"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="8dp"
+        android:hint="@string/start_loc"
         android:inputType="text"
-        app:layout_constraintTop_toBottomOf="@id/tvPoliceFormTitle"
-        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="16dp"/>
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tvPoliceFormTitle" />
 
 
     <EditText
@@ -39,9 +42,8 @@
         android:layout_marginTop="16dp"
         android:clickable="true"
         android:focusable="false"
-        android:hint="Starting latitude"
+        android:hint="@string/start_lat"
         android:inputType="text"
-        android:textColorHint="?attr/colorOnSurfaceInverse"
         app:layout_constraintHorizontal_weight="1"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/etPoliceFormStartLocation" />
@@ -54,26 +56,25 @@
         android:layout_marginEnd="44dp"
         android:clickable="true"
         android:focusable="false"
-        android:hint="Starting longitude"
+        android:hint="@string/start_long"
         android:inputType="text"
-        android:textColorHint="?attr/colorOnSurfaceInverse"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_weight="1"
         app:layout_constraintTop_toBottomOf="@+id/etPoliceFormStartLocation" />
-
 
 
     <EditText
         android:id="@+id/etPoliceFormEndLocation"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:hint="Ending location"
-        android:textColorHint="?attr/colorOnSurfaceInverse"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="8dp"
+        android:hint="@string/end_loc"
         android:inputType="text"
-        app:layout_constraintTop_toBottomOf="@id/etPoliceFormStartLatitude"
-        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginTop="16dp"/>
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/etPoliceFormStartLatitude" />
 
 
     <EditText
@@ -84,9 +85,8 @@
         android:layout_marginTop="16dp"
         android:clickable="true"
         android:focusable="false"
-        android:hint="Ending latitude"
+        android:hint="@string/end_lat"
         android:inputType="text"
-        android:textColorHint="?attr/colorOnSurfaceInverse"
         app:layout_constraintHorizontal_weight="1"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/etPoliceFormEndLocation" />
@@ -99,27 +99,25 @@
         android:layout_marginEnd="44dp"
         android:clickable="true"
         android:focusable="false"
-        android:hint="Ending longitude"
+        android:hint="@string/end_long"
         android:inputType="text"
-        android:textColorHint="?attr/colorOnSurfaceInverse"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_weight="1"
         app:layout_constraintTop_toBottomOf="@+id/etPoliceFormEndLocation" />
-
 
 
     <TextView
         android:id="@+id/tvPoliceAcceleration"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
         android:layout_marginTop="16dp"
-
         android:text="Acceleration"
+        android:textColor="@color/md_theme_primary"
         android:textSize="18sp"
         android:textStyle="bold"
-        android:textColor="@color/md_theme_primary"
-        app:layout_constraintTop_toBottomOf="@id/etPoliceFormEndLatitude"
-        app:layout_constraintStart_toStartOf="parent"/>
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/etPoliceFormEndLatitude" />
 
 
     <EditText
@@ -128,12 +126,10 @@
         android:layout_height="0dp"
         android:layout_marginTop="16dp"
         android:layout_marginStart="44dp"
-
         android:clickable="true"
         android:focusable="true"
         android:hint="Acceleration Start"
         android:inputType="text"
-        android:textColorHint="?attr/colorOnSurfaceInverse"
         app:layout_constraintHorizontal_weight="1"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/tvPoliceAcceleration" />
@@ -148,7 +144,6 @@
         android:focusable="true"
         android:hint="Acceleration End"
         android:inputType="text"
-        android:textColorHint="?attr/colorOnSurfaceInverse"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_weight="1"
         app:layout_constraintTop_toBottomOf="@+id/tvPoliceAcceleration" />
@@ -156,24 +151,38 @@
 
     <org.osmdroid.views.MapView
         android:id="@+id/mapPickerPolice"
-        android:layout_width="411dp"
-        android:layout_height="321dp"
-        android:layout_marginBottom="20dp"
+        android:layout_width="410dp"
+        android:layout_height="287dp"
+        android:layout_marginBottom="4dp"
         app:layout_constraintBottom_toTopOf="@+id/btnSavePoliceVehicle"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/etPoliceFormRangeStartAcceleration"
-        app:layout_constraintVertical_bias="0.791" />
+        app:layout_constraintVertical_bias="1.0" >
+
+    </org.osmdroid.views.MapView>
+
+    <Button
+        android:id="@+id/btnBack"
+        style="@style/btn_error_bottom"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginBottom="4dp"
+        android:text="@string/btn_back"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
 
     <Button
         android:id="@+id/btnSavePoliceVehicle"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
+        android:layout_width="wrap_content"
+        android:layout_height="49dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="4dp"
         android:text="Save police vehicle"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        app:layout_constraintEnd_toEndOf="parent" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -4,11 +4,13 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/my_nav"
     app:startDestination="@id/mainFragment">
+
     <fragment
         android:id="@+id/mainFragment"
         android:name="com.example.androidapp.MainFragment"
         android:label="fragment_main"
         tools:layout="@layout/fragment_main">
+
         <action
             android:id="@+id/action_mainFragment_to_sensorFragment"
             app:destination="@id/sensorFragment"
@@ -40,12 +42,15 @@
             app:exitAnim="@android:anim/slide_out_right"
             app:popEnterAnim="@android:anim/slide_in_left"
             app:popExitAnim="@android:anim/slide_out_right" />
+
     </fragment>
+
     <fragment
         android:id="@+id/sensorFragment"
         android:name="com.example.androidapp.SensorFragment"
         android:label="fragment_sensor"
         tools:layout="@layout/fragment_sensor">
+
         <action
             android:id="@+id/action_sensorFragment_to_mainFragment"
             app:destination="@id/mainFragment"
@@ -53,6 +58,7 @@
             app:exitAnim="@android:anim/slide_out_right"
             app:popEnterAnim="@android:anim/slide_in_left"
             app:popExitAnim="@android:anim/slide_out_right" />
+
     </fragment>
 
     <fragment
@@ -60,6 +66,7 @@
         android:name="com.example.androidapp.CameraFragment"
         android:label="fragment_camera"
         tools:layout="@layout/fragment_camera">
+
         <action
             android:id="@+id/action_cameraFragment_to_mainFragment"
             app:destination="@id/mainFragment"
@@ -67,9 +74,15 @@
             app:exitAnim="@android:anim/slide_out_right"
             app:popEnterAnim="@android:anim/slide_in_left"
             app:popExitAnim="@android:anim/slide_out_right" />
+
         <action
             android:id="@+id/action_cameraFragment_to_imagePreviewFragment"
-            app:destination="@id/imagePreviewFragment" />
+            app:destination="@id/imagePreviewFragment"
+            app:enterAnim="@android:anim/slide_in_left"
+            app:exitAnim="@android:anim/slide_out_right"
+            app:popEnterAnim="@android:anim/slide_in_left"
+            app:popExitAnim="@android:anim/slide_out_right" />
+
     </fragment>
 
     <fragment
@@ -77,6 +90,7 @@
         android:name="com.example.androidapp.SensorListFragment"
         android:label="fragment_sensor_list"
         tools:layout="@layout/fragment_sensor_list">
+
         <action
             android:id="@+id/action_sensorListFragment_to_mainFragment"
             app:destination="@id/mainFragment"
@@ -92,11 +106,16 @@
             app:exitAnim="@android:anim/slide_out_right"
             app:popEnterAnim="@android:anim/slide_in_left"
             app:popExitAnim="@android:anim/slide_out_right" />
+
         <action
             android:id="@+id/action_sensorListFragment_to_accidentFormFragment"
-            app:destination="@id/accidentFormFragment" />
-    </fragment>
+            app:destination="@id/accidentFormFragment"
+            app:enterAnim="@android:anim/slide_in_left"
+            app:exitAnim="@android:anim/slide_out_right"
+            app:popEnterAnim="@android:anim/slide_in_left"
+            app:popExitAnim="@android:anim/slide_out_right" />
 
+    </fragment>
 
     <fragment
         android:id="@+id/policeFormFragment"
@@ -112,19 +131,23 @@
             app:popEnterAnim="@android:anim/slide_in_left"
             app:popExitAnim="@android:anim/slide_out_right" />
 
-
     </fragment>
 
     <fragment
         android:id="@+id/accidentFormFragment"
         android:name="com.example.androidapp.AccidentFormFragment"
         android:label="fragment_accident_form"
-        tools:layout="@layout/fragment_accident_form" >
+        tools:layout="@layout/fragment_accident_form">
+
         <action
             android:id="@+id/action_accidentFormFragment_to_sensorListFragment"
-            app:destination="@id/sensorListFragment" />
-    </fragment>
+            app:destination="@id/sensorListFragment"
+            app:enterAnim="@android:anim/slide_in_left"
+            app:exitAnim="@android:anim/slide_out_right"
+            app:popEnterAnim="@android:anim/slide_in_left"
+            app:popExitAnim="@android:anim/slide_out_right" />
 
+    </fragment>
 
     <fragment
         android:id="@+id/messageFragment"
@@ -133,23 +156,36 @@
         tools:layout="@layout/fragment_message">
 
         <action
-            android:id="@+id/action_mainFragment_to_messageFragment"
+            android:id="@+id/action_messageFragment_to_mainFragment"
             app:destination="@id/mainFragment"
             app:enterAnim="@android:anim/slide_in_left"
             app:exitAnim="@android:anim/slide_out_right"
             app:popEnterAnim="@android:anim/slide_in_left"
             app:popExitAnim="@android:anim/slide_out_right" />
+
     </fragment>
+
     <fragment
         android:id="@+id/imagePreviewFragment"
         android:name="com.example.androidapp.ImagePreviewFragment"
         android:label="fragment_image_preview"
-        tools:layout="@layout/fragment_image_preview" >
+        tools:layout="@layout/fragment_image_preview">
+
         <action
             android:id="@+id/action_imagePreviewFragment_to_cameraFragment"
-            app:destination="@id/cameraFragment" />
+            app:destination="@id/cameraFragment"
+            app:enterAnim="@android:anim/slide_in_left"
+            app:exitAnim="@android:anim/slide_out_right"
+            app:popEnterAnim="@android:anim/slide_in_left"
+            app:popExitAnim="@android:anim/slide_out_right" />
+
         <action
             android:id="@+id/action_imagePreviewFragment_to_mainFragment"
-            app:destination="@id/mainFragment" />
+            app:destination="@id/mainFragment"
+            app:enterAnim="@android:anim/slide_in_left"
+            app:exitAnim="@android:anim/slide_out_right"
+            app:popEnterAnim="@android:anim/slide_in_left"
+            app:popExitAnim="@android:anim/slide_out_right" />
+
     </fragment>
 </navigation>
