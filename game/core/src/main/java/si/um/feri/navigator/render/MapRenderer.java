@@ -16,6 +16,7 @@ import java.util.List;
 import si.um.feri.navigator.OOP.Marker;
 import si.um.feri.navigator.OOP.MarkerType;
 import si.um.feri.navigator.OOP.TrafficPoint;
+import si.um.feri.navigator.OOP.Vehicle;
 import si.um.feri.navigator.utils.Constants;
 import si.um.feri.navigator.utils.MapRasterTiles;
 import si.um.feri.navigator.utils.ZoomXY;
@@ -40,6 +41,26 @@ public class MapRenderer {
         }
 
         spriteBatch.end();
+    }
+
+
+    public void drawVehicles(ShapeRenderer shapeRenderer, OrthographicCamera camera, List<Vehicle> vehicles) {
+        if (vehicles == null || vehicles.isEmpty()) return;
+
+        shapeRenderer.setProjectionMatrix(camera.combined);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+
+        shapeRenderer.setColor(Color.BLUE);
+
+        float circleSize = 300f * camera.zoom;
+
+        for (Vehicle vehicle : vehicles) {
+            if (vehicle.pathPoints.isEmpty()) continue;
+
+            shapeRenderer.circle(vehicle.currentPos.x, vehicle.currentPos.y, circleSize);
+        }
+
+        shapeRenderer.end();
     }
 
     public void drawStations(

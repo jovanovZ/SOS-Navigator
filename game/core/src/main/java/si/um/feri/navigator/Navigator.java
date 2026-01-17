@@ -29,6 +29,7 @@ import si.um.feri.navigator.OOP.Marker;
 import si.um.feri.navigator.OOP.MarkerType;
 import si.um.feri.navigator.OOP.Path;
 import si.um.feri.navigator.OOP.TrafficPoint;
+import si.um.feri.navigator.OOP.Vehicle;
 import si.um.feri.navigator.assets.AssetsDescriptors;
 import si.um.feri.navigator.logic.NavigationLogic;
 import si.um.feri.navigator.render.MapRenderer;
@@ -88,6 +89,7 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
 
     private final ArrayList<TrafficPoint> TRAFFIC_POINTS = new ArrayList<>();
     private TrafficPoint lastHoveredTrafficPoint = null; // Cache za zadnji hoverani TrafficPoint
+    private final ArrayList<Vehicle> VEHICLES = new ArrayList<>();
 
 
     private BackendService backendService;
@@ -167,6 +169,47 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
             }
         });
 
+        backendService.fetchVehicles(new BackendService.VehicleCallback() {
+            @Override
+            public void onSuccess(ArrayList<Vehicle> vehicles) {
+                VEHICLES.clear();
+                VEHICLES.addAll(vehicles);
+
+                for (Vehicle vehicle : VEHICLES) {
+                    backendService.fetchGeoapifyRoute(
+                        vehicle.locationStart.lat, vehicle.locationStart.lng,
+                        vehicle.locationEnd.lat, vehicle.locationEnd.lng,
+                        beginTile,
+                        new BackendService.VehiclePathCallback() {
+                            @Override
+                            public void onSuccess(ArrayList<Vector2> pathPoints) {
+                                vehicle.pathPoints = pathPoints;
+
+                                if (!vehicle.pathPoints.isEmpty()) {
+                                    vehicle.currentPos.set(vehicle.pathPoints.get(0));
+                                    vehicle.segIndex = 0;
+                                    vehicle.travelInSeg = 0f;
+                                    vehicle.isMoving = true;
+                                }
+                            }
+
+                            @Override
+                            public void onError(Throwable t) {
+                                Gdx.app.error("Vehicle", "Failed to load Geoapify route for " + vehicle.id + ", using fallback", t);
+
+                                generateVehiclePathFallback(vehicle);
+                            }
+                        }
+                    );
+                }
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                Gdx.app.error("Backend", "Failed to load vehicles", t);
+            }
+        });
+
         backendService.fetchPaths(new BackendService.PathCallback() {
             @Override
             public void onSuccess(ArrayList<Path> paths) {
@@ -220,6 +263,7 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
         camera.update();
 
         updateCar(dt);
+        updateVehicles(dt);
 
         viewport.apply();
 
@@ -228,6 +272,7 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
         drawCar();
         drawStations();
         drawTraffic();
+        drawVehicles();
         drawLoadingOverlay();
 
         ui.actAndDraw();
@@ -269,6 +314,16 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
             }
         }
 
+    }
+
+    private void updateVehicles(float dt) {
+        for (Vehicle vehicle : VEHICLES) {
+            vehicle.update(dt);
+        }
+    }
+
+    private void drawVehicles() {
+        renderer.drawVehicles(shapeRenderer, camera, VEHICLES);
     }
 
 
@@ -623,4 +678,28 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
 
     @Override public boolean pinch(Vector2 initialPointer1, Vector2 initialPointer2, Vector2 pointer1, Vector2 pointer2) { return false; }
     @Override public void pinchStop() { }
+
+    private void generateVehiclePathFallback(Vehicle vehicle) {
+        Vector2 startPos = MapRasterTiles.getPixelPosition(
+            vehicle.locationStart.lat, vehicle.locationStart.lng,
+            MapRasterTiles.TILE_SIZE, Constants.ZOOM,
+            beginTile.x, beginTile.y, Constants.MAP_HEIGHT
+        );
+
+        Vector2 endPos = MapRasterTiles.getPixelPosition(
+            vehicle.locationEnd.lat, vehicle.locationEnd.lng,
+            MapRasterTiles.TILE_SIZE, Constants.ZOOM,
+            beginTile.x, beginTile.y, Constants.MAP_HEIGHT
+        );
+
+        vehicle.pathPoints.clear();
+        logic.generatePath(vehicle.pathPoints, startPos, endPos);
+
+        if (!vehicle.pathPoints.isEmpty()) {
+            vehicle.currentPos.set(vehicle.pathPoints.get(0));
+            vehicle.segIndex = 0;
+            vehicle.travelInSeg = 0f;
+            vehicle.isMoving = true;
+        }
+    }
 }

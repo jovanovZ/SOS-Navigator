@@ -1,5 +1,6 @@
 package si.um.feri.navigator.utils;
 
+import com.badlogic.gdx.math.Vector2;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -7,9 +8,11 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
 
 import java.net.URI;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
 import si.um.feri.navigator.OOP.Marker;
@@ -18,6 +21,7 @@ import si.um.feri.navigator.OOP.Path;
 import si.um.feri.navigator.OOP.Station;
 import si.um.feri.navigator.OOP.StationType;
 import si.um.feri.navigator.OOP.TrafficPoint;
+import si.um.feri.navigator.OOP.Vehicle;
 
 public class BackendService {
 
@@ -39,6 +43,11 @@ public class BackendService {
 
     public interface SingleTrafficCallback {
         void onSuccess(TrafficPoint trafficPoint);
+        void onError(Throwable t);
+    }
+
+    public interface VehicleCallback {
+        void onSuccess(ArrayList<Vehicle> vehicles);
         void onError(Throwable t);
     }
 
@@ -257,6 +266,155 @@ public class BackendService {
             }
         }).start();
     }
+
+
+
+    public void fetchVehicles(VehicleCallback callback) {
+        new Thread(() -> {
+            try {
+                String uri = Keys.SERVER_URL + "/api/vehicle/all";
+                HttpRequest req = HttpRequest.newBuilder()
+                    .GET()
+                    .uri(URI.create(uri))
+                    .build();
+
+                HttpResponse<String> res =
+                    HttpClient.newHttpClient().send(req, HttpResponse.BodyHandlers.ofString());
+
+                JsonArray vehiclesJson = JsonParser.parseString(res.body()).getAsJsonArray();
+
+                ArrayList<Vehicle> vehicles = new ArrayList<>();
+
+                for (int i = 0; i < vehiclesJson.size(); i++) {
+                    JsonObject obj = vehiclesJson.get(i).getAsJsonObject();
+
+                    String id = obj.get("id").getAsString();
+                    String type = obj.get("type").getAsString();
+                    float acceleration = obj.get("acceleration").getAsFloat();
+
+                    JsonObject locationStart = obj.getAsJsonObject("locationStart");
+                    JsonArray startCoords = locationStart.getAsJsonArray("coordinates");
+                    double startLng = startCoords.get(0).getAsDouble();
+                    double startLat = startCoords.get(1).getAsDouble();
+
+                    JsonObject locationEnd = obj.getAsJsonObject("locationEnd");
+                    JsonArray endCoords = locationEnd.getAsJsonArray("coordinates");
+                    double endLng = endCoords.get(0).getAsDouble();
+                    double endLat = endCoords.get(1).getAsDouble();
+
+                    Vehicle vehicle = new Vehicle(id, type, acceleration,
+                        startLng, startLat, endLng, endLat);
+
+                    vehicle.icon = policeIcon;
+
+                    vehicles.add(vehicle);
+                }
+
+                Gdx.app.postRunnable(() -> callback.onSuccess(vehicles));
+
+            } catch (Exception e) {
+                Gdx.app.postRunnable(() -> callback.onError(e));
+            }
+        }).start();
+    }
+
+
+    public interface VehiclePathCallback {
+        void onSuccess(ArrayList<Vector2> pathPoints);
+        void onError(Throwable t);
+    }
+
+    public void fetchGeoapifyRoute(double startLat, double startLng,
+                                   double endLat, double endLng,
+                                   ZoomXY beginTile,
+                                   VehiclePathCallback callback) {
+        new Thread(() -> {
+            try {
+                // Geoapify Routing API endpoint
+                String waypoints = startLat + "," + startLng + "|" + endLat + "," + endLng;
+                String encodedWaypoints = URLEncoder.encode(waypoints, StandardCharsets.UTF_8);
+
+                String uri = "https://api.geoapify.com/v1/routing" +
+                    "?waypoints=" + encodedWaypoints +
+                    "&mode=drive" +
+                    "&apiKey=" + Keys.GEOAPIFY;
+
+                HttpRequest req = HttpRequest.newBuilder()
+                    .GET()
+                    .uri(URI.create(uri))
+                    .build();
+
+                HttpResponse<String> res =
+                    HttpClient.newHttpClient().send(req, HttpResponse.BodyHandlers.ofString());
+
+                JsonObject root = JsonParser.parseString(res.body()).getAsJsonObject();
+
+                if (root.has("error")) {
+                    throw new Exception("Geoapify API error: " + root.get("error").getAsString());
+                }
+
+                JsonArray features = root.getAsJsonArray("features");
+                if (features == null || features.size() == 0) {
+                    throw new Exception("No route found in response");
+                }
+
+                JsonObject feature = features.get(0).getAsJsonObject();
+                JsonObject geometry = feature.getAsJsonObject("geometry");
+
+                String geometryType = geometry.get("type").getAsString();
+                JsonArray coordinates = geometry.getAsJsonArray("coordinates");
+
+                ArrayList<Vector2> pathPoints = new ArrayList<>();
+
+                if (geometryType.equals("MultiLineString")) {
+                    if (coordinates.size() > 0) {
+                        JsonArray lineString = coordinates.get(0).getAsJsonArray();
+
+                        for (int i = 0; i < lineString.size(); i++) {
+                            JsonArray coord = lineString.get(i).getAsJsonArray();
+                            double lng = coord.get(0).getAsDouble();
+                            double lat = coord.get(1).getAsDouble();
+
+                            Vector2 pos = MapRasterTiles.getPixelPosition(
+                                lat, lng,
+                                MapRasterTiles.TILE_SIZE, Constants.ZOOM,
+                                beginTile.x, beginTile.y, Constants.MAP_HEIGHT
+                            );
+                            pathPoints.add(pos);
+                        }
+                    }
+                } else if (geometryType.equals("LineString")) {
+                    // LineString: coordinates je array [[lng,lat], [lng,lat], ...]
+                    for (int i = 0; i < coordinates.size(); i++) {
+                        JsonArray coord = coordinates.get(i).getAsJsonArray();
+                        double lng = coord.get(0).getAsDouble();
+                        double lat = coord.get(1).getAsDouble();
+
+                        Vector2 pos = MapRasterTiles.getPixelPosition(
+                            lat, lng,
+                            MapRasterTiles.TILE_SIZE, Constants.ZOOM,
+                            beginTile.x, beginTile.y, Constants.MAP_HEIGHT
+                        );
+                        pathPoints.add(pos);
+                    }
+                } else {
+                    throw new Exception("Unsupported geometry type: " + geometryType);
+                }
+
+                if (pathPoints.isEmpty()) {
+                    throw new Exception("No path points generated from route");
+                }
+
+                Gdx.app.postRunnable(() -> callback.onSuccess(pathPoints));
+
+            } catch (Exception e) {
+                Gdx.app.error("Geoapify", "Failed to fetch route: " + e.getMessage(), e);
+                Gdx.app.postRunnable(() -> callback.onError(e));
+            }
+        }).start();
+    }
+
+
 
 
 
