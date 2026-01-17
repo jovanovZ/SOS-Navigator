@@ -86,4 +86,7 @@
 /desktop/.DS_Store
 /desktop/.idea/
 
+## Dataset ##
+/yolo/dataset
+/yolo/Vehicle Detection.v1-v1.yolov8.zip
 **/.env
