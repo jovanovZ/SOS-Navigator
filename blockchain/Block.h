@@ -22,13 +22,13 @@ public:
 
     void mineBlock();
 
-    std::string calculateHash();
+    std::string calculateHash(long p_nonce) const;
 
-    bool isBlockValid(Block prevBlock, time_t currTime);
+    bool isBlockValid(Block prevBlock, time_t currTime) const;
 
     std::string toString();
 
-    std::string timeStampToString(const std::chrono::system_clock::time_point &time_point);
+    std::string timeStampToString(const std::chrono::system_clock::time_point &time_point) const;
 };
 
 

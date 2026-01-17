@@ -1,46 +1,78 @@
-#include <iostream>
 #include "BlockChain.h"
+#include <iostream>
+#include <omp.h>
+#include <string>
 
-int main() {
-    BlockChain bc;
+int main(int argc, char *argv[]) {
+  BlockChain bc;
 
-    std::cout << "=== Genesis block ===\n";
-    std::cout << bc.toString() << std::endl;
+  bool useMPI = false;
+  unsigned int threadCount = 0;
+  if (argc < 3) {
+    std::cerr << "Usage: " << argv[0] << " -t <thread_count> [-mpi]"
+              << std::endl;
+    return 1;
+  }
+  std::string arg1(argv[1]);
+  if (arg1 != "-t") {
+    std::cerr << "Error: first argument must be -t <thread_count>" << std::endl;
+    return 1;
+  }
 
-    const int NUM_BLOCKS = 5;
+  try {
+    threadCount = std::stoul(argv[2]);
+  } catch (...) {
+    std::cerr << "Error: invalid thread count" << std::endl;
+    return 1;
+  }
 
-    for (int i = 1; i <= NUM_BLOCKS; ++i) {
-        int difficulty = bc.getDifficulty();
+  if (threadCount == 0) {
+    std::cerr << "Error: thread count must be > 0" << std::endl;
+    return 1;
+  }
 
-        const Block& prevBlock = bc.getChain().back();
+  if (argc == 4) {
+    std::string arg3(argv[3]);
+    if (arg3 == "-mpi") {
+      useMPI = true;
+    } else {
+      std::cerr << "Error: unknown optional argument: " << arg3 << std::endl;
+      return 1;
+    }
+  } else if (argc > 4) {
+    std::cerr << "Error: too many arguments" << std::endl;
+    return 1;
+  }
 
-        Block newBlock(
-            i,
-            "Data for block " + std::to_string(i),
-            prevBlock.hash,
-            difficulty
-        );
+  omp_set_num_threads(threadCount);
+  const int BLOCK_COUNT = 50;
 
-        std::cout << "Mining block " << i
-                  << " (difficulty " << difficulty << ")...\n";
+  if (useMPI) {
 
-        newBlock.mineBlock();
+  } else {
 
-        if (bc.addBlock(newBlock)) {
-            std::cout << "Block " << i << " added successfully\n\n";
-        } else {
-            std::cout << "Block " << i << " rejected\n\n";
-        }
+    auto start = std::chrono::high_resolution_clock::now();
+    for (int i = 1; i <= BLOCK_COUNT; i++) {
+      const Block &prevBlock = bc.getChain().back();
+      //      int diff = bc.getDifficulty();
+      int diff = prevBlock.difficulty;
+      Block newBlock(i, "test" + std::to_string(i), prevBlock.hash, diff);
+      newBlock.mineBlock();
+      // dodamo blok v verigo
+      bc.addBlock(newBlock);
+
+      std::cout << "Mined block " << i << " | Hash: " << newBlock.hash
+                << " | Nonce: " << newBlock.nonce << " | Difficulty: " << diff
+                << std::endl;
     }
 
-    std::cout << "=== Final blockchain ===\n";
-    std::cout << bc.toString() << std::endl;
+    auto end = std::chrono::high_resolution_clock::now();
+    auto durationMs =
+        std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 
-    std::cout << "Chain valid: "
-              << (bc.isChainValid() ? "YES" : "NO") << std::endl;
-
-    std::cout << "Cumulative difficulty: "
-              << bc.getCumulativeDifficulty() << std::endl;
-
-    return 0;
+    std::cout << "Time to mine " << BLOCK_COUNT << " on " << threadCount
+              << " threads" << std::endl;
+    std::cout << durationMs.count() << "ms" << std::endl;
+  }
+  return 0;
 }
