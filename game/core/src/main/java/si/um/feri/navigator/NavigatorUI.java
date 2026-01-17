@@ -18,6 +18,7 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 
 import si.um.feri.navigator.OOP.Marker;
 import si.um.feri.navigator.OOP.Station;
+import si.um.feri.navigator.OOP.TrafficPoint;
 
 public class NavigatorUI {
 
@@ -178,6 +179,60 @@ public class NavigatorUI {
 
         infoTable.setVisible(true);
     }
+
+    public void showTrafficPointInfo(TrafficPoint trafficPoint, OrthographicCamera camera, Viewport viewport, Vector2 trafficPosWorld) {
+        if (trafficPoint == null || infoTable == null) {
+            hideInfo();
+            return;
+        }
+
+        infoTable.clear();
+        infoTable.defaults().pad(4).left();
+
+        Label.LabelStyle labelStyle = new Label.LabelStyle(font, Color.WHITE);
+
+        Label statusLabel = new Label("Status: " + trafficPoint.status, labelStyle);
+        statusLabel.setFontScale(0.5f);
+        infoTable.add(statusLabel).row();
+
+        Label vehicleCountLabel = new Label("Vehicle Count: " + trafficPoint.vehicleCount, labelStyle);
+        vehicleCountLabel.setFontScale(0.5f);
+        infoTable.add(vehicleCountLabel).row();
+
+        /*Label idLabel = new Label("ID: " + trafficPoint.id, labelStyle);
+        idLabel.setFontScale(0.5f);
+        infoTable.add(idLabel).row();*/
+
+        Label lonLabel = new Label("Lon: " + trafficPoint.geolocation.lng, labelStyle);
+        lonLabel.setFontScale(0.5f);
+        infoTable.add(lonLabel).row();
+
+        Label latLabel = new Label("Lat: " + trafficPoint.geolocation.lat, labelStyle);
+        latLabel.setFontScale(0.5f);
+        infoTable.add(latLabel).row();
+
+        if (trafficPoint.image != null) {
+            infoTable.add(trafficPoint.image)
+                .maxSize(200f, 75f)
+                .padTop(8)
+                .row();
+        } else {
+            Label loadingLabel = new Label("Loading image...", labelStyle);
+            loadingLabel.setFontScale(0.4f);
+            loadingLabel.setColor(Color.YELLOW);
+            infoTable.add(loadingLabel).padTop(8).row();
+        }
+
+
+        tmp.set(trafficPosWorld.x, trafficPosWorld.y, 0);
+        camera.project(tmp, viewport.getScreenX(), viewport.getScreenY(), viewport.getScreenWidth(), viewport.getScreenHeight());
+
+        infoTable.pack();
+        infoTable.setPosition(tmp.x - infoTable.getWidth() / 2f, tmp.y + 60);
+
+        infoTable.setVisible(true);
+    }
+
 
     public boolean isPolicijaEnabled() {
         return policijaEnabled;

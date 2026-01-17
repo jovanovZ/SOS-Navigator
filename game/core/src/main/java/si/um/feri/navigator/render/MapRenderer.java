@@ -15,6 +15,7 @@ import java.util.List;
 
 import si.um.feri.navigator.OOP.Marker;
 import si.um.feri.navigator.OOP.MarkerType;
+import si.um.feri.navigator.OOP.TrafficPoint;
 import si.um.feri.navigator.utils.Constants;
 import si.um.feri.navigator.utils.MapRasterTiles;
 import si.um.feri.navigator.utils.ZoomXY;
@@ -109,6 +110,47 @@ public class MapRenderer {
             if (marker.icon != null) {
                 spriteBatch.draw(
                     marker.icon,
+                    pos.x - iconSize / 2f,
+                    pos.y - iconSize / 2f,
+                    iconSize,
+                    iconSize
+                );
+            }
+        }
+
+        spriteBatch.end();
+    }
+
+    public void drawTrafficPoints(
+        SpriteBatch spriteBatch,
+        OrthographicCamera camera,
+        List<TrafficPoint> trafficPoints,
+        ZoomXY beginTile,
+        boolean showTraffic
+    ) {
+        if (!showTraffic || trafficPoints == null || trafficPoints.isEmpty()) {
+            return;
+        }
+
+        spriteBatch.setProjectionMatrix(camera.combined);
+        spriteBatch.begin();
+
+        float iconSize = 800f * camera.zoom;
+
+        for (TrafficPoint trafficPoint : trafficPoints) {
+            Vector2 pos = MapRasterTiles.getPixelPosition(
+                trafficPoint.geolocation.lat,
+                trafficPoint.geolocation.lng,
+                MapRasterTiles.TILE_SIZE,
+                Constants.ZOOM,
+                beginTile.x,
+                beginTile.y,
+                Constants.MAP_HEIGHT
+            );
+
+            if (trafficPoint.icon != null) {
+                spriteBatch.draw(
+                    trafficPoint.icon,
                     pos.x - iconSize / 2f,
                     pos.y - iconSize / 2f,
                     iconSize,

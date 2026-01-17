@@ -17,6 +17,7 @@ import si.um.feri.navigator.OOP.MarkerType;
 import si.um.feri.navigator.OOP.Path;
 import si.um.feri.navigator.OOP.Station;
 import si.um.feri.navigator.OOP.StationType;
+import si.um.feri.navigator.OOP.TrafficPoint;
 
 public class BackendService {
 
@@ -30,17 +31,32 @@ public class BackendService {
         void onError(Throwable t);
     }
 
+    public interface TrafficCallback {
+        void onSuccess(ArrayList<TrafficPoint> trafficPoints);
+        void onError(Throwable t);
+    }
+
+
+    public interface SingleTrafficCallback {
+        void onSuccess(TrafficPoint trafficPoint);
+        void onError(Throwable t);
+    }
+
+
+
 
     private final Texture hospitalIcon;
     private final Texture fireIcon;
     private final Texture policeIcon;
     private final Texture accidentIcon;
+    private final Texture trafficIcon;
 
     public BackendService() {
         hospitalIcon = new Texture(Gdx.files.internal("icons/hospital.png"));
         fireIcon = new Texture(Gdx.files.internal("icons/firestation.png"));
         policeIcon = new Texture(Gdx.files.internal("icons/policestation.png"));
         accidentIcon = new Texture(Gdx.files.internal("icons/accidentPlaceHolder.png"));
+        trafficIcon = new Texture(Gdx.files.internal("icons/traffic.png"));
 
     }
 
@@ -148,5 +164,100 @@ public class BackendService {
             }
         }).start();
     }
+
+    public void fetchTrafficPoints(TrafficCallback callback) {
+        new Thread(() -> {
+            try {
+                String uri = Keys.SERVER_URL + "/api/traffic/all";
+                HttpRequest req = HttpRequest.newBuilder()
+                    .GET()
+                    .uri(URI.create(uri))
+                    .build();
+
+                HttpResponse<String> res =
+                    HttpClient.newHttpClient().send(req, HttpResponse.BodyHandlers.ofString());
+
+                JsonObject root = JsonParser.parseString(res.body()).getAsJsonObject();
+                JsonArray trafficJson = root.getAsJsonArray("traffic");
+
+                ArrayList<TrafficPoint> trafficPoints = new ArrayList<>();
+
+                for (int i = 0; i < trafficJson.size(); i++) {
+                    JsonObject obj = trafficJson.get(i).getAsJsonObject();
+
+                    String id = obj.get("_id").getAsString();
+                    String status = obj.get("status").getAsString();
+                    int vehicleCount = obj.get("vehicle_count").getAsInt();
+
+                    JsonArray coords = obj.getAsJsonObject("geometry")
+                        .getAsJsonArray("coordinates");
+
+                    double lat = coords.get(0).getAsDouble();
+                    double lng = coords.get(1).getAsDouble();
+
+                    TrafficPoint trafficPoint = new TrafficPoint(
+                        status, lat, lng, id, vehicleCount, null
+                    );
+
+                    trafficPoint.icon = trafficIcon;
+
+                    trafficPoints.add(trafficPoint);
+                }
+
+                Gdx.app.postRunnable(() -> callback.onSuccess(trafficPoints));
+
+            } catch (Exception e) {
+                Gdx.app.postRunnable(() -> callback.onError(e));
+            }
+        }).start();
+    }
+
+
+    public void fetchTrafficPointById(String id, SingleTrafficCallback callback) {
+        new Thread(() -> {
+            try {
+                String uri = Keys.SERVER_URL + "/api/traffic/" + id;
+                HttpRequest req = HttpRequest.newBuilder()
+                    .GET()
+                    .uri(URI.create(uri))
+                    .build();
+
+                HttpResponse<String> res =
+                    HttpClient.newHttpClient().send(req, HttpResponse.BodyHandlers.ofString());
+
+                JsonObject root = JsonParser.parseString(res.body()).getAsJsonObject();
+                JsonObject trafficObj = root.getAsJsonObject("traffic");
+
+                String trafficId = trafficObj.get("_id").getAsString();
+                String status = trafficObj.get("status").getAsString();
+                int vehicleCount = trafficObj.get("vehicle_count").getAsInt();
+                String imageBase64 = trafficObj.has("image_base64") && !trafficObj.get("image_base64").isJsonNull()
+                    ? trafficObj.get("image_base64").getAsString()
+                    : null;
+
+                JsonArray coords = trafficObj.getAsJsonObject("geometry")
+                    .getAsJsonArray("coordinates");
+
+                double lat = coords.get(0).getAsDouble();
+                double lng = coords.get(1).getAsDouble();
+
+                TrafficPoint trafficPoint = new TrafficPoint(
+                    status, lat, lng, trafficId, vehicleCount, imageBase64
+                );
+
+                trafficPoint.icon = trafficIcon;
+
+                Gdx.app.postRunnable(() -> {
+                    trafficPoint.loadImageFromBase64();
+                    callback.onSuccess(trafficPoint);
+                });
+
+            } catch (Exception e) {
+                Gdx.app.postRunnable(() -> callback.onError(e));
+            }
+        }).start();
+    }
+
+
 
 }
