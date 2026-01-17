@@ -23,7 +23,12 @@
     <string name="btn_back_camera">Back</string>
     <string name="main_frag_camera_btn">Camera</string>
     <string name="tv_sos_vehicles">SOS-VEHICLES</string>
-    <string name="tv_acccidents">ACCCIDENTS</string>
+    <string name="tv_acccidents">ACCIDENTS</string>
     <string name="message_hint">Message</string>
     <string name="btn_send">Send</string>
+
+    <string name="loading_text">Analyzing image</string>
+    <string name="traffic_status_text">Traffic status: %1$s</string>
+    <string name="num_of_cars_text">Number of cars: %1$d</string>
+
 </resources>

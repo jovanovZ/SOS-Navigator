@@ -1,6 +1,5 @@
 package com.example.androidapp
 
-import android.content.Context
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
@@ -11,9 +10,6 @@ import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
-import androidx.camera.view.PreviewView
-import androidx.core.content.ContentProviderCompat
-import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.core.content.ContextCompat
 import androidx.navigation.fragment.findNavController
 import com.example.androidapp.databinding.FragmentCameraBinding
@@ -43,9 +39,6 @@ class CameraFragment : Fragment() {
             takePhoto()
         }
 
-        binding.btnAnalyze.setOnClickListener {
-            //TODO
-        }
         binding.btnBack.setOnClickListener {
             findNavController()
                 .navigate(R.id.action_cameraFragment_to_mainFragment)
@@ -106,6 +99,10 @@ class CameraFragment : Fragment() {
                     outputFileResults: ImageCapture.OutputFileResults
                 ) {
                     println("Saved: ${photoFile.absolutePath}")
+                    val bundle = Bundle().apply{
+                       putString("imagePath", photoFile.absolutePath)
+                    }
+                    findNavController().navigate(R.id.action_cameraFragment_to_imagePreviewFragment, bundle)
                 }
 
                 override fun onError(exception: ImageCaptureException) {
