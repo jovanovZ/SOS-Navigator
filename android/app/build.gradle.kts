@@ -37,6 +37,11 @@ android {
             "MQTT_URL",
             "\"${localProperties["MQTT_URL"]}\""
         )
+        buildConfigField(
+            "String",
+            "PYTHON_SERVER_URL",
+            "\"${localProperties["PYTHON_SERVER_URL"]}\""
+        )
     }
     buildFeatures {
         viewBinding = true
