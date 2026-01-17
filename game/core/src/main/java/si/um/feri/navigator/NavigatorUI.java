@@ -8,9 +8,11 @@ import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
+import com.badlogic.gdx.scenes.scene2d.ui.SelectBox;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
+import com.badlogic.gdx.scenes.scene2d.ui.TextField;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
@@ -37,6 +39,37 @@ public class NavigatorUI {
     private TextButton btnPolicija;
     private TextButton btnGasilci;
     private TextButton btnBolnica;
+
+    private SelectBox<String> typeSelectBox;
+    private TextField latField;
+    private TextField lngField;
+    private Label statusLabel;
+    private Marker currentMarker;
+
+
+    public interface StationDeleteListener {
+        void onDelete(Marker marker);
+    }
+    private StationDeleteListener deleteListener;
+
+    public void setDeleteListener(StationDeleteListener listener) {
+        this.deleteListener = listener;
+    }
+
+    public interface StationUpdateListener {
+        void onUpdate(Marker marker, String newType, double newLat, double newLng);
+    }
+    private StationUpdateListener updateListener;
+
+    public void setUpdateListener(StationUpdateListener listener) {
+        this.updateListener = listener;
+    }
+
+    public boolean isClickOnInfoTable(float screenX, float screenY) {
+        if (infoTable == null || !infoTable.isVisible()) return false;
+        Vector2 stageCoords = uiStage.screenToStageCoordinates(new Vector2(screenX, screenY));
+        return infoTable.hit(stageCoords.x - infoTable.getX(), stageCoords.y - infoTable.getY(), true) != null;
+    }
 
     public void init(Skin skin, BitmapFont font, Runnable onFindNearest) {
         this.skin = skin;
@@ -148,43 +181,121 @@ public class NavigatorUI {
             return;
         }
 
+        currentMarker = marker;
+        Station s = marker.station;
+
         infoTable.clear();
         infoTable.defaults().pad(4).left();
 
-        Station s = marker.station;
-
         Label.LabelStyle labelStyle = new Label.LabelStyle(font, Color.WHITE);
 
-        Label typeLabel = new Label("Type: " + s.type, labelStyle);
-        typeLabel.setFontScale(0.5f);
-        infoTable.add(typeLabel).row();
+        Label title = new Label(" Uredi postajo", labelStyle);
+        title.setFontScale(0.45f);
+        title.setColor(Color.YELLOW);
+        infoTable.add(title).colspan(2).center().padBottom(6).row();
 
-        Label permLabel = new Label("Permanent: " + s.isPermanent, labelStyle);
-        permLabel.setFontScale(0.5f);
-        infoTable.add(permLabel).row();
+        Label typeLabel = new Label("Tip:", labelStyle);
+        typeLabel.setFontScale(0.4f);
+        infoTable.add(typeLabel);
 
-        Label lonLabel = new Label("Lon: " + s.geolocation.lng, labelStyle);
-        lonLabel.setFontScale(0.5f);
-        infoTable.add(lonLabel).row();
+        typeSelectBox = new SelectBox<>(skin);
+        typeSelectBox.setItems("Policijska", "Bolnica", "Gasilci");
+        typeSelectBox.setSelected(s.type);
+        infoTable.add(typeSelectBox).width(140).height(35).row();
 
-        Label latLabel = new Label("Lat: " + s.geolocation.lat, labelStyle);
-        latLabel.setFontScale(0.5f);
-        infoTable.add(latLabel).row();
+        Label latLabel = new Label("Lat:", labelStyle);
+        latLabel.setFontScale(0.4f);
+        infoTable.add(latLabel);
+
+        latField = new TextField(String.format("%.5f", s.geolocation.lat), skin);
+        infoTable.add(latField).width(140).height(35).row();
+
+        Label lngLabel = new Label("Lng:", labelStyle);
+        lngLabel.setFontScale(0.4f);
+        infoTable.add(lngLabel);
+
+        lngField = new TextField(String.format("%.5f", s.geolocation.lng), skin);
+        infoTable.add(lngField).width(140).height(35).row();
+
+        Label permLabel = new Label("Stalna: " + (s.isPermanent ? "Da" : "Ne"), labelStyle);
+        permLabel.setFontScale(0.35f);
+        permLabel.setColor(Color.LIGHT_GRAY);
+        infoTable.add(permLabel).colspan(2).center().row();
+
+        statusLabel = new Label("", labelStyle);
+        statusLabel.setFontScale(0.35f);
+        infoTable.add(statusLabel).colspan(2).center().row();
+
+        TextButton saveBtn = new TextButton("Shrani", skin);
+        saveBtn.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                trySave();
+            }
+        });
+
+        TextButton deleteBtn = new TextButton("Izbrisi", skin);
+        deleteBtn.setColor(Color.RED);
+        deleteBtn.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                if (deleteListener != null && currentMarker != null) {
+                    statusLabel.setText("Brisem...");
+                    statusLabel.setColor(Color.YELLOW);
+                    deleteListener.onDelete(currentMarker);
+                }
+            }
+        });
+
+        Table btnTable = new Table();
+        btnTable.add(saveBtn).width(90).height(40).padRight(10);
+        btnTable.add(deleteBtn).width(90).height(40);
+
+        infoTable.add(btnTable).colspan(2).center().padTop(6).row();
 
         tmp.set(markerPosWorld.x, markerPosWorld.y, 0);
         camera.project(tmp, viewport.getScreenX(), viewport.getScreenY(), viewport.getScreenWidth(), viewport.getScreenHeight());
 
         infoTable.pack();
         infoTable.setPosition(tmp.x - infoTable.getWidth() / 2f, tmp.y + 60);
-
         infoTable.setVisible(true);
     }
 
+    private void trySave() {
+        if (currentMarker == null || updateListener == null) return;
+
+        try {
+            String newType = typeSelectBox.getSelected();
+            double newLat = Double.parseDouble(latField.getText().replace(",", "."));
+            double newLng = Double.parseDouble(lngField.getText().replace(",", "."));
+
+            if (newLat < -90 || newLat > 90 || newLng < -180 || newLng > 180) {
+                statusLabel.setText("Napacne koordinate!");
+                statusLabel.setColor(Color.RED);
+                return;
+            }
+
+            updateListener.onUpdate(currentMarker, newType, newLat, newLng);
+
+        } catch (NumberFormatException e) {
+            statusLabel.setText("Vnesite stevilke!");
+            statusLabel.setColor(Color.RED);
+        }
+    }
+
+    public void showStatus(String msg, Color color) {
+        if (statusLabel != null) {
+            statusLabel.setText(msg);
+            statusLabel.setColor(color);
+        }
+    }
     public void showTrafficPointInfo(TrafficPoint trafficPoint, OrthographicCamera camera, Viewport viewport, Vector2 trafficPosWorld) {
         if (trafficPoint == null || infoTable == null) {
             hideInfo();
             return;
         }
+
+        currentMarker = null;
 
         infoTable.clear();
         infoTable.defaults().pad(4).left();
@@ -231,6 +342,15 @@ public class NavigatorUI {
         infoTable.setPosition(tmp.x - infoTable.getWidth() / 2f, tmp.y + 60);
 
         infoTable.setVisible(true);
+    }
+    public boolean hasUIFocus() {
+        return uiStage.getKeyboardFocus() != null || uiStage.getScrollFocus() != null;
+    }
+
+    public boolean isClickOnUI(float screenX, float screenY) {
+        if (uiStage == null) return false;
+        Vector2 stageCoords = uiStage.screenToStageCoordinates(new Vector2(screenX, screenY));
+        return uiStage.hit(stageCoords.x, stageCoords.y, true) != null;
     }
 
 

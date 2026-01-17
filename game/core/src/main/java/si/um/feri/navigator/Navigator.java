@@ -6,6 +6,7 @@ import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.assets.AssetManager;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
@@ -28,6 +29,7 @@ import java.util.List;
 import si.um.feri.navigator.OOP.Marker;
 import si.um.feri.navigator.OOP.MarkerType;
 import si.um.feri.navigator.OOP.Path;
+import si.um.feri.navigator.OOP.Station;
 import si.um.feri.navigator.OOP.TrafficPoint;
 import si.um.feri.navigator.OOP.Vehicle;
 import si.um.feri.navigator.assets.AssetsDescriptors;
@@ -88,7 +90,7 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
     private final ArrayList<Marker> MARKERS = new ArrayList<>();
 
     private final ArrayList<TrafficPoint> TRAFFIC_POINTS = new ArrayList<>();
-    private TrafficPoint lastHoveredTrafficPoint = null; // Cache za zadnji hoverani TrafficPoint
+    private TrafficPoint lastHoveredTrafficPoint = null;
     private final ArrayList<Vehicle> VEHICLES = new ArrayList<>();
 
 
@@ -100,6 +102,8 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
     private final NavigationLogic logic = new NavigationLogic();
     private final NavigatorUI ui = new NavigatorUI();
     private final MapRenderer renderer = new MapRenderer();
+
+    private Marker selectedMarker = null;
 
     @Override
     public void create() {
@@ -123,6 +127,57 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
         camera.update();
 
         ui.init(skin, font, this::findNearestStations);
+
+        ui.setUpdateListener((marker, newType, newLat, newLng) -> {
+            Station s = marker.station;
+            if (s == null) return;
+
+            backendService.updateStation(
+                s.id,
+                s.locationId,
+                newType,
+                s.isPermanent,
+                s.region != null ? s.region : "Podravska",
+                newLat,
+                newLng,
+                new BackendService.StationUpdateCallback() {
+                    @Override
+                    public void onSuccess() {
+                        s.type = newType;
+                        s.geolocation.lat = newLat;
+                        s.geolocation.lng = newLng;
+
+                        marker.lokacija.lat = newLat;
+                        marker.lokacija.lng = newLng;
+                        marker.icon = backendService.getIconForType(newType);
+
+                        ui.showStatus("Shranjeno!", Color.GREEN);
+                    }
+
+                    @Override
+                    public void onError(Throwable t) {
+                        ui.showStatus("Napaka!", Color.RED);
+                    }
+                }
+            );
+        });
+
+        ui.setDeleteListener(marker -> {
+            Station s = marker.station;
+            if (s == null) return;
+            backendService.deleteStation(s.id, new BackendService.StationUpdateCallback() {
+                @Override
+                public void onSuccess() {
+                    MARKERS.remove(marker);
+                    selectedMarker = null;
+                    ui.hideInfo();
+                }
+                @Override
+                public void onError(Throwable t) {
+                    ui.showStatus("Napaka pri brisanju!", Color.RED);
+                }
+            });
+        });
 
         InputMultiplexer multiplexer = new InputMultiplexer();
         multiplexer.addProcessor(ui.getStage());
@@ -277,43 +332,39 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
 
         ui.actAndDraw();
 
-        TrafficPoint hoverTrafficPoint = getTrafficPointAtScreen(Gdx.input.getX(), Gdx.input.getY());
-        if (hoverTrafficPoint != null) {
-            if (hoverTrafficPoint != lastHoveredTrafficPoint) {
-                lastHoveredTrafficPoint = hoverTrafficPoint;
-
-                if (hoverTrafficPoint.image == null && hoverTrafficPoint.imageBase64 != null) {
-                    hoverTrafficPoint.loadImageFromBase64();
-                } else if (hoverTrafficPoint.image == null && hoverTrafficPoint.imageBase64 == null) {
-                    backendService.fetchTrafficPointById(hoverTrafficPoint.id, new BackendService.SingleTrafficCallback() {
-                        @Override
-                        public void onSuccess(TrafficPoint loadedPoint) {
-                            hoverTrafficPoint.image = loadedPoint.image;
-                            hoverTrafficPoint.imageBase64 = loadedPoint.imageBase64;
-                            showTrafficPointInfo(hoverTrafficPoint);
-                        }
-
-                        @Override
-                        public void onError(Throwable t) {
-                            Gdx.app.error("Backend", "Failed to load traffic point details", t);
-                            showTrafficPointInfo(hoverTrafficPoint);
-                        }
-                    });
+        // samo če ni izbran marker, preverjaj hover za traffic points
+        if (selectedMarker == null) {
+            TrafficPoint hoverTrafficPoint = getTrafficPointAtScreen(Gdx.input.getX(), Gdx.input.getY());
+            if (hoverTrafficPoint != null) {
+                if (hoverTrafficPoint != lastHoveredTrafficPoint) {
+                    lastHoveredTrafficPoint = hoverTrafficPoint;
+                    if (hoverTrafficPoint.image == null && hoverTrafficPoint.imageBase64 != null) {
+                        hoverTrafficPoint.loadImageFromBase64();
+                    } else if (hoverTrafficPoint.image == null && hoverTrafficPoint.imageBase64 == null) {
+                        backendService.fetchTrafficPointById(hoverTrafficPoint.id, new BackendService.SingleTrafficCallback() {
+                            @Override
+                            public void onSuccess(TrafficPoint loadedPoint) {
+                                hoverTrafficPoint.image = loadedPoint.image;
+                                hoverTrafficPoint.imageBase64 = loadedPoint.imageBase64;
+                                showTrafficPointInfo(hoverTrafficPoint);
+                            }
+                            @Override
+                            public void onError(Throwable t) {
+                                Gdx.app.error("Backend", "Failed to load traffic point details", t);
+                                showTrafficPointInfo(hoverTrafficPoint);
+                            }
+                        });
+                    } else {
+                        showTrafficPointInfo(hoverTrafficPoint);
+                    }
+                }
+            } else {
+                if (lastHoveredTrafficPoint != null) {
+                    lastHoveredTrafficPoint = null;
+                    ui.hideInfo();
                 }
             }
-
-            showTrafficPointInfo(hoverTrafficPoint);
-        } else {
-            lastHoveredTrafficPoint = null;
-
-            Marker hoverMarker = getMarkerAtScreen(Gdx.input.getX(), Gdx.input.getY());
-            if (hoverMarker != null && hoverMarker.type == MarkerType.POSTAJA) {
-                showMarkerInfo(hoverMarker);
-            } else {
-                ui.hideInfo();
-            }
         }
-
     }
 
     private void updateVehicles(float dt) {
@@ -652,9 +703,32 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
         if (assetManager != null) assetManager.dispose();
     }
 
-    // GestureDetector methods
     @Override public boolean touchDown(float x, float y, int pointer, int button) { return false; }
-    @Override public boolean tap(float x, float y, int count, int button) { return false; }
+
+    @Override
+    public boolean tap(float x, float y, int count, int button) {
+        if (ui.hasUIFocus()) {
+            return false;
+        }
+        if (ui.isClickOnUI(x, y)) {
+            return false;
+        }
+        Marker clickedMarker = getMarkerAtScreen(x, y);
+        if (clickedMarker != null && clickedMarker.type == MarkerType.POSTAJA) {
+            if (selectedMarker == clickedMarker) {
+                selectedMarker = null;
+                ui.hideInfo();
+            } else {
+                selectedMarker = clickedMarker;
+                showMarkerInfo(selectedMarker);
+            }
+            return true;
+        } else {
+            selectedMarker = null;
+            ui.hideInfo();
+            return false;
+        }
+    }
     @Override public boolean longPress(float x, float y) { return false; }
     @Override public boolean fling(float velocityX, float velocityY, int button) { return false; }
 
