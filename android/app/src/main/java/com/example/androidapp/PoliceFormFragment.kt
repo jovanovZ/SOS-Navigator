@@ -51,8 +51,8 @@ class PoliceFormFragment : Fragment() {
 
     private val client = OkHttpClient()
 
-    private val SERVER_URL = "http://10.0.2.2:3002"
-    //private val SERVER_URL = BuildConfig.SERVER_URL
+    //private val SERVER_URL = "http://10.0.2.2:3002"
+    private val SERVER_URL = BuildConfig.SERVER_URL
 
     private val gson = Gson();
 
@@ -161,8 +161,9 @@ class PoliceFormFragment : Fragment() {
             findNavController().navigate(R.id.action_policeFormFragment_to_sensorListFragment)
         }
 
-
-
+        binding.btnBack.setOnClickListener {
+            findNavController().navigate(R.id.action_policeFormFragment_to_sensorListFragment)
+        }
 
     }
 

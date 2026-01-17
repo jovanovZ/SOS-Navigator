@@ -110,7 +110,9 @@ class SensorListFragment : Fragment() {
 
         loadVehiclesFromBackend()
         loadAccidentsFromBackend()
-
+        binding.button2.setOnClickListener {
+            findNavController().navigate(R.id.action_sensorListFragment_to_mainFragment)
+        }
 
     }
 

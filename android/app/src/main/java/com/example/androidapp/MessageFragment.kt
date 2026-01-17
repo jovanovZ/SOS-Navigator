@@ -3,26 +3,39 @@ package com.example.androidapp
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
+import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import android.widget.Button
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
+import com.example.androidapp.databinding.FragmentMessageBinding
 import com.example.androidapp.utils.MQTTService
 import com.google.android.material.textfield.TextInputEditText
 import org.json.JSONObject
 
-class MessageFragment : Fragment(R.layout.fragment_message) {
+class MessageFragment : Fragment() {
+    private var _binding: FragmentMessageBinding? = null
+    private val binding get() = _binding!!
+
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
+        _binding = FragmentMessageBinding.inflate(inflater, container, false)
+        return binding.root
+    }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
         val input = view.findViewById<TextInputEditText>(R.id.messageEditText)
-        val sendBtn = view.findViewById<Button>(R.id.sendBtn)
 
-        sendBtn.setOnClickListener {
+        binding.sendBtn.setOnClickListener {
             val reportJson = JSONObject().apply {
                 put("type", "message")
-                put("message", "Message sent")
+                put("message", input)
             }.toString()
 
             val reportIntent = Intent(requireContext(), MQTTService::class.java).apply {
@@ -32,7 +45,10 @@ class MessageFragment : Fragment(R.layout.fragment_message) {
             }
             requireContext().startService(reportIntent)
 
-            findNavController().popBackStack()
+            findNavController().navigate(R.id.action_messageFragment_to_mainFragment)
+        }
+        binding.button.setOnClickListener {
+            findNavController().navigate(R.id.action_messageFragment_to_mainFragment)
         }
     }
 }

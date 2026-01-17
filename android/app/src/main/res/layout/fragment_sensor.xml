@@ -27,7 +27,7 @@
         style="@style/btn_error_bottom"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
+        android:layout_marginStart="32dp"
         android:layout_marginBottom="16dp"
         android:text="@string/btn_back"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -145,10 +145,10 @@
 
     <Button
         android:id="@+id/btnSave"
+        style="@style/btn_primary"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        style="@style/btn_primary"
-        android:layout_marginEnd="16dp"
+        android:layout_marginEnd="32dp"
         android:layout_marginBottom="16dp"
         android:text="@string/btn_save"
         app:layout_constraintBottom_toBottomOf="parent"
