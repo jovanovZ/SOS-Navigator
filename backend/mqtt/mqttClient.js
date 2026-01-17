@@ -1,8 +1,7 @@
-/*
 const mqtt = require("mqtt");
+const Message = require("../models/MessageModel");
 
-
-const MQTT_URL = process.env.MQTT_URL 
+const MQTT_URL = process.env.MQTT_URL || "mqtt://localhost:1883";
 
 const clientId = `backend-subscriber-${Math.random().toString(16).slice(2)}`;
 
@@ -12,7 +11,7 @@ const client = mqtt.connect(MQTT_URL, {
 });
 
 client.on("connect", () => {
-  console.log(" MQTT connected:", MQTT_URL);
+  console.log("MQTT connected:", MQTT_URL);
 
   client.subscribe("device/+/command/#", (err) => {
     if (err) {
@@ -23,16 +22,16 @@ client.on("connect", () => {
   });
 });
 
-client.on("message", (topic, message) => {
+client.on("message", async (topic, message) => {
   try {
     const payload = JSON.parse(message.toString());
     console.log("MQTT message received");
     console.log("Topic:", topic);
     console.log("Payload:", payload);
 
-    handleMessage(topic, payload);
+    await handleMessage(topic, payload);
   } catch (err) {
-    console.error("Invalid JSON:", err.message);
+    console.error("Invalid JSON or error processing message:", err.message);
   }
 });
 
@@ -40,7 +39,7 @@ client.on("error", (err) => {
   console.error("MQTT error:", err);
 });
 
-function handleMessage(topic, payload) {
+async function handleMessage(topic, payload) {
   const parts = topic.split("/");
   // device/1/command/message
   const deviceId = parts[1];
@@ -48,8 +47,17 @@ function handleMessage(topic, payload) {
 
   switch (commandType) {
     case "message":
-      // tu bo logika za create message
-      console.log(`Message from device ${deviceId}:`, payload.message);
+      try {
+        const messageText = payload.message || payload.messageText || "";
+        const newMessage = new Message({
+          deviceId,
+          message: messageText,
+        });
+        await newMessage.save();
+        console.log(`Message saved from device ${deviceId}:`, messageText);
+      } catch (error) {
+        console.error("Failed to save message:", error);
+      }
       break;
 
     case "update":
@@ -63,4 +71,3 @@ function handleMessage(topic, payload) {
 }
 
 module.exports = client;
-*/

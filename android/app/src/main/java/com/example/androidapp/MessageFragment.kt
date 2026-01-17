@@ -33,9 +33,11 @@ class MessageFragment : Fragment() {
         val input = view.findViewById<TextInputEditText>(R.id.messageEditText)
 
         binding.sendBtn.setOnClickListener {
+            val messageText = input.text?.toString() ?: ""
+
             val reportJson = JSONObject().apply {
                 put("type", "message")
-                put("message", input)
+                put("message", messageText)
             }.toString()
 
             val reportIntent = Intent(requireContext(), MQTTService::class.java).apply {
