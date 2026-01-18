@@ -351,10 +351,13 @@ public class BackendService {
         void onError(Throwable t);
     }
 
+    public Texture getAccidentIcon() {
+        return accidentIcon;
+    }
+
     public void fetchGeoapifyRoute(double startLat, double startLng, double endLat, double endLng, ZoomXY beginTile, VehiclePathCallback callback) {
         new Thread(() -> {
             try {
-                // Geoapify Routing API endpoint
                 String waypoints = startLat + "," + startLng + "|" + endLat + "," + endLng;
                 String encodedWaypoints = URLEncoder.encode(waypoints, StandardCharsets.UTF_8);
 
@@ -514,94 +517,244 @@ public class BackendService {
         }).start();
     }
 
-    public void fetchORSRoute(double startLat, double startLng, double endLat, double endLng, ZoomXY beginTile, VehiclePathCallback callback) {
-
+    public void fetchORSRoute(
+        double startLat, double startLng,
+        double endLat, double endLng,
+        ZoomXY beginTile,
+        java.util.List<TrafficPoint> trafficPoints,
+        VehiclePathCallback callback
+    ) {
         new Thread(() -> {
-            HttpResponse<String> res = null;
-
             try {
-                String uri = "https://api.openrouteservice.org/v2/directions/driving-car/geojson";
-
-                String body = String.format(java.util.Locale.US,
-                    "{\"coordinates\":[[%f,%f],[%f,%f]]}",
-                    startLng, startLat, endLng, endLat
+                ArrayList<Vector2> baseRoute = fetchORSRouteBlocking(
+                    startLat, startLng, endLat, endLng,
+                    beginTile,
+                    null
                 );
 
-                Gdx.app.log("ORS", "REQUEST URL: " + uri);
-                Gdx.app.log("ORS", "REQUEST BODY: " + body);
-                String keyPreview = (Keys.OPENROUTESERVICE == null) ? "null"
-                    : (Keys.OPENROUTESERVICE.length() < 8 ? Keys.OPENROUTESERVICE : Keys.OPENROUTESERVICE.substring(0, 8) + "...");
-                Gdx.app.log("ORS", "API KEY preview: " + keyPreview);
-
-                HttpRequest req = HttpRequest.newBuilder()
-                    .uri(URI.create(uri))
-                    .header("Authorization", Keys.OPENROUTESERVICE)
-                    .header("Content-Type", "application/json")
-                    .header("Accept", "application/geo+json, application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(body))
-                    .build();
-
-                HttpClient client = HttpClient.newBuilder()
-                    .connectTimeout(java.time.Duration.ofSeconds(10))
-                    .build();
-
-                res = client.send(req, HttpResponse.BodyHandlers.ofString());
-
-                Gdx.app.log("ORS", "HTTP STATUS: " + res.statusCode());
-                String respBody = res.body() == null ? "" : res.body();
-                Gdx.app.log("ORS", "RESPONSE (first 800 chars): " +
-                    (respBody.length() > 800 ? respBody.substring(0, 800) + "..." : respBody)
+                double thresholdMeters = 150.0;
+                java.util.List<TrafficPoint> near = findTrafficPointsNearRoute(
+                    baseRoute, trafficPoints, beginTile, thresholdMeters
                 );
-                if (res.statusCode() != 200) {
-                    throw new Exception("ORS HTTP " + res.statusCode() + " body=" + respBody);
-                }
-                JsonObject root = JsonParser.parseString(respBody).getAsJsonObject();
-                if (root.has("error")) {
-                    throw new Exception("ORS returned error: " + root.get("error").toString());
+
+                if (near.isEmpty()) {
+                    Gdx.app.postRunnable(() -> callback.onSuccess(baseRoute));
+                    return;
                 }
 
-                JsonArray features = root.getAsJsonArray("features");
-                if (features == null || features.size() == 0) {
-                    throw new Exception("ORS: no features in response");
-                }
+                double avoidRadiusMeters = 200.0;
+                JsonObject avoidMultiPolygon = buildAvoidMultiPolygon(near, avoidRadiusMeters);
 
-                JsonObject geom = features.get(0).getAsJsonObject().getAsJsonObject("geometry");
-                if (geom == null || !geom.has("coordinates")) {
-                    throw new Exception("ORS: missing geometry/coordinates");
-                }
+                ArrayList<Vector2> reroute = fetchORSRouteBlocking(
+                    startLat, startLng, endLat, endLng,
+                    beginTile,
+                    avoidMultiPolygon
+                );
 
-                JsonArray coords = geom.getAsJsonArray("coordinates");
-
-                ArrayList<Vector2> pathPoints = new ArrayList<>();
-                for (int i = 0; i < coords.size(); i++) {
-                    JsonArray c = coords.get(i).getAsJsonArray();
-                    double lon = c.get(0).getAsDouble();
-                    double lat = c.get(1).getAsDouble();
-
-                    Vector2 pos = MapRasterTiles.getPixelPosition(
-                        lat, lon,
-                        MapRasterTiles.TILE_SIZE, Constants.ZOOM,
-                        beginTile.x, beginTile.y, Constants.MAP_HEIGHT
-                    );
-                    pathPoints.add(pos);
-                }
-
-                Gdx.app.log("ORS", "PARSED points count: " + pathPoints.size());
-
-                if (pathPoints.isEmpty()) throw new Exception("ORS: empty polyline");
-
-                Gdx.app.postRunnable(() -> callback.onSuccess(pathPoints));
+                Gdx.app.postRunnable(() -> callback.onSuccess(reroute));
 
             } catch (Exception e) {
-                if (res == null) {
-                    Gdx.app.error("ORS", "FAILED before response (network/ssl/timeout?)", e);
-                } else {
-                    Gdx.app.error("ORS", "FAILED after response. status=" + res.statusCode(), e);
-                }
                 Gdx.app.postRunnable(() -> callback.onError(e));
             }
         }).start();
     }
 
+
+    private ArrayList<Vector2> fetchORSRouteBlocking(
+        double startLat, double startLng,
+        double endLat, double endLng,
+        ZoomXY beginTile,
+        JsonObject avoidMultiPolygonOrNull
+    ) throws Exception {
+
+        String uri = "https://api.openrouteservice.org/v2/directions/driving-car/geojson";
+
+        JsonObject rootBody = new JsonObject();
+
+        JsonArray coords = new JsonArray();
+
+        JsonArray a = new JsonArray();
+        a.add(startLng);
+        a.add(startLat);
+
+        JsonArray b = new JsonArray();
+        b.add(endLng);
+        b.add(endLat);
+
+        coords.add(a);
+        coords.add(b);
+
+        rootBody.add("coordinates", coords);
+
+        if (avoidMultiPolygonOrNull != null) {
+            JsonObject options = new JsonObject();
+            options.add("avoid_polygons", avoidMultiPolygonOrNull);
+            rootBody.add("options", options);
+        }
+
+        String body = rootBody.toString();
+
+        HttpRequest req = HttpRequest.newBuilder()
+            .uri(URI.create(uri))
+            .header("Authorization", Keys.OPENROUTESERVICE)
+            .header("Content-Type", "application/json")
+            .header("Accept", "application/geo+json, application/json")
+            .POST(HttpRequest.BodyPublishers.ofString(body))
+            .build();
+
+        HttpClient client = HttpClient.newBuilder()
+            .connectTimeout(java.time.Duration.ofSeconds(10))
+            .build();
+
+        HttpResponse<String> res = client.send(req, HttpResponse.BodyHandlers.ofString());
+
+        if (res.statusCode() != 200) {
+            throw new Exception("ORS HTTP " + res.statusCode() + " body=" + res.body());
+        }
+
+        String respBody = res.body() == null ? "" : res.body();
+        JsonObject root = JsonParser.parseString(respBody).getAsJsonObject();
+        if (root.has("error")) {
+            throw new Exception("ORS returned error: " + root.get("error"));
+        }
+
+        JsonArray features = root.getAsJsonArray("features");
+        if (features == null || features.size() == 0) {
+            throw new Exception("ORS: no features in response");
+        }
+
+        JsonObject geom = features.get(0).getAsJsonObject().getAsJsonObject("geometry");
+        if (geom == null || !geom.has("coordinates")) {
+            throw new Exception("ORS: missing geometry/coordinates");
+        }
+
+        JsonArray lineCoords = geom.getAsJsonArray("coordinates");
+
+        ArrayList<Vector2> pathPoints = new ArrayList<>();
+        for (int i = 0; i < lineCoords.size(); i++) {
+            JsonArray c = lineCoords.get(i).getAsJsonArray();
+            double lon = c.get(0).getAsDouble();
+            double lat = c.get(1).getAsDouble();
+
+            Vector2 pos = MapRasterTiles.getPixelPosition(
+                lat, lon,
+                MapRasterTiles.TILE_SIZE, Constants.ZOOM,
+                beginTile.x, beginTile.y, Constants.MAP_HEIGHT
+            );
+            pathPoints.add(pos);
+        }
+
+        if (pathPoints.isEmpty()) throw new Exception("ORS: empty polyline");
+
+        return pathPoints;
+    }
+
+
+    private JsonObject buildAvoidMultiPolygon(java.util.List<TrafficPoint> points, double radiusMeters) {
+        JsonObject mp = new JsonObject();
+        mp.addProperty("type", "MultiPolygon");
+
+        JsonArray multiPolyCoords = new JsonArray();
+
+        for (TrafficPoint tp : points) {
+            double lat = tp.geolocation.lat;
+            double lon = tp.geolocation.lng;
+
+            JsonArray polygon = new JsonArray();
+
+            JsonArray ring = buildCircleRingLonLat(lon, lat, radiusMeters, 16);
+
+            polygon.add(ring);
+
+            JsonArray multiPolyElement = new JsonArray();
+            multiPolyElement.add(polygon);
+
+            multiPolyCoords.add(multiPolyElement);
+        }
+
+        mp.add("coordinates", multiPolyCoords);
+        return mp;
+    }
+
+    private JsonArray buildCircleRingLonLat(double centerLon, double centerLat, double radiusMeters, int steps) {
+        double latRad = Math.toRadians(centerLat);
+        double latDegPerMeter = 1.0 / 111320.0;
+        double lonDegPerMeter = 1.0 / (111320.0 * Math.cos(latRad));
+
+        double dLat = radiusMeters * latDegPerMeter;
+        double dLon = radiusMeters * lonDegPerMeter;
+
+        JsonArray ring = new JsonArray();
+
+        for (int i = 0; i < steps; i++) {
+            double ang = (2.0 * Math.PI * i) / steps;
+            double lon = centerLon + (Math.cos(ang) * dLon);
+            double lat = centerLat + (Math.sin(ang) * dLat);
+
+            JsonArray p = new JsonArray();
+            p.add(lon);
+            p.add(lat);
+            ring.add(p);
+        }
+
+        if (ring.size() > 0) {
+            ring.add(ring.get(0).deepCopy());
+        }
+
+        return ring;
+    }
+
+
+    private java.util.List<TrafficPoint> findTrafficPointsNearRoute(
+        ArrayList<Vector2> routePixels,
+        java.util.List<TrafficPoint> trafficPoints,
+        ZoomXY beginTile,
+        double thresholdMeters
+    ) {
+        java.util.List<TrafficPoint> near = new java.util.ArrayList<>();
+        if (routePixels == null || routePixels.isEmpty() || trafficPoints == null || trafficPoints.isEmpty()) return near;
+
+        Vector2 base = routePixels.get(0);
+
+        TrafficPoint ref = trafficPoints.get(0);
+        double refLat = ref.geolocation.lat;
+        double refLon = ref.geolocation.lng;
+
+        Vector2 refPixel = MapRasterTiles.getPixelPosition(
+            refLat, refLon,
+            MapRasterTiles.TILE_SIZE, Constants.ZOOM,
+            beginTile.x, beginTile.y, Constants.MAP_HEIGHT
+        );
+
+        double latDegPerMeter = 1.0 / 111320.0;
+        double movedLat = refLat + thresholdMeters * latDegPerMeter;
+
+        Vector2 movedPixel = MapRasterTiles.getPixelPosition(
+            movedLat, refLon,
+            MapRasterTiles.TILE_SIZE, Constants.ZOOM,
+            beginTile.x, beginTile.y, Constants.MAP_HEIGHT
+        );
+
+        float thresholdPixels = movedPixel.dst(refPixel);
+
+        for (TrafficPoint tp : trafficPoints) {
+            Vector2 tpPixel = MapRasterTiles.getPixelPosition(
+                tp.geolocation.lat, tp.geolocation.lng,
+                MapRasterTiles.TILE_SIZE, Constants.ZOOM,
+                beginTile.x, beginTile.y, Constants.MAP_HEIGHT
+            );
+
+            boolean isNear = false;
+            for (int i = 0; i < routePixels.size(); i += 5) {
+                if (routePixels.get(i).dst(tpPixel) <= thresholdPixels) {
+                    isNear = true;
+                    break;
+                }
+            }
+            if (isNear) near.add(tp);
+        }
+
+        return near;
+    }
 
 }

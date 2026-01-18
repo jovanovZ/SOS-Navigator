@@ -107,7 +107,7 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
 
     private Marker selectedMarker = null;
 
-    private Accident currentAccident;
+    private final ArrayList<Accident> ACCIDENTS = new ArrayList<>();
 
 
     @Override
@@ -131,7 +131,11 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
         camera.position.set(Constants.MAP_WIDTH / 2f, Constants.MAP_HEIGHT / 2f, 0);
         camera.update();
 
-        currentAccident = new Accident("acc_demo", AccidentType.KRIMINAL, 46.5000, 14.9500);
+        ACCIDENTS.add(new Accident("acc_001", AccidentType.KRIMINAL, 46.5500, 15.6500));
+        ACCIDENTS.add(new Accident("acc_002", AccidentType.PROMETNA, 46.5700, 15.6300));
+        ACCIDENTS.add(new Accident("acc_003", AccidentType.ZDRAVSTVENI_PRIMER, 46.5300, 15.6700));
+        ACCIDENTS.add(new Accident("acc_004", AccidentType.NARAVNA_NESRECA, 46.5600, 15.6100));
+        ACCIDENTS.add(new Accident("acc_005", AccidentType.PROMETNA, 46.5400, 15.6400));
 
         ui.init(skin, font, this::runSimulation);
 
@@ -215,8 +219,24 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
         backendService = new BackendService();
 
         backendService.fetchMarkers(new BackendService.MarkerCallback() {
-            @Override public void onSuccess(ArrayList<Marker> markers) { MARKERS.addAll(markers); }
-            @Override public void onError(Throwable t) { Gdx.app.error("Backend", "Failed to load markers", t); }
+            @Override
+            public void onSuccess(ArrayList<Marker> markers) {
+                MARKERS.addAll(markers);
+                for (Accident acc : ACCIDENTS) {
+                    Marker accMarker = new Marker(
+                        MarkerType.NESRECA,
+                        acc.geolocation.lat,
+                        acc.geolocation.lng,
+                        backendService.getAccidentIcon()
+                    );
+                    accMarker.accident = acc;
+                    MARKERS.add(accMarker);
+                }
+            }
+            @Override
+            public void onError(Throwable t) {
+                Gdx.app.error("Backend", "Failed to load markers", t);
+            }
         });
 
         backendService.fetchTrafficPoints(new BackendService.TrafficCallback() {
@@ -265,12 +285,12 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
                     );
                 }
             }
-
             @Override
             public void onError(Throwable t) {
                 Gdx.app.error("Backend", "Failed to load vehicles", t);
             }
         });
+
 
         backendService.fetchPaths(new BackendService.PathCallback() {
             @Override
@@ -314,27 +334,66 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
         carAnim.setPlayMode(Animation.PlayMode.LOOP);
     }
 
-
     private void runSimulation() {
-        if (currentAccident == null) {
-            ui.showStatus("Ni nesrece!", Color.RED);
+        if (ACCIDENTS.isEmpty()) {
+            ui.showStatus("Ni nesreč!", Color.RED);
             return;
         }
-
         if (VEHICLES.isEmpty()) {
             ui.showStatus("Ni vozil!", Color.RED);
             return;
         }
+        backendPaths.clear();
+        showPaths = false;
 
-        // Najdi najbližje vozilo po zračni razdalji (haversine)
+
+        int successCount = 0;
+        int failCount = 0;
+
+        for (Accident accident : ACCIDENTS) {
+            String requiredVehicleType = mapAccidentToVehicleType(accident.typeOfAccident);
+            Vehicle nearest = findNearestAvailableVehicle(accident, requiredVehicleType);
+
+            if (nearest == null) {
+                failCount++;
+                continue;
+            }
+
+            nearest.isAssigned = true;
+
+            Gdx.app.log("SIM", "Nesreča " + accident.id + " (" + accident.typeOfAccident +
+                ") → Vozilo " + nearest.id);
+
+            fetchRouteAndStartVehicle(nearest, accident);
+            successCount++;
+        }
+
+        if (successCount > 0 && failCount == 0) {
+            ui.showStatus("Poslanih " + successCount + " vozil!", Color.GREEN);
+        } else if (successCount > 0 && failCount > 0) {
+            ui.showStatus("Poslanih " + successCount + ", preskočenih " + failCount, Color.YELLOW);
+        } else {
+            ui.showStatus("Ni ustreznih vozil!", Color.RED);
+        }
+    }
+    private Vehicle findNearestAvailableVehicle(Accident accident, String requiredType) {
         Vehicle nearest = null;
         double minDist = Double.MAX_VALUE;
 
-        for (Vehicle v : VEHICLES) {
-            if (v == null || v.locationStart == null) continue;
+        Gdx.app.log("SIM", "Iščem vozilo tipa '" + requiredType + "' za nesrečo " + accident.id);
 
+        for (Vehicle v : VEHICLES) {
+            if (v.type == null || !v.type.equalsIgnoreCase(requiredType)) {
+                continue;
+            }
+            if (v.isAssigned) {
+                continue;
+            }
+            if (v.locationStart == null) {
+                continue;
+            }
             double dist = haversineKm(
-                currentAccident.geolocation.lat, currentAccident.geolocation.lng,
+                accident.geolocation.lat, accident.geolocation.lng,
                 v.locationStart.lat, v.locationStart.lng
             );
 
@@ -344,18 +403,26 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
             }
         }
 
-        if (nearest == null) {
-            ui.showStatus("Ni veljavnih vozil!", Color.RED);
-            return;
+        if (nearest != null) {
+            Gdx.app.log("SIM", "✓ Najdeno: vozilo " + nearest.id +
+                " (" + nearest.type + ") na razdalji " +
+                String.format("%.2f km", minDist));
+        } else {
+            Gdx.app.log("SIM", "✗ Ni vozila tipa '" + requiredType + "' za nesrečo " + accident.id);
         }
 
-        Gdx.app.log("SIM", "Nearest vehicle: " + nearest.id + " at " + String.format("%.2f", minDist) + " km");
-        ui.showStatus("Vozilo: " + nearest.id + " (" + String.format("%.1f", minDist) + " km)", Color.YELLOW);
+        return nearest;
+    }
 
-        fetchRouteAndStart(nearest, currentAccident);
+    private void fetchRouteAndStartVehicle(Vehicle vehicle, Accident accident) {
+        fetchRouteAndStartInternal(vehicle, accident, false);
     }
 
     private void fetchRouteAndStart(Vehicle vehicle, Accident accident) {
+        fetchRouteAndStartInternal(vehicle, accident, true);
+    }
+
+    private void fetchRouteAndStartInternal(Vehicle vehicle, Accident accident, boolean withUiStatus) {
         vehicle.isMoving = false;
 
         double startLat = vehicle.locationStart.lat;
@@ -363,23 +430,35 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
         double endLat = accident.geolocation.lat;
         double endLng = accident.geolocation.lng;
 
-        Gdx.app.log("SIM", "Fetching route: " + startLat + "," + startLng + " -> " + endLat + "," + endLng);
         vehicle.locationEnd = new Geolocation(endLat, endLng);
+
+        if (withUiStatus) {
+            Gdx.app.log("SIM", "Fetching route: " + startLat + "," + startLng + " -> " + endLat + "," + endLng);
+        } else {
+            Gdx.app.log("SIM", "Fetching route for vehicle " + vehicle.id + ": " +
+                startLat + "," + startLng + " -> " + endLat + "," + endLng);
+        }
+
+        java.util.List<TrafficPoint> trafficPoints =
+            (TRAFFIC_POINTS == null) ? java.util.Collections.emptyList() : TRAFFIC_POINTS;
 
         backendService.fetchORSRoute(
             startLat, startLng,
             endLat, endLng,
             beginTile,
+            trafficPoints,
             new BackendService.VehiclePathCallback() {
                 @Override
                 public void onSuccess(ArrayList<Vector2> pts) {
-                    Gdx.app.log("SIM", "Route received with " + pts.size() + " points");
+                    if (withUiStatus) {
+                        Gdx.app.log("SIM", "Route received with " + (pts == null ? 0 : pts.size()) + " points");
+                    }
 
-                    if (pts.size() < 2) {
-                        ui.showStatus("Pot prekratka!", Color.RED);
+                    if (pts == null || pts.size() < 2) {
+                        if (withUiStatus) ui.showStatus("Pot prekratka!", Color.RED);
                         return;
                     }
-                    backendPaths.clear();
+                    if (withUiStatus) backendPaths.clear();
                     backendPaths.add(new ArrayList<>(pts));
                     showPaths = true;
 
@@ -388,21 +467,33 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
                     vehicle.segIndex = 0;
                     vehicle.travelInSeg = 0f;
                     vehicle.isMoving = true;
-                    ui.showStatus("Vozilo se premika!", Color.GREEN);
+
+                    vehicle.assignedToAccident = true;
+                    vehicle.animTime = 0f;
+
+                    if (withUiStatus) ui.showStatus("Vozilo se premika!", Color.GREEN);
                 }
 
                 @Override
                 public void onError(Throwable t) {
-                    Gdx.app.error("SIM", "Route error: " + t.getMessage());
-                    ui.showStatus("Napaka: " + t.getMessage(), Color.RED);
+                    String msg = (t == null || t.getMessage() == null) ? "neznana napaka" : t.getMessage();
+
+                    if (withUiStatus) {
+                        Gdx.app.error("SIM", "Route error: " + msg);
+                        ui.showStatus("Napaka: " + msg, Color.RED);
+                    } else {
+                        Gdx.app.error("SIM", "Route error for " + vehicle.id + ": " + msg);
+                    }
+
                     generateVehiclePathFallback(vehicle);
 
-                    backendPaths.clear();
+                    if (withUiStatus) backendPaths.clear();
                     backendPaths.add(new ArrayList<>(vehicle.pathPoints));
                     showPaths = true;
 
                     vehicle.isMoving = true;
-                    ui.showStatus("Fallback pot (ravna črta)", Color.ORANGE);
+
+                    if (withUiStatus) ui.showStatus("Fallback pot (ravna črta)", Color.ORANGE);
                 }
             }
         );
@@ -414,12 +505,13 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
         switch (t) {
             case KRIMINAL:
             case PROMETNA:
-                return "policijska";
+                return "Police";
             case ZDRAVSTVENI_PRIMER:
-                return "bolnica";
+                return "Ambulance";
             case NARAVNA_NESRECA:
+                return "Fire";
             default:
-                return "gasilci";
+                return "Police";
         }
     }
 

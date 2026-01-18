@@ -31,6 +31,9 @@ public class MapRenderer {
     private float vehicleAnimTime = 0f;
     private boolean loaded = false;
 
+    private static final float NORMAL_FPS = 4f;
+    private static final float FAST_FPS = 20f;
+
     private void loadVehicleAnimsIfNeeded() {
         if (loaded) return;
         loaded = true;
@@ -124,7 +127,6 @@ public class MapRenderer {
         if (vehicles == null || vehicles.isEmpty()) return;
 
         loadVehicleAnimsIfNeeded();
-        vehicleAnimTime += dt;
 
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
@@ -138,7 +140,12 @@ public class MapRenderer {
             Animation<TextureRegion> anim = getAnimForVehicle(v);
             if (anim == null) continue;
 
-            TextureRegion frame = anim.getKeyFrame(vehicleAnimTime, true);
+            float fps = v.assignedToAccident ? FAST_FPS : NORMAL_FPS;
+            float speedMultiplier = fps / NORMAL_FPS;
+
+            v.animTime += dt * speedMultiplier;
+
+            TextureRegion frame = anim.getKeyFrame(v.animTime, true);
 
             float w = baseW * camera.zoom;
             float h = baseH * camera.zoom;
@@ -147,7 +154,6 @@ public class MapRenderer {
             float y = v.currentPos.y - h / 2f;
 
             float angle = v.rotationDeg;
-
             while (angle > 180f) angle -= 360f;
             while (angle < -180f) angle += 360f;
 
@@ -157,7 +163,6 @@ public class MapRenderer {
             if (angle < -90f || angle > 90f) {
                 scaleY = -1f;
                 scaleX = -1f;
-
                 angle = (angle > 0f) ? (angle - 180f) : (angle + 180f);
             }
 
