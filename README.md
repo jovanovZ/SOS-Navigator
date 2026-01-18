@@ -44,4 +44,4 @@ Built for Slovenia (expandable to other regions).
 
 ### Prerequisites  
 
-
+[predstavitev](https://univerzamb-my.sharepoint.com/:p:/g/personal/zdravko_jovanov_student_um_si/IQAejLl86ULqTrVwHqvOVreAAZMcnsvx4kX3DGopYFcXb_w?e=DcXqxy) (pptx)  
