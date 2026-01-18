@@ -104,8 +104,28 @@ class SensorRunTimeViewModel : ViewModel() {
         }
     }
 
+
     private fun updateAccidentLocation(sensor: RunTimeSensor) {
-        Log.d("UPDATE_ACCIDENT", "Update accident id:${sensor.id} location")
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val randomLocation = Util.getRandomSloveniaLatLng()
+                val latitude = randomLocation.first
+                val longitude = randomLocation.second
+
+                sendMqttUpdate(
+                    deviceId = sensor.id,
+                    updateType = "accident_location",
+                    data = mapOf(
+                        "accidentId" to sensor.id,
+                        "latitude" to latitude,
+                        "longitude" to longitude
+                    )
+                )
+                Log.d("UPDATE_ACCIDENT", "Location updated for accident ${sensor.id}: $latitude, $longitude")
+            } catch (e: Exception) {
+                Log.e("UPDATE_ACCIDENT", "Failed to update location for accident ${sensor.id}", e)
+            }
+        }
     }
 
 
