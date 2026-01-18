@@ -1,0 +1,9 @@
+Starting command: mpiexec --bind-to none -n 3 ../build/blockchain -mpi -b 5 -t 4
+
+Mined by rank 1, block 1 | Hash: 000000ca0e9993dcd393e9f1006e4b08c1495c15e0b21e3a43fb7554024b47c6 | Nonce: 228470 | Difficulty: 5
+Mined by rank 1, block 2 | Hash: 394adc6a2ebd8bf5883f95f9abe055a8e5763a5d1c18fef26a479e2500d702ec | Nonce: 2570974 | Difficulty: 5
+Mined by rank 1, block 3 | Hash: 4ddc83105bf179459613db3e3002b9c027edc433ffc0e5b247f8f25eeb63b557 | Nonce: 1852916 | Difficulty: 5
+Mined by rank 1, block 4 | Hash: 5b2a8f7e0960e4320bc1f04d4a99077f5fb423b081e3e11a8c6afb698243c855 | Nonce: 3862598 | Difficulty: 5
+Mined by rank 2, block 5 | Hash: 9e19641f6ac7b12f99054184ffc366de8cf0d204726c2a9846f3b89681bef137 | Nonce: 1865585 | Difficulty: 5
+Time to mine 5 blocks on 2 nodes.
+7448ms

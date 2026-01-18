@@ -38,30 +38,39 @@ bool BlockChain::isChainValid() const {
 }
 
 int BlockChain::getDifficulty() const {
-  if (chain.size() < difficultyAdjustmentInterval) {
+  if (chain.size() % difficultyAdjustmentInterval != 0) {
     return chain.back().difficulty;
   }
+
   const Block &prevAdjustmentBlock =
       chain[chain.size() - difficultyAdjustmentInterval];
+  const Block &lastBlock = chain.back();
+
   const double timeExpected =
       blockGenerationInterval * difficultyAdjustmentInterval;
   const double timeTaken =
-      std::chrono::duration<double>(chain.back().timestamp -
+      std::chrono::duration<double>(lastBlock.timestamp -
                                     prevAdjustmentBlock.timestamp)
           .count();
 
+  int currentDifficulty = lastBlock.difficulty;
   int newDiff;
+
   if (timeTaken < timeExpected / 2.0) {
-    newDiff = prevAdjustmentBlock.difficulty + 1;
-    std::cout << "Difficulty is went from: " << prevAdjustmentBlock.difficulty
+    newDiff = currentDifficulty + 1;
+    std::cout << "Difficulty is increasing from: " << currentDifficulty
               << " to: " << newDiff << std::endl;
-  } else if (timeTaken > timeExpected * 2) {
-    newDiff = prevAdjustmentBlock.difficulty - 1;
-    std::cout << "Difficulty is went from: " << prevAdjustmentBlock.difficulty
+  } else if (timeTaken > timeExpected * 2.0) {
+    newDiff = currentDifficulty - 1;
+    std::cout << "Difficulty is decreasing from: " << currentDifficulty
               << " to: " << newDiff << std::endl;
   } else {
-    newDiff = prevAdjustmentBlock.difficulty;
+    newDiff = currentDifficulty;
     std::cout << "Difficulty stayed at " << newDiff << std::endl;
+  }
+
+  if (newDiff < 1) {
+    newDiff = 1;
   }
 
   return newDiff;
