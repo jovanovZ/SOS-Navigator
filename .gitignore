@@ -19,6 +19,7 @@
 # blockchain
 /blockchain/build/
 .idea/
+/blockcahin/web_app/__pycache__
 
 # testing
 /frontend/coverage

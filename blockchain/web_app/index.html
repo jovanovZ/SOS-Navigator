@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blockchain Miner Interface</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #f4f4f9; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; }
+        h1, h2 { color: #444; }
+        #controls { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        form { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        label { font-weight: 500; }
+        input[type="number"] { padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 16px; }
+        .button-group { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        button { padding: 12px; font-size: 16px; font-weight: bold; color: #fff; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        button:disabled { background-color: #999; cursor: not-allowed; }
+        #start-button { background-color: #007aff; }
+        #start-button:hover:not(:disabled) { background-color: #0056b3; }
+        #stop-button { background-color: #ff3b30; }
+        #stop-button:hover:not(:disabled) { background-color: #c50f0f; }
+        #log-container { background: #1c1c1e; color: #f2f2f2; padding: 20px; border-radius: 8px; height: 400px; overflow-y: scroll; font-family: "SF Mono", "Fira Code", "Consolas", monospace; font-size: 14px; white-space: pre-wrap; word-wrap: break-word; }
+        .status-badge { padding: 5px 10px; border-radius: 12px; font-size: 14px; font-weight: bold; color: #fff; }
+        .status-running { background-color: #34c759; }
+        .status-idle { background-color: #ff9500; }
+    </style>
+</head>
+<body>
+    <h1>Blockchain Miner Interface</h1>
+
+    <div id="controls">
+        <h2>Controls</h2>
+        <form id="mining-form">
+            <div>
+                <label for="node_count">Node Count:</label>
+                <input type="number" id="node_count" name="node_count" value="3" required>
+            </div>
+            <div>
+                <label for="blocks_to_mine">Blocks to Mine:</label>
+                <input type="number" id="blocks_to_mine" name="blocks_to_mine" value="5" required>
+            </div>
+            <div>
+                <label for="thread_count">Thread Count per Client:</label>
+                <input type="number" id="thread_count" name="thread_count" value="4" required>
+            </div>
+            <div class="button-group">
+                <button type="submit" id="start-button">Start Mining</button>
+                <button type="button" id="stop-button" disabled>Stop Mining</button>
+            </div>
+        </form>
+    </div>
+
+    <h2>
+        Live Log &nbsp;
+        <span id="status-indicator" class="status-badge status-idle">IDLE</span>
+    </h2>
+    <div id="log-container"></div>
+
+    <script>
+        const form = document.getElementById('mining-form');
+        const startButton = document.getElementById('start-button');
+        const stopButton = document.getElementById('stop-button');
+        const logContainer = document.getElementById('log-container');
+        const statusIndicator = document.getElementById('status-indicator');
+        let eventSource;
+
+        function setStatus(status, pid) {
+            if (status === 'running') {
+                statusIndicator.textContent = `RUNNING (PID: ${pid})`;
+                statusIndicator.className = 'status-badge status-running';
+                startButton.disabled = true;
+                stopButton.disabled = false;
+            } else {
+                statusIndicator.textContent = 'IDLE';
+                statusIndicator.className = 'status-badge status-idle';
+                startButton.disabled = false;
+                stopButton.disabled = true;
+                if (eventSource) {
+                    eventSource.close();
+                }
+            }
+        }
+
+        async function checkStatus() {
+            try {
+                const response = await fetch('/status');
+                const data = await response.json();
+                setStatus(data.status, data.pid);
+            } catch (error) {
+                console.error('Error fetching status:', error);
+                setStatus('idle');
+            }
+        }
+
+        function startLogStream() {
+            logContainer.innerHTML = '';
+            eventSource = new EventSource('/log-stream');
+            
+           eventSource.onmessage = function(event) {
+             logContainer.textContent += event.data + "\n";
+             logContainer.scrollTop = logContainer.scrollHeight;
+          };
+
+            eventSource.onerror = function() {
+                logContainer.textContent += '\n[Error: Connection to log stream failed. The process might have finished or been stopped.]';
+                eventSource.close();
+                checkStatus(); 
+            };
+        }
+
+        form.addEventListener('submit', async function(event) {
+            event.preventDefault();
+            startButton.disabled = true;
+            logContainer.textContent = 'Starting mining process...\n';
+            
+            const formData = new FormData(form);
+
+            try {
+                const response = await fetch('/mine', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    logContainer.textContent += `Error: ${result.detail}`;
+                    checkStatus();
+                    return;
+                }
+                
+                logContainer.textContent += `Process started with PID: ${result.pid}\n\n`;
+                startLogStream();
+                checkStatus();
+
+            } catch (error) {
+                logContainer.textContent += `Error starting process: ${error.message}`;
+                checkStatus();
+            }
+        });
+
+        stopButton.addEventListener('click', async function() {
+            stopButton.disabled = true;
+            logContainer.textContent += '\n[Sending stop signal...]';
+            try {
+                const response = await fetch('/stop', { method: 'POST' });
+                const result = await response.json();
+                if (!response.ok) {
+                    logContainer.textContent += `\n[Error: ${result.detail}]`;
+                } else {
+                    logContainer.textContent += `\n[${result.message}]`;
+                }
+            } catch (error) {
+                logContainer.textContent += `\n[Error sending stop signal: ${error.message}]`;
+            }
+                   });
+
+       
+        setInterval(checkStatus, 3000);
+        window.onload = checkStatus;
+    </script>
+
+</body>
+</html>
