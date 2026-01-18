@@ -64,42 +64,74 @@ async function handleMessage(topic, payload) {
       try {
         const updateType = payload.updateType;
         const vehicleId = payload.vehicleId;
+        const accidentId = payload.accidentId;
         
-        if (!vehicleId) {
-          console.error("Vehicle ID missing in update payload");
+        if (!vehicleId && !accidentId) {
+          console.error("Vehicle ID or Accident ID missing in update payload");
           break;
         }
         
         const Vehicle = require("../models/VehicleModel");
         const Location = require("../models/LocationModel");
+        const Accident = require("../models/AccidenceModel");
         
-        if (updateType === "location") {
-          // Ustvari novo Location
-          const newLocation = new Location({
-            geometry: {
-              type: "Point",
-              coordinates: [payload.longitude, payload.latitude],
-            },
-          });
-          await newLocation.save();
-          
-          // Posodobi vehicle - shrani novo lokacijo kot locationStartId
-          // (ali kot trenutno lokacijo, odvisno od tvoje logike)
-          await Vehicle.findByIdAndUpdate(
-            vehicleId,
-            { locationStartId: newLocation._id },
-            { new: true }
-          );
-          
-          console.log(`Vehicle ${vehicleId} location updated`);
-          
-        } else if (updateType === "acceleration") {
-          await Vehicle.findByIdAndUpdate(
-            vehicleId,
-            { acceleration: payload.acceleration },
-            { new: true }
-          );
-          console.log(`Vehicle ${vehicleId} acceleration updated to ${payload.acceleration}`);
+        // VEHICLE UPDATES
+        if (vehicleId) {
+          if (updateType === "location") {
+            const newLocation = new Location({
+              geometry: {
+                type: "Point",
+                coordinates: [payload.longitude, payload.latitude],
+              },
+            });
+            await newLocation.save();
+            
+            await Vehicle.findByIdAndUpdate(
+              vehicleId,
+              { locationStartId: newLocation._id },
+              { new: true }
+            );
+            
+            console.log(`Vehicle ${vehicleId} location updated`);
+            
+          } else if (updateType === "acceleration") {
+            await Vehicle.findByIdAndUpdate(
+              vehicleId,
+              { acceleration: payload.acceleration },
+              { new: true }
+            );
+            console.log(`Vehicle ${vehicleId} acceleration updated to ${payload.acceleration}`);
+          }
+        }
+        
+        // ACCIDENT UPDATES
+        else if (accidentId) {
+          if (updateType === "accident_location") {
+            const newLocation = new Location({
+              geometry: {
+                type: "Point",
+                coordinates: [payload.longitude, payload.latitude],
+              },
+            });
+            await newLocation.save();
+            
+            const accident = await Accident.findById(accidentId);
+            if (accident) {
+              await Accident.findByIdAndUpdate(
+                accidentId,
+                {
+                  locationId: newLocation._id,
+                  typeOfAccident: accident.typeOfAccident,
+                  locationFreq: accident.locationFreq
+                },
+                { new: true }
+              );
+              
+              console.log(`Accident ${accidentId} location updated to [${payload.longitude}, ${payload.latitude}]`);
+            } else {
+              console.error(`Accident ${accidentId} not found`);
+            }
+          }
         }
       } catch (error) {
         console.error("Failed to handle update:", error);
