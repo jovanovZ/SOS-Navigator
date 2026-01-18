@@ -211,19 +211,28 @@ public class MapRenderer {
                 }
                 continue;
             }
+
+            // DODAJ TA FLAG
+            boolean shouldDraw = true;
+
             if (marker.type == MarkerType.POSTAJA && marker.station != null) {
-                switch (marker.station.type) {
+                String stationType = marker.station.type.toLowerCase();
+
+                switch (stationType) {
                     case "policijska":
-                        if (!showPolicija) continue;
+                        if (!showPolicija) shouldDraw = false;
                         break;
                     case "gasilci":
-                        if (!showGasilci) continue;
+                        if (!showGasilci) shouldDraw = false;
                         break;
                     case "bolnica":
-                        if (!showBolnice) continue;
+                        if (!showBolnice) shouldDraw = false;
                         break;
                 }
             }
+
+            // PREVERI FLAG PRED RISANJEM
+            if (!shouldDraw) continue;
 
             Vector2 pos = MapRasterTiles.getPixelPosition(
                 marker.lokacija.lat,

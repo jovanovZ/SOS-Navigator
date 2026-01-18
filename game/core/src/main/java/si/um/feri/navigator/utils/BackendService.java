@@ -86,7 +86,32 @@ public class BackendService {
         policeIcon = new Texture(Gdx.files.internal("icons/policestation.png"));
         accidentIcon = new Texture(Gdx.files.internal("icons/accidentPlaceHolder.png"));
         trafficIcon = new Texture(Gdx.files.internal("icons/traffic.png"));
+    }
 
+    public Texture getAccidentIconForType(AccidentType type) {
+        if (type == null) return getAccidentIcon();
+
+        String iconPath;
+        switch (type) {
+            case PROMETNA:
+                iconPath = "icons/traffic.png";
+                break;
+            case KRIMINAL:
+                iconPath = "icons/criminal.png";
+                break;
+            case ZDRAVSTVENI_PRIMER:
+                iconPath = "icons/health.png";
+                break;
+            case NARAVNA_NESRECA:
+                iconPath = "icons/fire.png";
+                break;
+            default:
+                iconPath = "icons/accident.png";
+        }
+
+        Texture texture = new Texture(Gdx.files.internal(iconPath));
+        texture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        return texture;
     }
 
     public void fetchMarkers(MarkerCallback callback) {
