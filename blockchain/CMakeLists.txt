@@ -4,11 +4,14 @@ project(blockchain)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Poišči OpenSSL
+
 find_package(OpenSSL REQUIRED)
 
-# Omogoči OpenMP
+
 find_package(OpenMP REQUIRED)
+
+
+find_package(MPI REQUIRED)
 
 add_executable(blockchain
         main.cpp
@@ -18,6 +21,5 @@ add_executable(blockchain
         BlockChain.h
 )
 
-# Linka OpenSSL in OpenMP
-target_link_libraries(blockchain PRIVATE OpenSSL::SSL OpenSSL::Crypto OpenMP::OpenMP_CXX)
 
+target_link_libraries(blockchain PRIVATE OpenSSL::SSL OpenSSL::Crypto OpenMP::OpenMP_CXX MPI::MPI_CXX)
