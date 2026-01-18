@@ -90,7 +90,6 @@ public class NavigatorUI {
             }
         });
 
-
         Table actionTable = new Table();
         actionTable.setFillParent(true);
         actionTable.bottom().right();

@@ -27,7 +27,9 @@ public class Vehicle {
     public int segIndex = 0;
     public float travelInSeg = 0f;
     public boolean isMoving = true;
-
+    public boolean isAssigned = false;
+    public boolean assignedToAccident = false;
+    public float animTime = 0f;
     public Texture icon;
 
     public Vehicle(String id, String type, float acceleration,
@@ -45,20 +47,17 @@ public class Vehicle {
      * @param dt Delta time (sekunde)
      */
     public void update(float dt) {
+        animTime += dt;
         if (!isMoving || pathPoints.size() < 2) return;
 
-        // Če je prišel do konca, ustavi se in posodobi lokacije
         if (segIndex >= pathPoints.size() - 1) {
-            // Nastavi pozicijo na končno točko
             currentPos.set(pathPoints.get(pathPoints.size() - 1));
 
-            // Posodobi lokacije: locationStart postane locationEnd, locationEnd postane null
             if (locationEnd != null) {
                 locationStart = locationEnd;
                 locationEnd = null;
             }
 
-            // Ustavi premikanje
             isMoving = false;
             return;
         }
@@ -73,14 +72,12 @@ public class Vehicle {
             float remaining = segLen - travelInSeg;
 
             if (segLen < 0.0001f) {
-                // Segment je prekratek, preskoči
                 segIndex++;
                 travelInSeg = 0f;
                 continue;
             }
 
             if (move < remaining) {
-                // Premakni se v trenutnem segmentu
                 travelInSeg += move;
                 float t = travelInSeg / segLen;
 
@@ -89,22 +86,17 @@ public class Vehicle {
 
                 move = 0;
             } else {
-                // Premakni se v naslednji segment
                 move -= remaining;
                 segIndex++;
                 travelInSeg = 0f;
 
                 if (segIndex >= pathPoints.size() - 1) {
-                    // Prišel do konca
                     currentPos.set(pathPoints.get(pathPoints.size() - 1));
 
-                    // Posodobi lokacije
                     if (locationEnd != null) {
                         locationStart = locationEnd;
                         locationEnd = null;
                     }
-
-                    // Ustavi premikanje
                     isMoving = false;
                     break;
                 }
