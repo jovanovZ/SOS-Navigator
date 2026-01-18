@@ -61,8 +61,49 @@ async function handleMessage(topic, payload) {
       break;
 
     case "update":
-      // tu bo logika za update Vehicle in Accident
-      console.log(`Update from device ${deviceId}`, payload);
+      try {
+        const updateType = payload.updateType;
+        const vehicleId = payload.vehicleId;
+        
+        if (!vehicleId) {
+          console.error("Vehicle ID missing in update payload");
+          break;
+        }
+        
+        const Vehicle = require("../models/VehicleModel");
+        const Location = require("../models/LocationModel");
+        
+        if (updateType === "location") {
+          // Ustvari novo Location
+          const newLocation = new Location({
+            geometry: {
+              type: "Point",
+              coordinates: [payload.longitude, payload.latitude],
+            },
+          });
+          await newLocation.save();
+          
+          // Posodobi vehicle - shrani novo lokacijo kot locationStartId
+          // (ali kot trenutno lokacijo, odvisno od tvoje logike)
+          await Vehicle.findByIdAndUpdate(
+            vehicleId,
+            { locationStartId: newLocation._id },
+            { new: true }
+          );
+          
+          console.log(`Vehicle ${vehicleId} location updated`);
+          
+        } else if (updateType === "acceleration") {
+          await Vehicle.findByIdAndUpdate(
+            vehicleId,
+            { acceleration: payload.acceleration },
+            { new: true }
+          );
+          console.log(`Vehicle ${vehicleId} acceleration updated to ${payload.acceleration}`);
+        }
+      } catch (error) {
+        console.error("Failed to handle update:", error);
+      }
       break;
 
     default:

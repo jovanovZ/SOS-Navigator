@@ -73,6 +73,7 @@ class SensorFragment : Fragment(), View.OnClickListener {
         binding.sensorFragBack.setOnClickListener(this)
         binding.btnSave.setOnClickListener(this)
         configureNumberPickers()
+        runTimeViewModel.initialize(requireContext())
     }
 
     override fun onClick(v: View?) {
