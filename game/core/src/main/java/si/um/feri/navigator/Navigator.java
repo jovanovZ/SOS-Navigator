@@ -26,6 +26,8 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 import java.util.ArrayList;
 import java.util.List;
 
+import si.um.feri.navigator.OOP.Accident;
+import si.um.feri.navigator.OOP.AccidentType;
 import si.um.feri.navigator.OOP.Marker;
 import si.um.feri.navigator.OOP.MarkerType;
 import si.um.feri.navigator.OOP.Path;
@@ -105,6 +107,9 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
 
     private Marker selectedMarker = null;
 
+    private Accident currentAccident;
+
+
     @Override
     public void create() {
         shapeRenderer = new ShapeRenderer();
@@ -126,7 +131,9 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
         camera.position.set(Constants.MAP_WIDTH / 2f, Constants.MAP_HEIGHT / 2f, 0);
         camera.update();
 
-        ui.init(skin, font, this::findNearestStations);
+        currentAccident = new Accident("acc_demo", AccidentType.KRIMINAL, 46.5000, 14.9500);
+
+        ui.init(skin, font, this::runSimulation);
 
         ui.setUpdateListener((marker, newType, newLat, newLng) -> {
             Station s = marker.station;
@@ -307,6 +314,116 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
         carAnim.setPlayMode(Animation.PlayMode.LOOP);
     }
 
+
+    private void runSimulation() {
+        if (currentAccident == null) {
+            ui.showStatus("Ni nesrece!", Color.RED);
+            return;
+        }
+
+        if (VEHICLES.isEmpty()) {
+            ui.showStatus("Ni vozil!", Color.RED);
+            return;
+        }
+
+        // Najdi najbližje vozilo po zračni razdalji (haversine)
+        Vehicle nearest = null;
+        double minDist = Double.MAX_VALUE;
+
+        for (Vehicle v : VEHICLES) {
+            if (v == null || v.locationStart == null) continue;
+
+            double dist = haversineKm(
+                currentAccident.geolocation.lat, currentAccident.geolocation.lng,
+                v.locationStart.lat, v.locationStart.lng
+            );
+
+            if (dist < minDist) {
+                minDist = dist;
+                nearest = v;
+            }
+        }
+
+        if (nearest == null) {
+            ui.showStatus("Ni veljavnih vozil!", Color.RED);
+            return;
+        }
+
+        Gdx.app.log("SIM", "Nearest vehicle: " + nearest.id + " at " + String.format("%.2f", minDist) + " km");
+        ui.showStatus("Vozilo: " + nearest.id + " (" + String.format("%.1f", minDist) + " km)", Color.YELLOW);
+
+        fetchRouteAndStart(nearest, currentAccident);
+    }
+
+    private void fetchRouteAndStart(Vehicle vehicle, Accident accident) {
+        vehicle.isMoving = false;
+
+        double startLat = vehicle.locationStart.lat;
+        double startLng = vehicle.locationStart.lng;
+        double endLat = accident.geolocation.lat;
+        double endLng = accident.geolocation.lng;
+
+        Gdx.app.log("SIM", "Fetching route: " + startLat + "," + startLng + " -> " + endLat + "," + endLng);
+        vehicle.locationEnd = new Geolocation(endLat, endLng);
+
+        backendService.fetchORSRoute(
+            startLat, startLng,
+            endLat, endLng,
+            beginTile,
+            new BackendService.VehiclePathCallback() {
+                @Override
+                public void onSuccess(ArrayList<Vector2> pts) {
+                    Gdx.app.log("SIM", "Route received with " + pts.size() + " points");
+
+                    if (pts.size() < 2) {
+                        ui.showStatus("Pot prekratka!", Color.RED);
+                        return;
+                    }
+                    backendPaths.clear();
+                    backendPaths.add(new ArrayList<>(pts));
+                    showPaths = true;
+
+                    vehicle.pathPoints = pts;
+                    vehicle.currentPos.set(pts.get(0));
+                    vehicle.segIndex = 0;
+                    vehicle.travelInSeg = 0f;
+                    vehicle.isMoving = true;
+                    ui.showStatus("Vozilo se premika!", Color.GREEN);
+                }
+
+                @Override
+                public void onError(Throwable t) {
+                    Gdx.app.error("SIM", "Route error: " + t.getMessage());
+                    ui.showStatus("Napaka: " + t.getMessage(), Color.RED);
+                    generateVehiclePathFallback(vehicle);
+
+                    backendPaths.clear();
+                    backendPaths.add(new ArrayList<>(vehicle.pathPoints));
+                    showPaths = true;
+
+                    vehicle.isMoving = true;
+                    ui.showStatus("Fallback pot (ravna črta)", Color.ORANGE);
+                }
+            }
+        );
+    }
+
+
+    private String mapAccidentToVehicleType(AccidentType t) {
+        if (t == null) return "policijska";
+        switch (t) {
+            case KRIMINAL:
+            case PROMETNA:
+                return "policijska";
+            case ZDRAVSTVENI_PRIMER:
+                return "bolnica";
+            case NARAVNA_NESRECA:
+            default:
+                return "gasilci";
+        }
+    }
+
+
     @Override
     public void render() {
         ScreenUtils.clear(0.1f, 0.1f, 0.15f, 1);
@@ -327,7 +444,7 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
         drawCar();
         drawStations();
         drawTraffic();
-        drawVehicles();
+        drawVehicles(dt);
         drawLoadingOverlay();
 
         ui.actAndDraw();
@@ -373,8 +490,8 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
         }
     }
 
-    private void drawVehicles() {
-        renderer.drawVehicles(shapeRenderer, camera, VEHICLES);
+    private void drawVehicles(float dt) {
+        renderer.drawVehicles(spriteBatch, camera, VEHICLES, dt);
     }
 
 

@@ -15,6 +15,8 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
+import si.um.feri.navigator.OOP.Accident;
+import si.um.feri.navigator.OOP.AccidentType;
 import si.um.feri.navigator.OOP.Marker;
 import si.um.feri.navigator.OOP.MarkerType;
 import si.um.feri.navigator.OOP.Path;
@@ -63,6 +65,11 @@ public class BackendService {
             case "bolnica":
             default: return hospitalIcon;
         }
+    }
+
+    public interface OSMReverseCallback {
+        void onSuccess(String displayName, String placeId);
+        void onError(Throwable t);
     }
 
 
@@ -140,9 +147,14 @@ public class BackendService {
                     markers.add(marker);
                 }
 
-                // toti NESRECA je samo da deluje martionv del za izris poti
-                markers.add(new Marker(MarkerType.NESRECA, 46.5000, 14.9500, accidentIcon));
+                double accLat = 46.5000;
+                double accLng = 14.9500; //TO JE DUMMY NESRECA
+                Accident accident = new Accident("accident_dummy_1", AccidentType.PROMETNA, accLat, accLng);
+                Marker accidentMarker = new Marker(MarkerType.NESRECA, accLat, accLng, accidentIcon);
 
+                accidentMarker.accident = accident;
+
+                markers.add(accidentMarker);
                 Gdx.app.postRunnable(() -> callback.onSuccess(markers));
 
             } catch (Exception e) {
@@ -501,4 +513,95 @@ public class BackendService {
             }
         }).start();
     }
+
+    public void fetchORSRoute(double startLat, double startLng, double endLat, double endLng, ZoomXY beginTile, VehiclePathCallback callback) {
+
+        new Thread(() -> {
+            HttpResponse<String> res = null;
+
+            try {
+                String uri = "https://api.openrouteservice.org/v2/directions/driving-car/geojson";
+
+                String body = String.format(java.util.Locale.US,
+                    "{\"coordinates\":[[%f,%f],[%f,%f]]}",
+                    startLng, startLat, endLng, endLat
+                );
+
+                Gdx.app.log("ORS", "REQUEST URL: " + uri);
+                Gdx.app.log("ORS", "REQUEST BODY: " + body);
+                String keyPreview = (Keys.OPENROUTESERVICE == null) ? "null"
+                    : (Keys.OPENROUTESERVICE.length() < 8 ? Keys.OPENROUTESERVICE : Keys.OPENROUTESERVICE.substring(0, 8) + "...");
+                Gdx.app.log("ORS", "API KEY preview: " + keyPreview);
+
+                HttpRequest req = HttpRequest.newBuilder()
+                    .uri(URI.create(uri))
+                    .header("Authorization", Keys.OPENROUTESERVICE)
+                    .header("Content-Type", "application/json")
+                    .header("Accept", "application/geo+json, application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(body))
+                    .build();
+
+                HttpClient client = HttpClient.newBuilder()
+                    .connectTimeout(java.time.Duration.ofSeconds(10))
+                    .build();
+
+                res = client.send(req, HttpResponse.BodyHandlers.ofString());
+
+                Gdx.app.log("ORS", "HTTP STATUS: " + res.statusCode());
+                String respBody = res.body() == null ? "" : res.body();
+                Gdx.app.log("ORS", "RESPONSE (first 800 chars): " +
+                    (respBody.length() > 800 ? respBody.substring(0, 800) + "..." : respBody)
+                );
+                if (res.statusCode() != 200) {
+                    throw new Exception("ORS HTTP " + res.statusCode() + " body=" + respBody);
+                }
+                JsonObject root = JsonParser.parseString(respBody).getAsJsonObject();
+                if (root.has("error")) {
+                    throw new Exception("ORS returned error: " + root.get("error").toString());
+                }
+
+                JsonArray features = root.getAsJsonArray("features");
+                if (features == null || features.size() == 0) {
+                    throw new Exception("ORS: no features in response");
+                }
+
+                JsonObject geom = features.get(0).getAsJsonObject().getAsJsonObject("geometry");
+                if (geom == null || !geom.has("coordinates")) {
+                    throw new Exception("ORS: missing geometry/coordinates");
+                }
+
+                JsonArray coords = geom.getAsJsonArray("coordinates");
+
+                ArrayList<Vector2> pathPoints = new ArrayList<>();
+                for (int i = 0; i < coords.size(); i++) {
+                    JsonArray c = coords.get(i).getAsJsonArray();
+                    double lon = c.get(0).getAsDouble();
+                    double lat = c.get(1).getAsDouble();
+
+                    Vector2 pos = MapRasterTiles.getPixelPosition(
+                        lat, lon,
+                        MapRasterTiles.TILE_SIZE, Constants.ZOOM,
+                        beginTile.x, beginTile.y, Constants.MAP_HEIGHT
+                    );
+                    pathPoints.add(pos);
+                }
+
+                Gdx.app.log("ORS", "PARSED points count: " + pathPoints.size());
+
+                if (pathPoints.isEmpty()) throw new Exception("ORS: empty polyline");
+
+                Gdx.app.postRunnable(() -> callback.onSuccess(pathPoints));
+
+            } catch (Exception e) {
+                if (res == null) {
+                    Gdx.app.error("ORS", "FAILED before response (network/ssl/timeout?)", e);
+                } else {
+                    Gdx.app.error("ORS", "FAILED after response. status=" + res.statusCode(), e);
+                }
+                Gdx.app.postRunnable(() -> callback.onError(e));
+            }
+        }).start();
+    }
+
+
 }
