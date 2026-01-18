@@ -23,6 +23,82 @@ import si.um.feri.navigator.utils.ZoomXY;
 
 public class MapRenderer {
 
+    private Animation<TextureRegion> policeAnim;
+    private Animation<TextureRegion> hospitalAnim;
+    private Animation<TextureRegion> fireAnim;
+
+    private final ArrayList<Texture> vehicleTextures = new ArrayList<>();
+    private float vehicleAnimTime = 0f;
+    private boolean loaded = false;
+
+    private void loadVehicleAnimsIfNeeded() {
+        if (loaded) return;
+        loaded = true;
+
+        float frameDuration = 1f / 4f;
+
+        policeAnim = loadPoliceAnim(frameDuration);
+        hospitalAnim = loadHospitalAnim(frameDuration);
+        fireAnim = loadFireAnim(frameDuration);
+    }
+
+    private Animation<TextureRegion> loadPoliceAnim(float fd) {
+        TextureRegion[] frames = new TextureRegion[24];
+        for (int i = 1; i <= 24; i++) {
+            Texture t = new Texture("policecarimages/car_" + i + ".png");
+            t.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+            vehicleTextures.add(t);
+            frames[i - 1] = new TextureRegion(t);
+        }
+        return new Animation<>(fd, frames);
+    }
+
+    private Animation<TextureRegion> loadHospitalAnim(float fd) {
+        TextureRegion[] frames = new TextureRegion[24];
+        for (int i = 1; i <= 24; i++) {
+            Texture t = new Texture("hospitalcarimages/vehicle_" + String.format("%02d", i) + ".png");
+            t.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+            vehicleTextures.add(t);
+            frames[i - 1] = new TextureRegion(t);
+        }
+        return new Animation<>(fd, frames);
+    }
+
+    private Animation<TextureRegion> loadFireAnim(float fd) {
+        TextureRegion[] frames = new TextureRegion[20];
+        for (int i = 1; i <= 20; i++) {
+            Texture t = new Texture("firecarimages/firecar_" + String.format("%02d", i) + ".png");
+            t.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+            vehicleTextures.add(t);
+            frames[i - 1] = new TextureRegion(t);
+        }
+        return new Animation<>(fd, frames);
+    }
+
+    private Animation<TextureRegion> getAnimForVehicle(Vehicle v) {
+        if (v.type == null) return policeAnim;
+
+        switch (v.type.toLowerCase()) {
+            case "policija":
+            case "police":
+                return policeAnim;
+
+            case "bolnica":
+            case "hospital":
+            case "ambulance":
+                return hospitalAnim;
+
+            case "gasilci":
+            case "fire":
+                return fireAnim;
+
+            default:
+                return policeAnim;
+        }
+    }
+
+
+
     public void drawTiles(SpriteBatch spriteBatch, OrthographicCamera camera, ZoomXY[] tileZone) {
         spriteBatch.setProjectionMatrix(camera.combined);
         spriteBatch.begin();
@@ -44,24 +120,53 @@ public class MapRenderer {
     }
 
 
-    public void drawVehicles(ShapeRenderer shapeRenderer, OrthographicCamera camera, List<Vehicle> vehicles) {
+    public void drawVehicles(SpriteBatch batch, OrthographicCamera camera, List<Vehicle> vehicles, float dt) {
         if (vehicles == null || vehicles.isEmpty()) return;
 
-        shapeRenderer.setProjectionMatrix(camera.combined);
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        loadVehicleAnimsIfNeeded();
+        vehicleAnimTime += dt;
 
-        shapeRenderer.setColor(Color.BLUE);
+        batch.setProjectionMatrix(camera.combined);
+        batch.begin();
 
-        float circleSize = 300f * camera.zoom;
+        float baseW = 1400f;
+        float baseH = 800f;
 
-        for (Vehicle vehicle : vehicles) {
-            if (vehicle.pathPoints.isEmpty()) continue;
+        for (Vehicle v : vehicles) {
+            if (v.pathPoints.isEmpty()) continue;
 
-            shapeRenderer.circle(vehicle.currentPos.x, vehicle.currentPos.y, circleSize);
+            Animation<TextureRegion> anim = getAnimForVehicle(v);
+            if (anim == null) continue;
+
+            TextureRegion frame = anim.getKeyFrame(vehicleAnimTime, true);
+
+            float w = baseW * camera.zoom;
+            float h = baseH * camera.zoom;
+
+            float x = v.currentPos.x - w / 2f;
+            float y = v.currentPos.y - h / 2f;
+
+            float angle = v.rotationDeg;
+
+            while (angle > 180f) angle -= 360f;
+            while (angle < -180f) angle += 360f;
+
+            float scaleX = 1f;
+            float scaleY = 1f;
+
+            if (angle < -90f || angle > 90f) {
+                scaleY = -1f;
+                scaleX = -1f;
+
+                angle = (angle > 0f) ? (angle - 180f) : (angle + 180f);
+            }
+
+            batch.draw(frame, x, y, w / 2f, h / 2f, w, h, scaleX, scaleY, angle);
         }
 
-        shapeRenderer.end();
+        batch.end();
     }
+
 
     public void drawStations(
         SpriteBatch spriteBatch,
@@ -79,7 +184,6 @@ public class MapRenderer {
 
         for (Marker marker : markers) {
 
-            // NESREČA – vedno prikaži
             if (marker.type == MarkerType.NESRECA) {
                 Vector2 pos = MapRasterTiles.getPixelPosition(
                     marker.lokacija.lat,
@@ -102,8 +206,6 @@ public class MapRenderer {
                 }
                 continue;
             }
-
-            // POSTAJE – filtriranje po tipu
             if (marker.type == MarkerType.POSTAJA && marker.station != null) {
                 switch (marker.station.type) {
                     case "policijska":

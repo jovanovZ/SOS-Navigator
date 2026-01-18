@@ -71,7 +71,7 @@ public class NavigatorUI {
         return infoTable.hit(stageCoords.x - infoTable.getX(), stageCoords.y - infoTable.getY(), true) != null;
     }
 
-    public void init(Skin skin, BitmapFont font, Runnable onFindNearest) {
+    public void init(Skin skin, BitmapFont font, Runnable onSimulate) {
         this.skin = skin;
         this.font = font;
 
@@ -82,13 +82,14 @@ public class NavigatorUI {
         infoTable.setBackground(skin.newDrawable("white", Color.DARK_GRAY));
         uiStage.addActor(infoTable);
 
-        TextButton button = new TextButton("Najdi 5 najblizjih", skin);
+        TextButton button = new TextButton("Izvedi simulacijo", skin);
         button.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                if (onFindNearest != null) onFindNearest.run();
+                if (onSimulate != null) onSimulate.run();
             }
         });
+
 
         Table actionTable = new Table();
         actionTable.setFillParent(true);
