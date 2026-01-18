@@ -6,6 +6,7 @@ import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.assets.AssetManager;
+import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
@@ -45,6 +46,16 @@ import si.um.feri.navigator.utils.MapRasterTiles;
 import si.um.feri.navigator.utils.ZoomXY;
 
 public class Navigator extends ApplicationAdapter implements GestureDetector.GestureListener {
+
+    private Music policeSound;
+    private Music ambulanceSound;
+    private Music fireSound;
+    private Music roadSound;
+
+
+    private boolean policeSoundPlaying = false;
+    private boolean ambulanceSoundPlaying = false;
+    private boolean fireSoundPlaying = false;
 
     private static final float MIN_ZOOM = 0.02f;
     private static final float MAX_ZOOM = 5.0f;
@@ -215,6 +226,7 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
         tileZone = MapRasterTiles.getTileZoneCoords(centerTile, Constants.NUM_TILES_X, Constants.NUM_TILES_Y);
 
         loadCarAnimation();
+        loadSounds();
 
         backendService = new BackendService();
 
@@ -227,7 +239,7 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
                         MarkerType.NESRECA,
                         acc.geolocation.lat,
                         acc.geolocation.lng,
-                        backendService.getAccidentIcon()
+                        backendService.getAccidentIconForType(acc.typeOfAccident)
                     );
                     accMarker.accident = acc;
                     MARKERS.add(accMarker);
@@ -339,33 +351,76 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
             ui.showStatus("Ni nesreč!", Color.RED);
             return;
         }
-        if (VEHICLES.isEmpty()) {
-            ui.showStatus("Ni vozil!", Color.RED);
-            return;
-        }
+
         backendPaths.clear();
         showPaths = false;
-
 
         int successCount = 0;
         int failCount = 0;
 
         for (Accident accident : ACCIDENTS) {
-            String requiredVehicleType = mapAccidentToVehicleType(accident.typeOfAccident);
-            Vehicle nearest = findNearestAvailableVehicle(accident, requiredVehicleType);
+            AccidentType accType = accident.typeOfAccident;
 
-            if (nearest == null) {
-                failCount++;
-                continue;
+            if (accType == AccidentType.KRIMINAL || accType == AccidentType.PROMETNA) {
+                String requiredVehicleType = "Police";
+                Vehicle nearest = findNearestAvailableVehicle(accident, requiredVehicleType);
+
+                if (nearest == null) {
+                    Gdx.app.log("SIM", "✗ Ni razpoložljivega policijskega vozila za nesrečo " + accident.id);
+                    failCount++;
+                    continue;
+                }
+
+                nearest.isAssigned = true;
+                nearest.assignedToAccident = true;
+
+                Gdx.app.log("SIM", "Nesreča " + accident.id + " (" + accType +
+                    ") → Vozilo " + nearest.id);
+
+                fetchRouteAndStartVehicle(nearest, accident);
+                successCount++;
+
+            } else {
+                String stationType = mapAccidentToStationType(accType);
+                String vehicleType = mapAccidentToVehicleType(accType);
+
+                Marker nearestStation = findNearestStation(accident, stationType);
+
+                if (nearestStation == null) {
+                    Gdx.app.log("SIM", "✗ Ni postaje tipa '" + stationType + "' za nesrečo " + accident.id);
+                    failCount++;
+                    continue;
+                }
+
+                Gdx.app.log("SIM", "Nesreča " + accident.id + " (" + accType +
+                    ") → Postaja " + nearestStation.station.id + " (" + stationType + ")");
+
+                Vehicle newVehicle = new Vehicle();
+                newVehicle.id = "temp_" + accident.id + "_" + System.currentTimeMillis();
+                newVehicle.type = vehicleType;
+                newVehicle.locationStart = new Geolocation(
+                    nearestStation.lokacija.lat,
+                    nearestStation.lokacija.lng
+                );
+                newVehicle.locationEnd = new Geolocation(
+                    accident.geolocation.lat,
+                    accident.geolocation.lng
+                );
+                newVehicle.pathPoints = new ArrayList<>();
+                newVehicle.currentPos = new Vector2();
+                newVehicle.isMoving = false;
+                newVehicle.isAssigned = true;
+                newVehicle.assignedToAccident = true;
+                newVehicle.segIndex = 0;
+                newVehicle.travelInSeg = 0f;
+                newVehicle.animTime = 0f;
+                newVehicle.rotationDeg = 0f;
+
+                VEHICLES.add(newVehicle);
+
+                fetchRouteAndStartVehicle(newVehicle, accident);
+                successCount++;
             }
-
-            nearest.isAssigned = true;
-
-            Gdx.app.log("SIM", "Nesreča " + accident.id + " (" + accident.typeOfAccident +
-                ") → Vozilo " + nearest.id);
-
-            fetchRouteAndStartVehicle(nearest, accident);
-            successCount++;
         }
 
         if (successCount > 0 && failCount == 0) {
@@ -373,9 +428,24 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
         } else if (successCount > 0 && failCount > 0) {
             ui.showStatus("Poslanih " + successCount + ", preskočenih " + failCount, Color.YELLOW);
         } else {
-            ui.showStatus("Ni ustreznih vozil!", Color.RED);
+            ui.showStatus("Ni ustreznih vozil/postaj!", Color.RED);
         }
     }
+
+    private String mapAccidentToStationType(AccidentType t) {
+        if (t == null) return "policijska";
+        switch (t) {
+            case ZDRAVSTVENI_PRIMER:
+                return "bolnica";
+            case NARAVNA_NESRECA:
+                return "gasilci";
+            case KRIMINAL:
+            case PROMETNA:
+            default:
+                return "policijska";
+        }
+    }
+
     private Vehicle findNearestAvailableVehicle(Accident accident, String requiredType) {
         Vehicle nearest = null;
         double minDist = Double.MAX_VALUE;
@@ -501,7 +571,7 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
 
 
     private String mapAccidentToVehicleType(AccidentType t) {
-        if (t == null) return "policijska";
+        if (t == null) return "Police";
         switch (t) {
             case KRIMINAL:
             case PROMETNA:
@@ -528,6 +598,7 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
 
         updateCar(dt);
         updateVehicles(dt);
+        updateSounds();
 
         viewport.apply();
 
@@ -908,6 +979,11 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
         for (Texture t : carFrameTextures) t.dispose();
         carFrameTextures.clear();
 
+        if (policeSound != null) policeSound.dispose();
+        if (ambulanceSound != null) ambulanceSound.dispose();
+        if (fireSound != null) fireSound.dispose();
+        if (roadSound != null) roadSound.dispose();
+
         ui.dispose();
         if (assetManager != null) assetManager.dispose();
     }
@@ -983,6 +1059,107 @@ public class Navigator extends ApplicationAdapter implements GestureDetector.Ges
             vehicle.segIndex = 0;
             vehicle.travelInSeg = 0f;
             vehicle.isMoving = true;
+        }
+    }
+
+
+    private Marker findNearestStation(Accident accident, String stationType) {
+        Marker nearest = null;
+        double minDist = Double.MAX_VALUE;
+
+        for (Marker m : MARKERS) {
+            if (m.type != MarkerType.POSTAJA) continue;
+            if (m.station == null) continue;
+
+            String type = m.station.type.toLowerCase();
+            if (!type.equals(stationType.toLowerCase())) continue;
+
+            double dist = haversineKm(
+                accident.geolocation.lat, accident.geolocation.lng,
+                m.lokacija.lat, m.lokacija.lng
+            );
+
+            if (dist < minDist) {
+                minDist = dist;
+                nearest = m;
+            }
+        }
+
+        return nearest;
+    }
+
+    private void loadSounds() {
+        try {
+            policeSound = Gdx.audio.newMusic(Gdx.files.internal("sounds/police-siren-sound-effect-453296.mp3"));
+            policeSound.setLooping(true);
+            policeSound.setVolume(0.5f);
+
+            ambulanceSound = Gdx.audio.newMusic(Gdx.files.internal("sounds/ambulance-siren-363656.mp3"));
+            ambulanceSound.setLooping(true);
+            ambulanceSound.setVolume(0.5f);
+
+            fireSound = Gdx.audio.newMusic(Gdx.files.internal("sounds/fire_alarm-71107.mp3"));
+            fireSound.setLooping(true);
+            fireSound.setVolume(0.5f);
+
+            roadSound = Gdx.audio.newMusic(Gdx.files.internal("sounds/road.mp3"));
+            roadSound.setLooping(true);
+            roadSound.setVolume(0.6f);
+            roadSound.play();
+
+        } catch (Exception e) {
+            Gdx.app.error("Sound", "Failed to load sounds", e);
+        }
+    }
+
+    private void updateSounds() {
+        int policeActive = 0;
+        int ambulanceActive = 0;
+        int fireActive = 0;
+        for (Vehicle v : VEHICLES) {
+            if (v.isMoving && v.assignedToAccident) {
+                String type = v.type != null ? v.type.toLowerCase() : "";
+                if (type.equals("police")) {
+                    policeActive++;
+                } else if (type.equals("ambulance")) {
+                    ambulanceActive++;
+                } else if (type.equals("fire")) {
+                    fireActive++;
+                }
+            }
+        }
+        if (policeActive > 0 && !policeSoundPlaying) {
+            if (policeSound != null) {
+                policeSound.play();
+                policeSoundPlaying = true;
+            }
+        } else if (policeActive == 0 && policeSoundPlaying) {
+            if (policeSound != null) {
+                policeSound.stop();
+                policeSoundPlaying = false;
+            }
+        }
+        if (ambulanceActive > 0 && !ambulanceSoundPlaying) {
+            if (ambulanceSound != null) {
+                ambulanceSound.play();
+                ambulanceSoundPlaying = true;
+            }
+        } else if (ambulanceActive == 0 && ambulanceSoundPlaying) {
+            if (ambulanceSound != null) {
+                ambulanceSound.stop();
+                ambulanceSoundPlaying = false;
+            }
+        }
+        if (fireActive > 0 && !fireSoundPlaying) {
+            if (fireSound != null) {
+                fireSound.play();
+                fireSoundPlaying = true;
+            }
+        } else if (fireActive == 0 && fireSoundPlaying) {
+            if (fireSound != null) {
+                fireSound.stop();
+                fireSoundPlaying = false;
+            }
         }
     }
 }

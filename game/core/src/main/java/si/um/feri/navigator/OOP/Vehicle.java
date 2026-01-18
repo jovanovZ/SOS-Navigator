@@ -32,6 +32,11 @@ public class Vehicle {
     public float animTime = 0f;
     public Texture icon;
 
+    // ✨ PRAZEN KONSTRUKTOR - POTREBEN ZA USTVARJANJE NOVIH VOZIL V SIMULACIJI ✨
+    public Vehicle() {
+    }
+
+    // Konstruktor s parametri - uporablja se pri nalaganju vozil iz baze
     public Vehicle(String id, String type, float acceleration,
                    double startLng, double startLat,
                    double endLng, double endLat) {
